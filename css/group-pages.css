@@ -1,0 +1,68 @@
+/* Estilos para las páginas detalladas de agrupaciones */
+.members-list {
+    margin-top: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+}
+
+.member-section h3 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+.member-section ul {
+    list-style: none;
+    padding-left: 0;
+    color: #555;
+    line-height: 1.8;
+}
+
+/* Headers de agrupaciones */
+.group-header {
+    height: 50vh; 
+    min-height: 300px; 
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.group-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7));
+    z-index: 1;
+}
+
+.group-header > div {
+    position: relative;
+    z-index: 2;
+}
+
+.group-header h1 {
+    font-size: 3rem;
+}
+
+.centered-content {
+    max-width: 900px; 
+    margin: 0 auto; 
+    text-align: center;
+}
+
+.centered-content p {
+    margin-top: 1.5rem; 
+    color: #555; 
+    font-size: 1.1rem;
+}
+
+.action-container {
+    text-align: center; 
+    margin-top: 3rem;
+}

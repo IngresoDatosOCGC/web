@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Únete | Orquesta Comunitaria Gran Canaria</title>
+    <meta name="description" content="Únete a la Orquesta Comunitaria de Gran Canaria, al coro, o a los ensembles musicales.">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/unete.css">
+</head>
+<body>
+
+    <!-- Header Placeholder -->
+    <div id="header-placeholder"></div>
+
+    <main>
+        <div class="unete-header">
+            <h1>Haz música con nosotros</h1>
+            <p>Elige la agrupación que más te guste e inscríbete para formar parte de la OCGC.</p>
+        </div>
+        <section class="section animate-on-scroll">
+            <div class="unete-grid">
+                
+                <!-- Orquesta -->
+                <div class="join-card">
+                    <div class="card-content">
+                        <div class="join-icon"><i class="fas fa-music"></i></div>
+                        <h3>Orquesta Sinfónica</h3>
+                        <p>Nuestra formación principal. Abiertos a músicos de todas las cuerdas, viento y percusión clásica.</p>
+                    </div>
+
+                    <div class="join-btn-container">
+                        <button onclick="toggleForm('form-orquesta')" class="btn btn-outline" style="width: 100%; cursor: pointer;">Inscribirse en Orquesta</button>
+                    </div>
+                </div>
+
+                <!-- Coro -->
+                <div class="join-card">
+                    <div class="card-content">
+                        <div class="join-icon"><i class="fas fa-microphone-alt"></i></div>
+                        <h3>Coro (COCGC)</h3>
+                        <p>La voz de la comunidad. Buscamos sopranos, altos, tenores y bajos con pasión por cantar en grupo.</p>
+                    </div>
+
+                    <div class="join-btn-container">
+                        <button onclick="toggleForm('form-coro')" class="btn btn-outline" style="width: 100%; cursor: pointer;">Inscribirse en Coro</button>
+                    </div>
+                </div>
+
+                <!-- Ensemble de Flautas -->
+                <div class="join-card">
+                    <div class="card-content">
+                        <div class="join-icon"><i class="fas fa-wind"></i></div>
+                        <h3>Ensemble de Flautas</h3>
+                        <p>Agrupación centrada en la familia de las flautas traversas, desde el piccolo hasta la flauta bajo.</p>
+                    </div>
+
+                    <div class="join-btn-container">
+                        <button onclick="toggleForm('form-flautas')" class="btn btn-outline" style="width: 100%; cursor: pointer;">Inscripción Flautas</button>
+                    </div>
+                </div>
+
+                <!-- Ensemble de Metales -->
+                <div class="join-card">
+                    <div class="card-content">
+                        <div class="join-icon"><i class="fas fa-bullhorn"></i></div>
+                        <h3>Ensemble de Metales</h3>
+                        <p>Queremos potenciar el brillo armónico. Para músicos que toquen trompeta, trompa, trombón o tuba.</p>
+                    </div>
+
+                    <div class="join-btn-container">
+                        <button onclick="toggleForm('form-metales')" class="btn btn-outline" style="width: 100%; cursor: pointer;">Inscripción Metales</button>
+                    </div>
+                </div>
+
+                <!-- Ensemble de Violonchelos -->
+                <div class="join-card">
+                    <div class="card-content">
+                        <div class="join-icon"><i class="fas fa-compact-disc"></i></div>
+                        <h3>Ensemble de Violonchelos</h3>
+                        <p>Un espacio exclusivo dedicado al hermoso timbre del violonchelo. Forma parte de esta formación única.</p>
+                    </div>
+
+                    <div class="join-btn-container">
+                        <button onclick="toggleForm('form-chelos')" class="btn btn-outline" style="width: 100%; cursor: pointer;">Inscripción Chelos</button>
+                    </div>
+                </div>
+
+                <!-- Big Band -->
+                <div class="join-card">
+                    <div class="card-content">
+                        <div class="join-icon"><i class="fas fa-drum"></i></div>
+                        <h3>Big Band</h3>
+                        <p>Si el Jazz, el Swing o el Blues son lo tuyo. Metales, saxofones y base rítmica para aportar ritmo vital.</p>
+                    </div>
+
+                    <div class="join-btn-container">
+                        <button onclick="toggleForm('form-bigband')" class="btn btn-outline" style="width: 100%; cursor: pointer;">Inscripción Big Band</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Formularios Modales Globales -->
+            <div class="join-form-container" id="form-orquesta">
+                <div class="form-modal-content">
+                    <span class="close-modal" aria-label="Cerrar" onclick="toggleForm('form-orquesta')">&times;</span>
+                    <h3>Inscripción: Orquesta Sinfónica</h3>
+                    <form action="#" method="POST" onsubmit="event.preventDefault(); alert('Solicitud para la Orquesta enviada con éxito.'); this.reset(); toggleForm('form-orquesta');">
+                    <input type="text" placeholder="Nombre y Apellidos *" required class="form-control">
+                    <input type="email" placeholder="Correo Electrónico *" required class="form-control">
+                    <input type="tel" placeholder="Teléfono *" required class="form-control">
+                    <input type="text" placeholder="Instrumento *" required class="form-control">
+                    <textarea placeholder="Experiencia (Opcional)" rows="3" class="form-control"></textarea>
+                    <button type="submit" class="btn btn-primary btn-submit">Enviar Solicitud</button>
+                </form>
+                </div>
+            </div>
+
+            <div class="join-form-container" id="form-coro">
+                <div class="form-modal-content">
+                    <span class="close-modal" aria-label="Cerrar" onclick="toggleForm('form-coro')">&times;</span>
+                    <h3>Inscripción: Coro (COCGC)</h3>
+                    <form action="#" method="POST" onsubmit="event.preventDefault(); alert('Solicitud para el Coro enviada con éxito.'); this.reset(); toggleForm('form-coro');">
+                    <input type="text" placeholder="Nombre y Apellidos *" required class="form-control">
+                    <input type="email" placeholder="Correo Electrónico *" required class="form-control">
+                    <input type="tel" placeholder="Teléfono *" required class="form-control">
+                    <select required class="form-control" style="background: #fff;">
+                        <option value="" disabled selected>Tipo de voz *</option>
+                        <option value="Soprano">Soprano</option>
+                        <option value="Alto">Alto / Contralto</option>
+                        <option value="Tenor">Tenor</option>
+                        <option value="Bajo">Bajo / Barítono</option>
+                        <option value="No lo se">Aún no lo sé</option>
+                    </select>
+                    <textarea placeholder="Resumen vocal (Opcional)" rows="3" class="form-control"></textarea>
+                    <button type="submit" class="btn btn-primary btn-submit">Enviar Solicitud</button>
+                </form>
+                </div>
+            </div>
+
+            <div class="join-form-container" id="form-flautas">
+                <div class="form-modal-content">
+                    <span class="close-modal" aria-label="Cerrar" onclick="toggleForm('form-flautas')">&times;</span>
+                    <h3>Inscripción: Ensemble de Flautas</h3>
+                    <form action="#" method="POST" onsubmit="event.preventDefault(); alert('Solicitud para el Ensemble de Flautas enviada con éxito.'); this.reset(); toggleForm('form-flautas');">
+                    <input type="text" placeholder="Nombre y Apellidos *" required class="form-control">
+                    <input type="email" placeholder="Correo Electrónico *" required class="form-control">
+                    <input type="tel" placeholder="Teléfono *" required class="form-control">
+                    <textarea placeholder="Explícanos tu experiencia flautística" rows="3" class="form-control" required></textarea>
+                    <button type="submit" class="btn btn-primary btn-submit">Enviar Solicitud</button>
+                </form>
+                </div>
+            </div>
+
+            <div class="join-form-container" id="form-metales">
+                <div class="form-modal-content">
+                    <span class="close-modal" aria-label="Cerrar" onclick="toggleForm('form-metales')">&times;</span>
+                    <h3>Inscripción: Ensemble de Metales</h3>
+                    <form action="#" method="POST" onsubmit="event.preventDefault(); alert('Solicitud para el Ensemble de Metales enviada con éxito.'); this.reset(); toggleForm('form-metales');">
+                    <input type="text" placeholder="Nombre y Apellidos *" required class="form-control">
+                    <input type="email" placeholder="Correo Electrónico *" required class="form-control">
+                    <input type="tel" placeholder="Teléfono *" required class="form-control">
+                    <select required class="form-control" style="background: #fff;">
+                        <option value="" disabled selected>Instrumento que interpretas *</option>
+                        <option value="Trompeta">Trompeta</option>
+                        <option value="Trompa">Trompa</option>
+                        <option value="Trombon">Trombón</option>
+                        <option value="Tuba">Tuba</option>
+                        <option value="Otro">Otro Metal</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary btn-submit">Enviar Solicitud</button>
+                </form>
+                </div>
+            </div>
+
+            <div class="join-form-container" id="form-chelos">
+                <div class="form-modal-content">
+                    <span class="close-modal" aria-label="Cerrar" onclick="toggleForm('form-chelos')">&times;</span>
+                    <h3>Inscripción: Ensemble de Violonchelos</h3>
+                    <form action="#" method="POST" onsubmit="event.preventDefault(); alert('Solicitud para el Ensemble de Violonchelos enviada con éxito.'); this.reset(); toggleForm('form-chelos');">
+                    <input type="text" placeholder="Nombre y Apellidos *" required class="form-control">
+                    <input type="email" placeholder="Correo Electrónico *" required class="form-control">
+                    <input type="tel" placeholder="Teléfono *" required class="form-control">
+                    <textarea placeholder="Experiencia con el Violonchelo (Opcional)" rows="3" class="form-control"></textarea>
+                    <button type="submit" class="btn btn-primary btn-submit">Enviar Solicitud</button>
+                </form>
+                </div>
+            </div>
+
+            <div class="join-form-container" id="form-bigband">
+                <div class="form-modal-content">
+                    <span class="close-modal" aria-label="Cerrar" onclick="toggleForm('form-bigband')">&times;</span>
+                    <h3>Inscripción: Big Band</h3>
+                    <form action="#" method="POST" onsubmit="event.preventDefault(); alert('Solicitud para la Big Band enviada con éxito.'); this.reset(); toggleForm('form-bigband');">
+                    <input type="text" placeholder="Nombre y Apellidos *" required class="form-control">
+                    <input type="email" placeholder="Correo Electrónico *" required class="form-control">
+                    <input type="tel" placeholder="Teléfono *" required class="form-control">
+                    <select required class="form-control" style="background: #fff;">
+                        <option value="" disabled selected>Instrumento (Ej: Saxo Mib, Batería...) *</option>
+                        <option value="Saxo Alto">Saxofón Alto</option>
+                        <option value="Saxo Tenor">Saxofón Tenor</option>
+                        <option value="Saxo Baritono">Saxofón Barítono</option>
+                        <option value="Trompeta">Trompeta</option>
+                        <option value="Trombon">Trombón</option>
+                        <option value="Bateria">Batería</option>
+                        <option value="Guitarra">Guitarra</option>
+                        <option value="Bajo">Bajo / Contrabajo</option>
+                        <option value="Piano">Piano</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary btn-submit">Enviar Solicitud</button>
+                </form>
+                </div>
+            </div>
+        </section>
+
+
+    </main>
+
+    <!-- Footer Placeholder -->
+    <div id="footer-placeholder"></div>
+
+    <script type="module" src="../js/main.js"></script>
+</body>
+</html>

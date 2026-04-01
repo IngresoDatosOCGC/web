@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================
+// PARTITURAS Y REPERTORIOS
+// =============================================
+
+model Score {
+  id           Int       @id @default(autoincrement())
+  title        String
+  fileUrl      String
+  createdAt    DateTime  @default(now())
+  isDocument   Boolean   @default(false)
+  categoryId   Int?
+  category     Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  // Ahora es una lista preestablecida de cadenas
+  allowedRoles String[]  @default([])
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  eventDate DateTime?
+  scores    Score[]
+}
+
+// =============================================
+// TABLA UNIFICADA: Secciones/Instrumentos
+// Fusiona las antiguas tablas Role y Seccion
+// =============================================
+
+model Seccion {
+  id          Int          @id @default(autoincrement())
+  seccion     String       @unique
+  familia     String?      @default("Otros")
+  estructuras Estructura[]
+}
+
+model SystemConfig {
+  key   String @id
+  value Json
+}
+
+// =============================================
+// ESQUEMA NORMALIZADO - Paridad con Supabase
+// =============================================
+
+model User {
+  id            Int          @id @default(autoincrement())
+  clerkUserId   String?      @unique
+  name          String
+  surname       String
+  dni           String       @unique
+  email         String?      @unique
+  phone         String?
+  birthDate     String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  residenciaId  Int?
+  residencia    Residencia?  @relation(fields: [residenciaId], references: [id])
+  empleoId      Int?
+  empleo        Empleo?      @relation(fields: [empleoId], references: [id])
+
+  estructuras   Estructura[]
+  matriculas    Matricula[]
+}
+
+model Estructura {
+  id               Int                  @id @default(autoincrement())
+  userId           Int
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  papelId          Int
+  papel            Papel                @relation(fields: [papelId], references: [id])
+  agrupacionId     Int
+  agrupacion       Agrupacion           @relation(fields: [agrupacionId], references: [id])
+  seccionId        Int
+  seccion          Seccion              @relation(fields: [seccionId], references: [id])
+  activo           Boolean              @default(false)
+  atril            Int?
+  programaAnterior Boolean              @default(false)
+
+  @@unique([userId, papelId, agrupacionId, seccionId])
+}
+
+model Residencia {
+  id              Int     @id @default(autoincrement())
+  isla            String?
+  municipio       String?
+  empadronamiento String?
+  users           User[]
+
+  @@unique([isla, municipio, empadronamiento])
+}
+
+model Empleo {
+  id       Int     @id @default(autoincrement())
+  trabajo  String?
+  estudios String?
+  users    User[]
+
+  @@unique([trabajo, estudios])
+}
+
+model Matricula {
+  id              Int    @id @default(autoincrement())
+  matriculaNumber String @unique
+  userId          Int
+  user            User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// =============================================
+// CATÁLOGOS (pre-llenados)
+// =============================================
+
+model Agrupacion {
+  id          Int          @id @default(autoincrement())
+  agrupacion  String       @unique
+  estructuras Estructura[]
+}
+
+model Papel {
+  id          Int          @id @default(autoincrement())
+  papel       String       @unique
+  estructuras Estructura[]
+}
+
