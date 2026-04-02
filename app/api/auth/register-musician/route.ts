@@ -12,8 +12,23 @@ export async function POST(req: Request) {
       agrupacion, instrument, desk,
       isla, municipio, empadronamiento,
       trabajo, estudios, vehicleRegistration,
-      username, password
+      username, password,
+      inviteCode // El código de invitación de un solo uso
     } = data;
+
+    // 0. Validar y consumir el código de invitación
+    if (!inviteCode) return new NextResponse(JSON.stringify({ error: "Se requiere un código de invitación válido." }), { status: 400 });
+    
+    const invite = await prisma.invitationCode.findUnique({ where: { code: inviteCode } });
+    if (!invite) return new NextResponse(JSON.stringify({ error: "Código de invitación no encontrado." }), { status: 404 });
+    if (invite.usedAt) return new NextResponse(JSON.stringify({ error: "Este código ya ha sido utilizado." }), { status: 410 });
+    if (new Date(invite.expiresAt) < new Date()) return new NextResponse(JSON.stringify({ error: "Este código ha caducado." }), { status: 410 });
+
+    // Marcar como usado inmediatamente para evitar ataques de carrera (race conditions)
+    await prisma.invitationCode.update({
+      where: { id: invite.id },
+      data: { usedAt: new Date() }
+    });
 
     // 1. Preparar los pares Agrupación/Sección para crear la Estructura y Roles
     const groupPairs = [

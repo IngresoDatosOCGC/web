@@ -21,7 +21,8 @@ const SECCIONES = [
 ];
 
 export default function PaginaRegistroSecreta() {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0); // Empezamos en el paso 0 de validación
+  const [inviteToken, setInviteToken] = useState(''); // El token introducido
   const [formData, setFormData] = useState({
     firstName: '', surname: '', dni: '', dob: '',
     phone: '', email: '', isla: '', municipio: '', empadronamiento: '',
@@ -33,6 +34,38 @@ export default function PaginaRegistroSecreta() {
   });
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<any>(null);
+
+  // Intentar capturar el código de la URL si existe
+  useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+      if (code) setInviteToken(code);
+    }
+  });
+
+  const validateInvitation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setStatus(null);
+    try {
+      const res = await fetch("/api/auth/validate-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: inviteToken })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setStep(1); // Desbloqueado!
+      } else {
+        setStatus({ success: false, msg: data.error || "Código de invitación no válido." });
+      }
+    } catch (error) {
+      setStatus({ success: false, msg: "Error al validar el código." });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -59,7 +92,7 @@ export default function PaginaRegistroSecreta() {
     try {
       const res = await fetch("/api/auth/register-musician", {
         method: "POST",
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, inviteCode: inviteToken }),
         headers: { "Content-Type": "application/json" }
       });
 
@@ -98,7 +131,8 @@ export default function PaginaRegistroSecreta() {
       <div className="onboarding-card">
         <center><img src="/assets/images/logo_ocgc.png" width="100" alt="OCGC" style={{marginBottom: '1rem'}} /></center>
         <h1>Formulario de Alta: Miembros</h1>
-        {step < 6 && <p className="step-indicator">Paso {step} de 5</p>}
+        {step > 0 && step < 6 && <p className="step-indicator">Paso {step} de 5</p>}
+        {step === 0 && <p className="step-indicator">Validación de Acceso</p>}
         <hr />
 
         {status && step < 6 && (
@@ -114,211 +148,237 @@ export default function PaginaRegistroSecreta() {
              <a href="/sign-in" className="btn-onboarding" style={{ display: 'inline-block', textDecoration: 'none', width: 'auto', padding: '1rem 2rem' }}>Ir a Iniciar Sesión</a>
            </div>
         ) : (
-          <form onSubmit={handleSubmit} className="onboarding-form">
+          <div className="onboarding-form">
             
-            {step === 1 && (
-              <div className="step-content">
-                <h3>Información Personal</h3>
-                <div className="form-group">
-                  <label>Nombre:</label>
-                  <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} required />
-                </div>
-                <div className="form-group">
-                  <label>Apellidos:</label>
-                  <input type="text" name="surname" value={formData.surname} onChange={handleChange} required />
-                </div>
-                <div className="form-group-row">
-                  <div>
-                    <label>DNI / NIE:</label>
-                    <input type="text" name="dni" value={formData.dni} onChange={handleChange} required />
-                  </div>
-                  <div>
-                    <label>Fecha de Nacimiento:</label>
-                    <input type="date" name="dob" value={formData.dob} onChange={handleChange} required />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {step === 2 && (
-              <div className="step-content">
-                <h3>Contacto y Residencia</h3>
-                <div className="form-group-row">
-                  <div>
-                    <label>Teléfono Múltiple/Móvil:</label>
-                    <input type="tel" name="phone" value={formData.phone} onChange={handleChange} required />
-                  </div>
-                  <div>
-                    <label>Correo Electrónico:</label>
-                    <input type="email" name="email" value={formData.email} onChange={handleChange} required />
-                  </div>
-                </div>
-                <div className="form-group-row">
-                  <div>
-                    <label>Isla de Residencia:</label>
-                    <select name="isla" value={formData.isla} onChange={handleChange} required>
-                      <option value="">-- Seleccionar --</option>
-                      <option value="Gran Canaria">Gran Canaria</option>
-                      <option value="Tenerife">Tenerife</option>
-                      <option value="Lanzarote">Lanzarote</option>
-                      <option value="Fuerteventura">Fuerteventura</option>
-                      <option value="La Palma">La Palma</option>
-                      <option value="La Gomera">La Gomera</option>
-                      <option value="El Hierro">El Hierro</option>
-                      <option value="La Graciosa">La Graciosa</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label>Municipio de Residencia:</label>
-                    <input type="text" name="municipio" value={formData.municipio} onChange={handleChange} required />
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>Lugar de Empadronamiento:</label>
-                  <input type="text" name="empadronamiento" value={formData.empadronamiento} onChange={handleChange} required />
-                </div>
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="step-content">
-                <h3>Perfil Artístico</h3>
-                <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1.5rem' }}>
-                  Selecciona la agrupación y el instrumento/voz principal. Puedes añadir hasta 2 agrupaciones más si perteneces a varias.
-                </p>
-                
-                {/* Agrupación 1 */}
-                <div className="form-group-row">
-                  <div>
-                    <label>Agrupación Principal:</label>
-                    <select name="agrupacion" value={formData.agrupacion} onChange={handleChange} required>
-                      <option value="">-- Selecciona --</option>
-                      {AGRUPACIONES.map(a => <option key={a} value={a}>{a}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label>Sección / Instrumento Principal:</label>
-                    <select name="instrument" value={formData.instrument} onChange={handleChange} required>
-                      <option value="">-- Elige --</option>
-                      {SECCIONES.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                <hr style={{ margin: '2rem 0', opacity: 0.2 }} />
-
-                {/* Agrupación 2 (Opcional) */}
-                <div className="form-group-row">
-                  <div>
-                    <label>Segunda Agrupación (Opcional):</label>
-                    <select name="agrupacion2" value={formData.agrupacion2} onChange={handleChange}>
-                      <option value="">-- Ninguna --</option>
-                      {AGRUPACIONES.map(a => <option key={a} value={a}>{a}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label>Segunda Sección (Opcional):</label>
-                    <select name="instrument2" value={formData.instrument2} onChange={handleChange}>
-                      <option value="">-- Ninguna --</option>
-                      {SECCIONES.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                <hr style={{ margin: '2rem 0', opacity: 0.2 }} />
-
-                {/* Agrupación 3 (Opcional) */}
-                <div className="form-group-row">
-                  <div>
-                    <label>Tercera Agrupación (Opcional):</label>
-                    <select name="agrupacion3" value={formData.agrupacion3} onChange={handleChange}>
-                      <option value="">-- Ninguna --</option>
-                      {AGRUPACIONES.map(a => <option key={a} value={a}>{a}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label>Tercera Sección (Opcional):</label>
-                    <select name="instrument3" value={formData.instrument3} onChange={handleChange}>
-                      <option value="">-- Ninguna --</option>
-                      {SECCIONES.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {step === 4 && (
-              <div className="step-content">
-                <h3>Estudios y Ocupación</h3>
-                <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1.5rem' }}>
-                   No tienen por qué ser estudios o trabajos musicales.
+            {step === 0 && (
+              <form onSubmit={validateInvitation} className="step-content" style={{textAlign: 'center'}}>
+                <h3>Código de Invitación Requerido</h3>
+                <p className="help-text" style={{marginBottom: '2rem'}}>
+                  Esta es una zona privada. Por favor, introduce el código de 7 días que te ha facilitado el Administrador de la OCGC.
                 </p>
                 <div className="form-group">
-                  <label>Trabajo Actual / Ocupación:</label>
-                  <input type="text" name="trabajo" placeholder="Ej: Estudiante, Ingeniero, Administrativo..." value={formData.trabajo} onChange={handleChange} required />
+                  <input 
+                    type="text" 
+                    value={inviteToken} 
+                    onChange={(e) => setInviteToken(e.target.value)} 
+                    placeholder="Introduce el código de 32 caracteres..." 
+                    required 
+                    style={{textAlign: 'center', fontSize: '1rem', letterSpacing: '1px', padding: '1.2rem', border: '2px solid #478AC9'}}
+                  />
                 </div>
-                <div className="form-group">
-                  <label>Estudios Realizados:</label>
-                  <textarea name="estudios" rows={3} value={formData.estudios} onChange={(e) => setFormData(prev => ({...prev, estudios: e.target.value}))} placeholder="Ej: Grado en..., Bachillerato, Master..." required style={{ width: '100%', padding: '0.9rem', border: '1px solid #ddd', borderRadius: '8px', fontFamily: 'inherit' }}></textarea>
-                </div>
-              </div>
+                <button type="submit" className="btn-primary" disabled={loading} style={{width: '100%'}}>
+                  {loading ? "Validando..." : "Verificar Código y Entrar"}
+                </button>
+              </form>
             )}
 
-            {step === 5 && (
-              <div className="step-content">
-                <h3>Crear Cuenta Digital</h3>
-                <p className="help-text" style={{ marginBottom: '1.5rem', marginTop: 0 }}>Estos datos te servirán para iniciar sesión en el Archivo Digital y descargar pdfs.</p>
-                <div className="form-group-row" style={{ marginBottom: '0.5rem' }}>
-                  <div>
-                    <label>Usuario (nickname):</label>
-                    <input type="text" name="username" value={formData.username} onChange={handleChange} required />
+            {step > 0 && (
+              <form onSubmit={handleSubmit}>
+                {step === 1 && (
+                  <div className="step-content">
+                    <h3>Información Personal</h3>
+                    <div className="form-group">
+                      <label>Nombre:</label>
+                      <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} required />
+                    </div>
+                    <div className="form-group">
+                      <label>Apellidos:</label>
+                      <input type="text" name="surname" value={formData.surname} onChange={handleChange} required />
+                    </div>
+                    <div className="form-group-row">
+                      <div>
+                        <label>DNI / NIE:</label>
+                        <input type="text" name="dni" value={formData.dni} onChange={handleChange} required />
+                      </div>
+                      <div>
+                        <label>Fecha de Nacimiento:</label>
+                        <input type="date" name="dob" value={formData.dob} onChange={handleChange} required />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label>Contraseña:</label>
-                    <input 
-                      type="password" 
-                      name="password" 
-                      value={formData.password} 
-                      onChange={handleChange} 
-                      required 
-                      autoComplete="new-password"
-                    />
+                )}
+
+                {step === 2 && (
+                  <div className="step-content">
+                    <h3>Contacto y Residencia</h3>
+                    <div className="form-group-row">
+                      <div>
+                        <label>Teléfono Múltiple/Móvil:</label>
+                        <input type="tel" name="phone" value={formData.phone} onChange={handleChange} required />
+                      </div>
+                      <div>
+                        <label>Correo Electrónico:</label>
+                        <input type="email" name="email" value={formData.email} onChange={handleChange} required />
+                      </div>
+                    </div>
+                    <div className="form-group-row">
+                      <div>
+                        <label>Isla de Residencia:</label>
+                        <select name="isla" value={formData.isla} onChange={handleChange} required>
+                          <option value="">-- Seleccionar --</option>
+                          <option value="Gran Canaria">Gran Canaria</option>
+                          <option value="Tenerife">Tenerife</option>
+                          <option value="Lanzarote">Lanzarote</option>
+                          <option value="Fuerteventura">Fuerteventura</option>
+                          <option value="La Palma">La Palma</option>
+                          <option value="La Gomera">La Gomera</option>
+                          <option value="El Hierro">El Hierro</option>
+                          <option value="La Graciosa">La Graciosa</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label>Municipio de Residencia:</label>
+                        <input type="text" name="municipio" value={formData.municipio} onChange={handleChange} required />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label>Lugar de Empadronamiento:</label>
+                      <input type="text" name="empadronamiento" value={formData.empadronamiento} onChange={handleChange} required />
+                    </div>
                   </div>
-                </div>
-                
-                {/* Visualizador de fortaleza de contraseña compatible con Clerk */}
-                <div className="password-requirements" style={{ padding: '1rem', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #ddd', marginBottom: '1.5rem' }}>
-                  <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', fontWeight: 'bold', color: '#555' }}>Requisitos de seguridad:</p>
-                  <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-                    <li style={{ fontSize: '0.8rem', color: formData.password.length >= 8 ? '#27ae60' : '#e74c3c', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      {formData.password.length >= 8 ? '✓' : '○'} Mínimo 8 caracteres
-                    </li>
-                    <li style={{ fontSize: '0.8rem', color: /[A-Za-z]/.test(formData.password) && /[0-9]/.test(formData.password) ? '#27ae60' : '#e74c3c', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      {/[A-Za-z]/.test(formData.password) && /[0-9]/.test(formData.password) ? '✓' : '○'} Letras y números
-                    </li>
-                  </ul>
-                  {formData.password && !(formData.password.length >= 8 && /[A-Za-z]/.test(formData.password) && /[0-9]/.test(formData.password)) && (
-                    <p style={{ color: '#e74c3c', fontSize: '0.75rem', marginTop: '0.8rem', fontStyle: 'italic' }}>
-                      La contraseña es demasiado débil.
+                )}
+
+                {step === 3 && (
+                  <div className="step-content">
+                    <h3>Perfil Artístico</h3>
+                    <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1.5rem' }}>
+                      Selecciona la agrupación y el instrumento/voz principal. Puedes añadir hasta 2 agrupaciones más si perteneces a varias.
                     </p>
-                  )}
-                </div>
-              </div>
-            )}
+                    
+                    {/* Agrupación 1 */}
+                    <div className="form-group-row">
+                      <div>
+                        <label>Agrupación Principal:</label>
+                        <select name="agrupacion" value={formData.agrupacion} onChange={handleChange} required>
+                          <option value="">-- Selecciona --</option>
+                          {AGRUPACIONES.map(a => <option key={a} value={a}>{a}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label>Sección / Instrumento Principal:</label>
+                        <select name="instrument" value={formData.instrument} onChange={handleChange} required>
+                          <option value="">-- Elige --</option>
+                          {SECCIONES.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                    </div>
 
-            <div className="form-actions">
-              {step > 1 && (
-                <button type="button" onClick={prevStep} className="btn-secondary" disabled={loading}>Atrás</button>
-              )}
-              <button 
-                type="submit" 
-                className="btn-primary" 
-                disabled={loading || (step === 5 && !(formData.password.length >= 8 && /[A-Za-z]/.test(formData.password) && /[0-9]/.test(formData.password)))}
-              >
-                {step === 5 ? (loading ? "Guardando ficha..." : "Finalizar Registro") : "Siguiente"}
-              </button>
-            </div>
-          </form>
+                    <hr style={{ margin: '2rem 0', opacity: 0.2 }} />
+
+                    {/* Agrupación 2 (Opcional) */}
+                    <div className="form-group-row">
+                      <div>
+                        <label>Segunda Agrupación (Opcional):</label>
+                        <select name="agrupacion2" value={formData.agrupacion2} onChange={handleChange}>
+                          <option value="">-- Ninguna --</option>
+                          {AGRUPACIONES.map(a => <option key={a} value={a}>{a}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label>Segunda Sección (Opcional):</label>
+                        <select name="instrument2" value={formData.instrument2} onChange={handleChange}>
+                          <option value="">-- Ninguna --</option>
+                          {SECCIONES.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    <hr style={{ margin: '2rem 0', opacity: 0.2 }} />
+
+                    {/* Agrupación 3 (Opcional) */}
+                    <div className="form-group-row">
+                      <div>
+                        <label>Tercera Agrupación (Opcional):</label>
+                        <select name="agrupacion3" value={formData.agrupacion3} onChange={handleChange}>
+                          <option value="">-- Ninguna --</option>
+                          {AGRUPACIONES.map(a => <option key={a} value={a}>{a}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label>Tercera Sección (Opcional):</label>
+                        <select name="instrument3" value={formData.instrument3} onChange={handleChange}>
+                          <option value="">-- Ninguna --</option>
+                          {SECCIONES.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {step === 4 && (
+                  <div className="step-content">
+                    <h3>Estudios y Ocupación</h3>
+                    <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1.5rem' }}>
+                       No tienen por qué ser estudios o trabajos musicales.
+                    </p>
+                    <div className="form-group">
+                      <label>Trabajo Actual / Ocupación:</label>
+                      <input type="text" name="trabajo" placeholder="Ej: Estudiante, Ingeniero, Administrativo..." value={formData.trabajo} onChange={handleChange} required />
+                    </div>
+                    <div className="form-group">
+                      <label>Estudios Realizados:</label>
+                      <textarea name="estudios" rows={3} value={formData.estudios} onChange={(e) => setFormData(prev => ({...prev, estudios: e.target.value}))} placeholder="Ej: Grado en..., Bachillerato, Master..." required style={{ width: '100%', padding: '0.9rem', border: '1px solid #ddd', borderRadius: '8px', fontFamily: 'inherit' }}></textarea>
+                    </div>
+                  </div>
+                )}
+
+                {step === 5 && (
+                  <div className="step-content">
+                    <h3>Crear Cuenta Digital</h3>
+                    <p className="help-text" style={{ marginBottom: '1.5rem', marginTop: 0 }}>Estos datos te servirán para iniciar sesión en el Archivo Digital y descargar pdfs.</p>
+                    <div className="form-group-row" style={{ marginBottom: '0.5rem' }}>
+                      <div>
+                        <label>Usuario (nickname):</label>
+                        <input type="text" name="username" value={formData.username} onChange={handleChange} required />
+                      </div>
+                      <div>
+                        <label>Contraseña:</label>
+                        <input 
+                          type="password" 
+                          name="password" 
+                          value={formData.password} 
+                          onChange={handleChange} 
+                          required 
+                          autoComplete="new-password"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Visualizador de fortaleza de contraseña compatible con Clerk */}
+                    <div className="password-requirements" style={{ padding: '1rem', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #ddd', marginBottom: '1.5rem' }}>
+                      <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', fontWeight: 'bold', color: '#555' }}>Requisitos de seguridad:</p>
+                      <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+                        <li style={{ fontSize: '0.8rem', color: formData.password.length >= 8 ? '#27ae60' : '#e74c3c', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          {formData.password.length >= 8 ? '✓' : '○'} Mínimo 8 caracteres
+                        </li>
+                        <li style={{ fontSize: '0.8rem', color: /[A-Za-z]/.test(formData.password) && /[0-9]/.test(formData.password) ? '#27ae60' : '#e74c3c', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          {/[A-Za-z]/.test(formData.password) && /[0-9]/.test(formData.password) ? '✓' : '○'} Letras y números
+                        </li>
+                      </ul>
+                      {formData.password && !(formData.password.length >= 8 && /[A-Za-z]/.test(formData.password) && /[0-9]/.test(formData.password)) && (
+                        <p style={{ color: '#e74c3c', fontSize: '0.75rem', marginTop: '0.8rem', fontStyle: 'italic' }}>
+                          La contraseña es demasiado débil.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="form-actions">
+                  {step > 1 && (
+                    <button type="button" onClick={prevStep} className="btn-secondary" disabled={loading}>Atrás</button>
+                  )}
+                  <button 
+                    type="submit" 
+                    className="btn-primary" 
+                    disabled={loading || (step === 5 && !(formData.password.length >= 8 && /[A-Za-z]/.test(formData.password) && /[0-9]/.test(formData.password)))}
+                  >
+                    {step === 5 ? (loading ? "Guardando ficha..." : "Finalizar Registro") : "Siguiente"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         )}
       </div>
 

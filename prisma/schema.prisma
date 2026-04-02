@@ -131,3 +131,11 @@ model Papel {
   estructuras Estructura[]
 }
 
+model InvitationCode {
+  id        Int       @id @default(autoincrement())
+  code      String    @unique
+  forWhom   String?   // Nombre - Sección del invitado
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}

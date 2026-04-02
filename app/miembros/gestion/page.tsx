@@ -27,6 +27,12 @@ export default function AdminOCGCPartituras() {
   const [editingMember, setEditingMember] = useState<string | null>(null);
   const [selectedMemberRoles, setSelectedMemberRoles] = useState<string[]>([]);
   
+  // Estados para invitaciones
+  const [invitations, setInvitations] = useState<any[]>([]);
+  const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
+  const [inviteName, setInviteName] = useState('');
+  const [inviteSection, setInviteSection] = useState('');
+  
   // Estados para vista previa de subida
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadIsDoc, setUploadIsDoc] = useState(false);
@@ -72,11 +78,14 @@ export default function AdminOCGCPartituras() {
   const loadMembers = async () => {
     if (!isMaster) return;
     try {
-      const res = await fetch("/api/admin/users");
-      if (!res.ok) return;
-      setMembers(await res.json());
+      const [mRes, iRes] = await Promise.all([
+        fetch("/api/admin/users"),
+        fetch("/api/admin/invitations")
+      ]);
+      if (mRes.ok) setMembers(await mRes.json());
+      if (iRes.ok) setInvitations(await iRes.json());
     } catch (error) {
-      console.error("Error loading members:", error);
+      console.error("Error loading members/invitations:", error);
     }
   };
 
@@ -263,6 +272,41 @@ export default function AdminOCGCPartituras() {
       loadMembers();
     } catch (error) {
       console.error("Error toggling ban status:", error);
+    }
+  };
+
+  const createInvitation = async () => {
+    if (!inviteName || !inviteSection) {
+      alert("Por favor, pon el nombre y la sección del invitado.");
+      return;
+    }
+    setIsGeneratingInvite(true);
+    try {
+      const res = await fetch("/api/admin/invitations", { 
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ forWhom: `${inviteName} - ${inviteSection}` })
+      });
+      if (res.ok) {
+        const newInvite = await res.json();
+        setInvitations(prev => [newInvite, ...prev]);
+        setInviteName('');
+        setInviteSection('');
+      }
+    } catch (error) {
+      console.error("Error creating invitation:", error);
+    } finally {
+      setIsGeneratingInvite(false);
+    }
+  };
+
+  const deleteInvitation = async (id: number) => {
+    if (!confirm("¿Revocar esta invitación?")) return;
+    try {
+      const res = await fetch(`/api/admin/invitations?id=${id}`, { method: "DELETE" });
+      if (res.ok) setInvitations(prev => prev.filter(i => i.id !== id));
+    } catch (error) {
+      console.error("Error deleting invitation:", error);
     }
   };
 
@@ -574,22 +618,76 @@ export default function AdminOCGCPartituras() {
 
       {isMaster && activeTab === 'personal' && (
         <section className="admin-list-card">
-          <div className="personal-header-actions">
-            <h3>Gestión de Personal ({members.length})</h3>
-            <div className="secret-link-box">
-              <span>Link de Registro Músicos:</span>
-              <button 
-                onClick={() => {
-                  const url = `${window.location.origin}/registro-usuarios`;
-                  navigator.clipboard.writeText(url);
-                  alert("Link de registro copiado al portapapeles");
-                }}
-                className="btn-copy-link"
+          <div className="personal-header-actions" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '1rem', background: '#f8f9fa', padding: '1.5rem', borderRadius: '12px', border: '1px solid #dee2e6', marginBottom: '2rem' }}>
+            <h3 style={{ margin: 0 }}>🎟️ Generar Nueva Invitación Nominativa</h3>
+            <div style={{ display: 'flex', gap: '1rem', width: '100%', flexWrap: 'wrap' }}>
+              <input 
+                type="text" 
+                placeholder="Nombre completo del músico..." 
+                value={inviteName} 
+                onChange={(e) => setInviteName(e.target.value)} 
+                style={{ flex: 2, padding: '0.8rem', borderRadius: '8px', border: '1px solid #ccc' }}
+              />
+              <select 
+                value={inviteSection} 
+                onChange={(e) => setInviteSection(e.target.value)} 
+                style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', border: '1px solid #ccc' }}
               >
-                Copiar Link Secreto 🔗
+                <option value="">-- Sección --</option>
+                {predefinedRoles.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+              <button 
+                onClick={createInvitation} 
+                className="btn-main-admin" 
+                style={{ width: 'auto', padding: '0.8rem 1.5rem' }}
+                disabled={isGeneratingInvite}
+              >
+                {isGeneratingInvite ? "Generando..." : "Crear Invitación"}
               </button>
             </div>
+            <p style={{ margin: 0, fontSize: '0.8rem', color: '#666' }}>
+              El código será de 1 solo uso y caducará automáticamente en 7 días si no se utiliza.
+            </p>
           </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <h3>Gestión de Personal ({members.length})</h3>
+          </div>
+
+          {/* Sección de Invitaciones Activas */}
+          {invitations.length > 0 && (
+            <div className="invitations-section" style={{ marginBottom: '2.5rem', padding: '1.2rem', background: '#fff9db', borderRadius: '12px', border: '1px solid #fab005' }}>
+              <h4 style={{ margin: '0 0 1.2rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#856404' }}>
+                📋 Invitaciones Pendientes de Uso ({invitations.length})
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {invitations.map(inv => (
+                  <div key={inv.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '1rem', borderRadius: '10px', border: '1px solid #ffeeba', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                      <span style={{ fontWeight: 'bold', fontSize: '1rem', color: '#1a1a1a' }}>{inv.forWhom || "Invitado sin nombre"}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                        <code style={{ color: '#478AC9', fontSize: '0.9rem', background: '#f1f7fd', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>{inv.code}</code>
+                        <span style={{ fontSize: '0.75rem', color: '#999' }}>Expira: {new Date(inv.expiresAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button 
+                        onClick={() => {
+                          const url = `${window.location.origin}/registro-usuarios?code=${inv.code}`;
+                          navigator.clipboard.writeText(url);
+                          alert("Enlace copiado. Compártelo con el músico.");
+                        }}
+                        className="btn-copy-link"
+                      >
+                        Copiar Link 🔗
+                      </button>
+                      <button onClick={() => deleteInvitation(inv.id)} style={{ padding: '0.4rem', background: 'none', border: 'none', cursor: 'pointer' }} title="Revocar">🗑️</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             <select value={filterPersonalRole} onChange={(e) => setFilterPersonalRole(e.target.value)} style={{ padding: '0.8rem', border: '1px solid #ddd', borderRadius: '6px' }}>
               <option value="all">Todos los permisos</option>
