@@ -7,8 +7,14 @@ async function main() {
 
   // ── Agrupaciones ──
   const agrupaciones = [
-    "Orquesta", "Coro", "Ensemble Flautas", "Ensemble Metales",
-    "Ensemble Chelos", "Colaboradores", "Empresa Externa", "Invitados"
+    "Orquesta",
+    "Coro",
+    "Ensemble Flautas",
+    "Ensemble Metales",
+    "Ensemble Chelos",
+    "Big Band",
+    "Colaboradores",
+    "Invitados"
   ];
   for (const name of agrupaciones) {
     await prisma.agrupacion.upsert({
@@ -19,34 +25,8 @@ async function main() {
   }
   console.log(`  ✓ ${agrupaciones.length} agrupaciones`);
 
-  // ── Secciones (antes eran "Roles" e "instrumentos") ──
-  const secciones = [
-    "Dirección artística y musical (OCGC y Orquesta)",
-    "Dirección musical (Ensemble Flautas)",
-    "Dirección musical (Ensemble Metales)",
-    "Dirección musical (Ensemble Violonchelos)",
-    "Dirección musical (Coro)",
-    "Violín primero", "Violín segundo", "Viola", "Violonchelo", "Contrabajo",
-    "Flauta", "Oboe", "Clarinete", "Requinto", "Fagot", "Contrafagot", "Saxofón",
-    "Trompeta", "Trompa", "Trombón", "Tuba", "Bombardino",
-    "Arpa", "Piano", "Órgano", "Percusión",
-    "Solista",
-    "Alto (coro)", "Soprano (coro)", "Bajo (coro)", "Tenor (coro)", "Coach vocal",
-    "Colaboradores", "Transportes", "Rider Service", "Brea Producciones",
-    "Productora Pedro Ruiz", "Técnico Sonido", "Técnico Sala", "LF Sound",
-    "Productora Las Hormigas Negras", "Invitados"
-  ];
-  for (const name of secciones) {
-    await prisma.seccion.upsert({
-      where: { seccion: name },
-      create: { seccion: name },
-      update: {},
-    });
-  }
-  console.log(`  ✓ ${secciones.length} secciones`);
-
   // ── Papeles ──
-  const papeles = ["Músico", "Invitado", "Colaborador", "Empresa Externa"];
+  const papeles = ["Músico", "Director", "Archivero", "Solista", "Invitado", "Colaborador"];
   for (const name of papeles) {
     await prisma.papel.upsert({
       where: { papel: name },
@@ -55,6 +35,38 @@ async function main() {
     });
   }
   console.log(`  ✓ ${papeles.length} papeles`);
+
+  // ── Secciones (Instrumentos) con Familia ──
+  const instrumentosDict = {
+    "Cuerda": ["Violín primero", "Violín segundo", "Viola", "Violonchelo", "Contrabajo", "Arpa", "Piano", "Órgano"],
+    "Viento Madera": ["Flauta", "Oboe", "Clarinete", "Fagot", "Requinto", "Contrafagot", "Saxofón"],
+    "Viento Metal": ["Trompeta", "Trompa", "Trombón", "Tuba", "Bombardino"],
+    "Percusión": ["Percusión"],
+    "Coro": ["Soprano (coro)", "Alto (coro)", "Tenor (coro)", "Bajo (coro)", "Coach vocal"],
+    "Tuttis": ["Orquesta - Tutti", "Coro - Tutti", "Ensemble Flautas - Tutti", "Ensemble Metales - Tutti", "Ensemble Chelos - Tutti", "Big Band - Tutti"],
+    "Generales": [
+      "Dirección artística y musical (OCGC y Orquesta)", 
+      "Dirección musical (Ensemble Flautas)", 
+      "Dirección musical (Ensemble Metales)", 
+      "Dirección musical (Ensemble Violonchelos)", 
+      "Dirección musical (Coro)",
+      "Solista"
+    ],
+    "Otros": ["Colaboradores", "Invitados", "Técnico Sonido", "Técnico Sala"]
+  };
+
+  let seccionCount = 0;
+  for (const [familia, instrumentos] of Object.entries(instrumentosDict)) {
+    for (const nombre of instrumentos) {
+      await prisma.seccion.upsert({
+        where: { seccion: nombre },
+        update: { familia: familia },
+        create: { seccion: nombre, familia: familia }
+      });
+      seccionCount++;
+    }
+  }
+  console.log(`  ✓ ${seccionCount} secciones sincronizadas con familias`);
 
   console.log("✅ Seed completado");
 }

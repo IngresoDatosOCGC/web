@@ -40,7 +40,13 @@ export async function POST(req: Request) {
     await prisma.activityLog.create({
       data: {
         action: "Batch CSV Import",
-        details: `Importada obra '${title}' desde CSV`,
+        details: {
+          title: title,
+          isDocument: isDocument,
+          categoryId: categoryId,
+          roles: roles,
+          scoreId: (newScore as any).id
+        },
         userClerkId: userId
       }
     });

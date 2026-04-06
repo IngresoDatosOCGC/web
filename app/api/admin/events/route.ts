@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import prisma from '@/lib/prisma';
+import { EventType } from '@prisma/client';
 
 export async function GET() {
   const { userId } = await auth();
@@ -30,20 +31,32 @@ export async function POST(req: Request) {
   try {
     const { title, date, location, description, type } = await req.json();
 
+    // Validar tipo de evento para evitar errores con el Enum
+    const validTypes = ['Ensayo', 'Concierto'];
+    if (!validTypes.includes(type)) {
+      return new NextResponse("Invalid event type", { status: 400 });
+    }
+
     const event = await prisma.event.create({
       data: {
         title,
         date: new Date(date),
         location,
         description,
-        type
+        type: type as EventType
       }
     });
 
     await prisma.activityLog.create({
       data: {
         action: "Create Event",
-        details: `Evento '${title}' creado para la fecha ${date}`,
+        details: JSON.stringify({
+          title,
+          date,
+          type,
+          location,
+          id: (event as any).id
+        }),
         userClerkId: userId
       }
     });

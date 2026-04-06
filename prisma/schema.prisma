@@ -142,24 +142,31 @@ model InvitationCode {
   createdAt        DateTime  @default(now())
 }
 
-// =============================================
-// EVENTOS Y LOGS (Nuevas Funcionalidades)
-// =============================================
+enum EventType {
+  Ensayo
+  Concierto
+}
 
 model Event {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   title       String
   date        DateTime
   location    String?
   description String?
-  type        String   @default("Ensayo") // Ensayo, Concierto
-  createdAt   DateTime @default(now())
+  type        EventType @default(Ensayo)
+  createdAt   DateTime  @default(now())
+
+  @@index([date])
+  @@index([type, date])
 }
 
 model ActivityLog {
   id          Int      @id @default(autoincrement())
   action      String   // Qué se hizo (ej: "Usuario Baneado", "Partitura Subida")
-  details     String?  // Detalles adicionales en JSON o texto
+  details     Json?    // Detalles adicionales en formato JSON estructurado
   userClerkId String?  // Quién hizo la acción (Admin)
   createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userClerkId])
 }
