@@ -2,8 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useUser } from "@clerk/nextjs";
+import DashboardPanel from '@/components/admin/DashboardPanel';
+import CalendarPanel from '@/components/admin/CalendarPanel';
+import LogsPanel from '@/components/admin/LogsPanel';
+import CSVImportScores from '@/components/admin/CSVImportScores';
 
-type TabType = 'scores' | 'categories' | 'roles' | 'personal';
+type TabType = 'scores' | 'categories' | 'roles' | 'personal' | 'dashboard' | 'calendar' | 'logs';
 const DEFAULT_FAMILIAS = ["Cuerda", "Viento Madera", "Viento Metal", "Teclados", "Percusión", "Coro", "Tuttis", "Generales", "Otros"];
 
 export default function AdminOCGCPartituras() {
@@ -15,7 +19,9 @@ export default function AdminOCGCPartituras() {
   const [categories, setCategories] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<TabType>('scores');
+  const [activeTab, setActiveTab] = useState<TabType | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [membersLoaded, setMembersLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [editingRole, setEditingRole] = useState<{ id: number; name: string } | null>(null);
   const [editingCategory, setEditingCategory] = useState<{ id: number; name: string; eventDate?: string | null } | null>(null);
@@ -53,7 +59,8 @@ export default function AdminOCGCPartituras() {
   const isMaster = !!user?.publicMetadata?.isMaster;
   const isArchiver = !!user?.publicMetadata?.isArchiver;
 
-  const loadData = async () => {
+  const loadData = async (force = false) => {
+    if (dataLoaded && !force) return;
     try {
       const [rolesRes, scoresRes, categoriesRes] = await Promise.all([
         fetch("/api/roles"),
@@ -69,13 +76,14 @@ export default function AdminOCGCPartituras() {
       setPredefinedRoles(Object.values(rolesData).flat().map((r: any) => r.name));
       setScores(scoresData);
       setCategories(categoriesData);
+      setDataLoaded(true);
     } catch (error) {
       console.error("Error loading data:", error);
     }
   };
 
-  const loadMembers = async () => {
-    if (!isMaster) return;
+  const loadMembers = async (force = false) => {
+    if (!isMaster || (membersLoaded && !force)) return;
     try {
       const [mRes, iRes] = await Promise.all([
         fetch("/api/admin/users"),
@@ -83,6 +91,7 @@ export default function AdminOCGCPartituras() {
       ]);
       if (mRes.ok) setMembers(await mRes.json());
       if (iRes.ok) setInvitations(await iRes.json());
+      setMembersLoaded(true);
     } catch (error) {
       console.error("Error loading members/invitations:", error);
     }
@@ -90,13 +99,21 @@ export default function AdminOCGCPartituras() {
 
   useEffect(() => {
     if (isLoaded && user) {
-      if (!isMaster && !isArchiver) window.location.href = "/miembros/tablon";
-      else {
-        loadData();
-        loadMembers();
+      if (!isMaster && !isArchiver) {
+        window.location.href = "/miembros/tablon";
+      } else if (activeTab === null) {
+        setActiveTab(isMaster ? 'dashboard' : 'scores');
       }
     }
-  }, [isLoaded, isMaster, isArchiver, user]);
+  }, [isLoaded, isMaster, isArchiver, user, activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'scores' || activeTab === 'categories' || activeTab === 'roles') {
+      loadData();
+    } else if (activeTab === 'personal') {
+      loadMembers();
+    }
+  }, [activeTab]);
 
   const toggleRole = (r: string) => {
     setSelectedRoles(prev => prev.includes(r) ? prev.filter(x => x !== r) : [...prev, r]);
@@ -121,7 +138,7 @@ export default function AdminOCGCPartituras() {
       });
       if (res.ok) {
         setNewRoleName('');
-        loadData();
+        loadData(true);
       }
     } catch (error) {
       console.error("Error creating role:", error);
@@ -132,7 +149,7 @@ export default function AdminOCGCPartituras() {
     if (!confirm("¿Seguro que quieres eliminar esta sección?")) return;
     try {
       const res = await fetch(`/api/roles?id=${id}`, { method: 'DELETE' });
-      if (res.ok) loadData();
+      if (res.ok) loadData(true);
     } catch (error) {
       console.error("Error deleting role:", error);
     }
@@ -340,11 +357,16 @@ export default function AdminOCGCPartituras() {
           <p>Control de partituras, roles, categorías y personal</p>
         </div>
         <nav className="admin-nav-pills">
+          {isMaster && <button onClick={() => setActiveTab('dashboard')} className={activeTab === 'dashboard' ? 'active' : ''}>Dashboard</button>}
           <button onClick={() => setActiveTab('scores')} className={activeTab === 'scores' ? 'active' : ''}>Partituras</button>
           <button onClick={() => setActiveTab('categories')} className={activeTab === 'categories' ? 'active' : ''}>Programas</button>
           <button onClick={() => setActiveTab('roles')} className={activeTab === 'roles' ? 'active' : ''}>Instrumentos</button>
+          <button onClick={() => setActiveTab('calendar')} className={activeTab === 'calendar' ? 'active' : ''}>Calendario</button>
           {isMaster && (
-            <button onClick={() => setActiveTab('personal')} className={activeTab === 'personal' ? 'active' : ''}>Personal</button>
+            <>
+              <button onClick={() => setActiveTab('personal')} className={activeTab === 'personal' ? 'active' : ''}>Personal</button>
+              <button onClick={() => setActiveTab('logs')} className={activeTab === 'logs' ? 'active' : ''}>Logs</button>
+            </>
           )}
         </nav>
       </div>
@@ -612,6 +634,7 @@ export default function AdminOCGCPartituras() {
               })}
             </div>
           </section>
+          <CSVImportScores categories={categories} onImportSuccess={() => loadData(true)} />
         </div>
       )}
 
@@ -649,8 +672,16 @@ export default function AdminOCGCPartituras() {
             </p>
           </div>
 
-          <div style={{ marginBottom: '1.5rem' }}>
+          <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3>Gestión de Personal ({members.length})</h3>
+            <button onClick={() => {
+              const h = "Nombre,Email,Instrumentos,Master,Archivero,Baneado\n";
+              const r = filteredMembers.map((m: any) => `"${m.name}","${m.email}","${m.roles.join(', ')}",${m.isMaster},${m.isArchiver},${m.isBanned}`).join('\n');
+              const url = URL.createObjectURL(new Blob([h + r], { type: 'text/csv;charset=utf-8;' }));
+              const l = document.createElement("a");
+              l.href = url; l.download = "miembros_ocgc.csv";
+              l.click();
+            }} className="btn-main-admin" style={{width: 'auto'}}>📄 Exportar CSV</button>
           </div>
 
           {/* Sección de Invitaciones Activas */}
@@ -798,6 +829,10 @@ export default function AdminOCGCPartituras() {
           </div>
         </section>
       )}
+
+      {activeTab === 'dashboard' && isMaster && <DashboardPanel members={members} scores={scores} />}
+      {activeTab === 'calendar' && <CalendarPanel />}
+      {activeTab === 'logs' && isMaster && <LogsPanel />}
 
       <style jsx>{`
         .admin-body-pure { width: 100%; }
