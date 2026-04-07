@@ -33,9 +33,8 @@ export async function sendInvitationEmail(to: string, name: string, code: string
     </div>
   `;
 
-  console.log(`[Email Service] Simulación de envío a ${to}: Invitación nominativa para ${name}`);
-  
   if (process.env.RESEND_API_KEY) {
+    console.log(`[Email Service] Intentando envío real a ${to} a través de Resend...`);
     try {
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -44,16 +43,26 @@ export async function sendInvitationEmail(to: string, name: string, code: string
           "Authorization": `Bearer ${process.env.RESEND_API_KEY}`
         },
         body: JSON.stringify({
-          from: "OCGC <no-reply@ocgc.es>",
+          // IMPORTANTE: Hasta que ocgc.es esté verificado en Resend, usa 'onboarding@resend.dev'
+          from: "OCGC <onboarding@resend.dev>", 
           to: [to],
           subject: "Invitación al Portal de Músicos — OCGC",
           html: html
         })
       });
-      return await res.json();
+
+      const resData = await res.json();
+      if (!res.ok) {
+        console.error("❌ Fallo de envío en Resend:", resData);
+      } else {
+        console.log("✅ Email enviado correctamente (ID):", resData.id);
+      }
+      return resData;
     } catch (e) {
-      console.error("Error enviando email con Resend:", e);
+      console.error("❌ Error de red enviando email con Resend:", e);
     }
+  } else {
+    console.log(`[Email Service] MODO SIMULACIÓN (No hay API Key) para ${to}`);
   }
   
   return { success: true, simulated: true };
@@ -81,25 +90,29 @@ export async function sendAdminJoinNotification(data: any) {
     </div>
   `;
 
-  console.log(`[Email Service] Notificando administrador: Nueva solicitud de ${data.name}`);
-
   if (process.env.RESEND_API_KEY) {
+    console.log(`[Email Service] Notificando administrador (${adminEmail}) vía Resend...`);
     try {
-      await fetch("https://api.resend.com/emails", {
+      const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${process.env.RESEND_API_KEY}`
         },
         body: JSON.stringify({
-          from: "OCGC Sistema <sistema@ocgc.es>",
+          from: "OCGC Sistema <onboarding@resend.dev>",
           to: [adminEmail],
           subject: `Nueva Solicitud: ${data.name} (${data.group})`,
           html: html
         })
       });
+      const resData = await res.json();
+      if (!res.ok) console.error("❌ Fallo notificación admin en Resend:", resData);
+      else console.log("✅ Notificación admin enviada");
     } catch (e) {
-      console.error("Error notificando al admin:", e);
+      console.error("❌ Error de red notificando al admin:", e);
     }
+  } else {
+    console.log(`[Email Service] MODO SIMULACIÓN (Notificación Admin): ${data.name}`);
   }
 }

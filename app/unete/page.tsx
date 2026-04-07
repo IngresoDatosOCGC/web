@@ -56,6 +56,7 @@ export default function UnetePage() {
   const [activeForm, setActiveForm] = useState<GroupId | null>(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<any>(null);
+  const [showOther, setShowOther] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent, group: string) => {
     e.preventDefault();
@@ -63,13 +64,21 @@ export default function UnetePage() {
     setStatus(null);
 
     const formData = new FormData(e.currentTarget as HTMLFormElement);
+    let selectedInstrument = formData.get("instrument")?.toString() || group;
+    const otherVal = formData.get("instrument_other")?.toString();
+
+    // Si seleccionó "Otro" y escribió algo, usamos el valor del input de texto
+    if ((selectedInstrument.includes("Otro") || selectedInstrument === "otro") && otherVal) {
+      selectedInstrument = otherVal;
+    }
+
     const data = {
       name: formData.get("name"),
       email: formData.get("email"),
       phone: formData.get("phone"),
       experience: formData.get("experience"),
       group: group,
-      instrument: formData.get("instrument") || group, // Para los que no tengan selector extra
+      instrument: selectedInstrument,
       fax_number: formData.get("fax_number"),
     };
 
@@ -107,6 +116,35 @@ export default function UnetePage() {
       description: 'Nuestra formación principal. Abiertos a músicos de todas las cuerdas, viento y percusión clásica.',
       color: 'var(--clr-primary)',
       icon: <IconViolin />,
+      formExtra: (
+        <select name="instrument" required className="form-control" style={{ background: '#fff' }} defaultValue="">
+          <option value="" disabled>Instrumento *</option>
+          <optgroup label="Cuerdas">
+            <option>Violín</option>
+            <option>Viola</option>
+            <option>Violonchelo</option>
+            <option>Contrabajo</option>
+            <option>Arpa</option>
+          </optgroup>
+          <optgroup label="Viento Madera">
+            <option>Flauta / Flautín</option>
+            <option>Oboe / Corno Inglés</option>
+            <option>Clarinete</option>
+            <option>Fagot / Contrafagot</option>
+          </optgroup>
+          <optgroup label="Viento Metal">
+            <option>Trompa</option>
+            <option>Trompeta</option>
+            <option>Trombón / Trombón Bajo</option>
+            <option>Tuba</option>
+          </optgroup>
+          <optgroup label="Percusión / Otros">
+            <option>Percusión / Timbales</option>
+            <option>Piano / Celesta</option>
+            <option>Otro Instrumento</option>
+          </optgroup>
+        </select>
+      ),
     },
     {
       id: 'coro',
@@ -115,7 +153,7 @@ export default function UnetePage() {
       color: '#8e44ad',
       icon: <IconMic />,
       formExtra: (
-        <select required className="form-control" style={{ background: '#fff' }} defaultValue="">
+        <select name="instrument" required className="form-control" style={{ background: '#fff' }} defaultValue="">
           <option value="" disabled>Tipo de voz *</option>
           <option>Soprano</option>
           <option>Alto / Contralto</option>
@@ -131,6 +169,15 @@ export default function UnetePage() {
       description: 'Agrupación centrada en la familia de las flautas traversas, desde el piccolo hasta la flauta bajo.',
       color: '#16a085',
       icon: <IconWind />,
+      formExtra: (
+        <select name="instrument" required className="form-control" style={{ background: '#fff' }} defaultValue="">
+          <option value="" disabled>Instrumento *</option>
+          <option>Flauta Travesera</option>
+          <option>Flautín (Piccolo)</option>
+          <option>Flauta en Sol (Alto)</option>
+          <option>Flauta Bajo</option>
+        </select>
+      ),
     },
     {
       id: 'metales',
@@ -139,10 +186,12 @@ export default function UnetePage() {
       color: '#d35400',
       icon: <IconDrum />,
       formExtra: (
-        <select required className="form-control" style={{ background: '#fff' }} defaultValue="">
+        <select name="instrument" required className="form-control" style={{ background: '#fff' }} defaultValue="">
           <option value="" disabled>Instrumento *</option>
-          <option>Trompeta</option><option>Trompa</option>
-          <option>Trombón</option><option>Tuba</option>
+          <option>Trompeta</option>
+          <option>Trompa</option>
+          <option>Trombón</option>
+          <option>Tuba</option>
           <option>Otro Metal</option>
         </select>
       ),
@@ -153,6 +202,9 @@ export default function UnetePage() {
       description: 'Un espacio exclusivo dedicado al hermoso timbre del violonchelo. Una formación única en la isla.',
       color: '#c0392b',
       icon: <IconCello />,
+      formExtra: (
+        <input name="instrument" type="text" value="Violonchelo" readOnly className="form-control" style={{ background: '#f8f9fa' }} />
+      ),
     },
     {
       id: 'bigband',
@@ -161,7 +213,7 @@ export default function UnetePage() {
       color: '#1a2a4b',
       icon: <IconSax />,
       formExtra: (
-        <select required className="form-control" style={{ background: '#fff' }} defaultValue="">
+        <select name="instrument" required className="form-control" style={{ background: '#fff' }} defaultValue="">
           <option value="" disabled>Instrumento *</option>
           <option>Saxofón Alto</option><option>Saxofón Tenor</option>
           <option>Saxofón Barítono</option><option>Trompeta</option>
@@ -283,47 +335,49 @@ export default function UnetePage() {
                     </div>
                   )}
 
-                  <form onSubmit={(e) => handleSubmit(e, g.name)}>
+                  <form onSubmit={(e) => handleSubmit(e, g.name)} onChange={(e) => {
+                    const target = e.target as any;
+                    if (target.name === 'instrument') {
+                      setShowOther(target.value.includes("Otro"));
+                    }
+                  }}>
                     {/* Honeypot field for anti-spam */}
                     <div style={{ opacity: 0, position: 'absolute', top: 0, left: 0, height: 0, width: 0, overflow: 'hidden' }} aria-hidden="true">
                       <input type="text" name="fax_number" tabIndex={-1} autoComplete="off" />
                     </div>
+                    
                     <label htmlFor="fi-name" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Nombre y Apellidos *</label>
                     <input id="fi-name" name="name" type="text" placeholder="Tu nombre completo" required className="form-control" autoComplete="name" />
 
-                    <label htmlFor="fi-email" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Correo Electrónico *</label>
-                    <input id="fi-email" name="email" type="email" placeholder="tu@email.com" required className="form-control" autoComplete="email" />
-
-                    <label htmlFor="fi-tel" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Teléfono *</label>
-                    <input id="fi-tel" name="phone" type="tel" placeholder="+34 600 000 000" required className="form-control" autoComplete="tel" />
-
-                    {g.id === 'coro' && (
-                      <div className="form-group" style={{ marginBottom: 'var(--sp-3)' }}>
-                        <label style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Tipo de voz *</label>
-                        <select id="instrument" name="instrument" required className="form-control" style={{ background: '#fff' }} defaultValue="">
-                          <option value="" disabled>Elige...</option>
-                          <option>Soprano</option><option>Alto / Contralto</option><option>Tenor</option><option>Bajo / Barítono</option><option>No lo sé</option>
-                        </select>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-4)', marginBottom: 'var(--sp-4)' }}>
+                      <div>
+                        <label htmlFor="fi-email" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Email *</label>
+                        <input id="fi-email" name="email" type="email" placeholder="tu@email.com" required className="form-control" />
                       </div>
-                    )}
-
-                    {(g.id === 'metales' || g.id === 'bigband') && (
-                      <div className="form-group" style={{ marginBottom: 'var(--sp-3)' }}>
-                        <label style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Instrumento *</label>
-                        <select id="instrument" name="instrument" required className="form-control" style={{ background: '#fff' }} defaultValue="">
-                          <option value="" disabled>Elige...</option>
-                          {g.id === 'metales' ? (
-                            <>
-                              <option>Trompeta</option><option>Trompa</option><option>Trombón</option><option>Tuba</option><option>Otro Metal</option>
-                            </>
-                          ) : (
-                            <>
-                              <option>Saxofón Alto</option><option>Saxofón Tenor</option><option>Saxofón Barítono</option><option>Trompeta</option><option>Trombón</option><option>Batería</option><option>Guitarra</option><option>Bajo / Contrabajo</option><option>Piano</option>
-                            </>
-                          )}
-                        </select>
+                      <div>
+                        <label htmlFor="fi-tel" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Teléfono *</label>
+                        <input id="fi-tel" name="phone" type="tel" placeholder="+34 600 000 000" required className="form-control" />
                       </div>
-                    )}
+                    </div>
+
+                    <div style={{ marginBottom: 'var(--sp-4)' }}>
+                      <label style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Instrumento / Voz *</label>
+                      {g.formExtra}
+                      
+                      {showOther && (
+                        <div style={{ marginTop: 'var(--sp-3)', animation: 'fadeIn 0.3s ease' }}>
+                          <input 
+                            name="instrument_other" 
+                            type="text" 
+                            placeholder="Especifique su instrumento..." 
+                            required 
+                            className="form-control" 
+                            style={{ borderColor: 'var(--clr-gold)', borderStyle: 'dashed' }}
+                            autoFocus
+                          />
+                        </div>
+                      )}
+                    </div>
 
                     <label htmlFor="fi-exp" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Experiencia musical (Opcional)</label>
                     <textarea id="fi-exp" name="experience" placeholder="Cuéntanos un poco sobre tu trayectoria musical..." rows={3} className="form-control" />
