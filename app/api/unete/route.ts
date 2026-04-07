@@ -10,6 +10,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Faltan campos obligatorios." }, { status: 400 });
     }
 
+    if (!process.env.DATABASE_URL) {
+      console.error("[CRITICAL] DATABASE_URL is not defined in environment variables.");
+      return NextResponse.json({ error: "Error de configuración: Base de datos no conectada." }, { status: 500 });
+    }
+
     // 1. Guardamos en la base de datos
     const request = await (prisma as any).joinRequest.create({
       data: {

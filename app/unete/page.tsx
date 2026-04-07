@@ -78,15 +78,23 @@ export default function UnetePage() {
         body: JSON.stringify(data),
         headers: { "Content-Type": "application/json" }
       });
-      const resData = await res.json();
+      
+      let resData;
+      try {
+        resData = await res.json();
+      } catch (e) {
+        resData = { error: "El servidor devolvió una respuesta inesperada." };
+      }
+
       if (res.ok) {
         setStatus({ success: true, msg: `¡Solicitud para ${group} enviada con éxito! Nos pondremos en contacto contigo pronto.` });
         setTimeout(() => { setActiveForm(null); setStatus(null); }, 3000);
       } else {
-        setStatus({ success: false, msg: resData.error || "Error al enviar la solicitud." });
+        setStatus({ success: false, msg: resData.error || "Error al enviar la solicitud (Código: " + res.status + ")" });
       }
     } catch (err) {
-      setStatus({ success: false, msg: "Error de conexión." });
+      console.error("Error fatal en envío:", err);
+      setStatus({ success: false, msg: "Error de conexión o fallo del servidor." });
     } finally {
       setLoading(false);
     }
