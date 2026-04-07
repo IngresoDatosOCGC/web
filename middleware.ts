@@ -7,7 +7,9 @@ const isProtectedRoute = createRouteMatcher(['/miembros(.*)', '/api/(.*)']);
 const isPublicRoute = createRouteMatcher([
   '/api/auth/register-musician',
   '/api/roles',
-  '/api/agrupaciones'
+  '/api/agrupaciones',
+  '/api/unete',
+  '/unete'
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

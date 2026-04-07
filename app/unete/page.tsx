@@ -70,6 +70,7 @@ export default function UnetePage() {
       experience: formData.get("experience"),
       group: group,
       instrument: formData.get("instrument") || group, // Para los que no tengan selector extra
+      fax_number: formData.get("fax_number"),
     };
 
     try {
@@ -87,8 +88,7 @@ export default function UnetePage() {
       }
 
       if (res.ok) {
-        setStatus({ success: true, msg: `¡Solicitud para ${group} enviada con éxito! Nos pondremos en contacto contigo pronto.` });
-        setTimeout(() => { setActiveForm(null); setStatus(null); }, 3000);
+        setStatus({ success: true, msg: `¡Solicitud para ${group} enviada con éxito!`, id: resData.id });
       } else {
         setStatus({ success: false, msg: resData.error || "Error al enviar la solicitud (Código: " + res.status + ")" });
       }
@@ -256,60 +256,84 @@ export default function UnetePage() {
             onClick={(e) => { if (e.target === e.currentTarget) setActiveForm(null); }}
           >
             <div className="form-modal-content">
-              <button className="close-modal" onClick={() => setActiveForm(null)} aria-label="Cerrar modal">✕</button>
-              <h3 id="modal-title">Inscripción: {g.name}</h3>
-
-              {status && (
-                <div className={`alert ${status.success ? 'alert-success' : 'alert-error'}`} style={{ marginBottom: 'var(--sp-4)', padding: 'var(--sp-3)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)' }}>
-                  {status.msg}
+              <button className="close-modal" onClick={() => { setActiveForm(null); setStatus(null); }} aria-label="Cerrar modal">✕</button>
+              
+              {status?.success ? (
+                <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                  <div style={{ width: '80px', height: '80px', background: 'var(--clr-success-lt)', color: 'var(--clr-success)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '2.5rem' }}>
+                    ✓
+                  </div>
+                  <h3 style={{ color: 'var(--clr-navy)', marginBottom: '1rem' }}>{status.msg}</h3>
+                  <p style={{ color: 'var(--clr-text-muted)', marginBottom: '2rem' }}>Hemos recibido tu interés para entrar en {g.name}. Nuestro equipo revisará tu perfil y te contactaremos por email o teléfono lo antes posible.</p>
+                  <button 
+                    onClick={() => { setActiveForm(null); setStatus(null); }}
+                    className="btn btn-primary"
+                    style={{ width: '100%', maxWidth: '200px' }}
+                  >
+                    Entendido
+                  </button>
                 </div>
+              ) : (
+                <>
+                  <h3 id="modal-title">Inscripción: {g.name}</h3>
+
+                  {status && (
+                    <div className={`alert alert-error`} style={{ marginBottom: 'var(--sp-4)', padding: 'var(--sp-3)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)' }}>
+                      {status.msg}
+                    </div>
+                  )}
+
+                  <form onSubmit={(e) => handleSubmit(e, g.name)}>
+                    {/* Honeypot field for anti-spam */}
+                    <div style={{ opacity: 0, position: 'absolute', top: 0, left: 0, height: 0, width: 0, overflow: 'hidden' }} aria-hidden="true">
+                      <input type="text" name="fax_number" tabIndex={-1} autoComplete="off" />
+                    </div>
+                    <label htmlFor="fi-name" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Nombre y Apellidos *</label>
+                    <input id="fi-name" name="name" type="text" placeholder="Tu nombre completo" required className="form-control" autoComplete="name" />
+
+                    <label htmlFor="fi-email" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Correo Electrónico *</label>
+                    <input id="fi-email" name="email" type="email" placeholder="tu@email.com" required className="form-control" autoComplete="email" />
+
+                    <label htmlFor="fi-tel" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Teléfono *</label>
+                    <input id="fi-tel" name="phone" type="tel" placeholder="+34 600 000 000" required className="form-control" autoComplete="tel" />
+
+                    {g.id === 'coro' && (
+                      <div className="form-group" style={{ marginBottom: 'var(--sp-3)' }}>
+                        <label style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Tipo de voz *</label>
+                        <select id="instrument" name="instrument" required className="form-control" style={{ background: '#fff' }} defaultValue="">
+                          <option value="" disabled>Elige...</option>
+                          <option>Soprano</option><option>Alto / Contralto</option><option>Tenor</option><option>Bajo / Barítono</option><option>No lo sé</option>
+                        </select>
+                      </div>
+                    )}
+
+                    {(g.id === 'metales' || g.id === 'bigband') && (
+                      <div className="form-group" style={{ marginBottom: 'var(--sp-3)' }}>
+                        <label style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Instrumento *</label>
+                        <select id="instrument" name="instrument" required className="form-control" style={{ background: '#fff' }} defaultValue="">
+                          <option value="" disabled>Elige...</option>
+                          {g.id === 'metales' ? (
+                            <>
+                              <option>Trompeta</option><option>Trompa</option><option>Trombón</option><option>Tuba</option><option>Otro Metal</option>
+                            </>
+                          ) : (
+                            <>
+                              <option>Saxofón Alto</option><option>Saxofón Tenor</option><option>Saxofón Barítono</option><option>Trompeta</option><option>Trombón</option><option>Batería</option><option>Guitarra</option><option>Bajo / Contrabajo</option><option>Piano</option>
+                            </>
+                          )}
+                        </select>
+                      </div>
+                    )}
+
+                    <label htmlFor="fi-exp" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Experiencia musical (Opcional)</label>
+                    <textarea id="fi-exp" name="experience" placeholder="Cuéntanos un poco sobre tu trayectoria musical..." rows={3} className="form-control" />
+
+                    <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: 'var(--sp-2)' }} disabled={loading}>
+                      {loading ? "Enviando solicitud..." : "Enviar Solicitud"}
+                    </button>
+                  </form>
+                </>
               )}
-
-              <form onSubmit={(e) => handleSubmit(e, g.name)}>
-                <label htmlFor="fi-name" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Nombre y Apellidos *</label>
-                <input id="fi-name" name="name" type="text" placeholder="Tu nombre completo" required className="form-control" autoComplete="name" />
-
-                <label htmlFor="fi-email" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Correo Electrónico *</label>
-                <input id="fi-email" name="email" type="email" placeholder="tu@email.com" required className="form-control" autoComplete="email" />
-
-                <label htmlFor="fi-tel" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Teléfono *</label>
-                <input id="fi-tel" name="phone" type="tel" placeholder="+34 600 000 000" required className="form-control" autoComplete="tel" />
-
-                {g.id === 'coro' && (
-                  <div className="form-group" style={{ marginBottom: 'var(--sp-3)' }}>
-                    <label style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Tipo de voz *</label>
-                    <select id="instrument" name="instrument" required className="form-control" style={{ background: '#fff' }} defaultValue="">
-                      <option value="" disabled>Elige...</option>
-                      <option>Soprano</option><option>Alto / Contralto</option><option>Tenor</option><option>Bajo / Barítono</option><option>No lo sé</option>
-                    </select>
-                  </div>
-                )}
-
-                {(g.id === 'metales' || g.id === 'bigband') && (
-                  <div className="form-group" style={{ marginBottom: 'var(--sp-3)' }}>
-                    <label style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Instrumento *</label>
-                    <select id="instrument" name="instrument" required className="form-control" style={{ background: '#fff' }} defaultValue="">
-                      <option value="" disabled>Elige...</option>
-                      {g.id === 'metales' ? (
-                        <>
-                          <option>Trompeta</option><option>Trompa</option><option>Trombón</option><option>Tuba</option><option>Otro Metal</option>
-                        </>
-                      ) : (
-                        <>
-                          <option>Saxofón Alto</option><option>Saxofón Tenor</option><option>Saxofón Barítono</option><option>Trompeta</option><option>Trombón</option><option>Batería</option><option>Guitarra</option><option>Bajo / Contrabajo</option><option>Piano</option>
-                        </>
-                      )}
-                    </select>
-                  </div>
-                )}
-
-                <label htmlFor="fi-exp" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Experiencia musical (Opcional)</label>
-                <textarea id="fi-exp" name="experience" placeholder="Cuéntanos un poco sobre tu trayectoria musical..." rows={3} className="form-control" />
-
-                <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: 'var(--sp-2)' }} disabled={loading}>
-                  {loading ? "Enviando solicitud..." : "Enviar Solicitud"}
-                </button>
-              </form>
             </div>
           </div>
         );

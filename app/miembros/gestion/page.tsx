@@ -123,7 +123,7 @@ export default function AdminOCGCPartituras() {
     if (activeTab === 'scores' || activeTab === 'categories' || activeTab === 'roles') {
       loadData();
     } else if (activeTab === 'personal' || activeTab === 'requests') {
-      loadMembers();
+      loadMembers(true);
     }
   }, [activeTab]);
 

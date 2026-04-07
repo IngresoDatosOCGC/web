@@ -10,6 +10,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Faltan campos obligatorios." }, { status: 400 });
     }
 
+    // --- PROTECCIÓN ANTI-SPAM ---
+    // 1. Honeypot check
+    // @ts-ignore
+    const { fax_number } = body;
+    if (fax_number && fax_number.length > 0) {
+      console.log("🚫 Bot detectado bloqueado por Honeypot:", { email });
+      return NextResponse.json({ error: "Solicitud rechazada por sospecha de bot." }, { status: 400 });
+    }
+
+    // 2. Control anti-spam por Email (Max 1 cada 30 min)
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+    const existingRequest = await (prisma as any).joinRequest.findFirst({
+      where: {
+        email,
+        createdAt: { gte: thirtyMinutesAgo }
+      }
+    });
+
+    if (existingRequest) {
+      console.log("🚫 Reintento de solicitud bloqueado por tiempo:", { email });
+      return NextResponse.json({ 
+        error: "Ya hemos recibido una solicitud tuya hace poco. Por favor, espera 30 minutos para enviar otra." 
+      }, { status: 429 });
+    }
+    // ----------------------------
+
     if (!process.env.DATABASE_URL) {
       console.error("[CRITICAL] DATABASE_URL is not defined in environment variables.");
       return NextResponse.json({ error: "Error de configuración: Base de datos no conectada." }, { status: 500 });
@@ -27,6 +53,8 @@ export async function POST(req: Request) {
         status: "Pendiente"
       }
     });
+
+    console.log("✅ Nueva solicitud guardada en DB:", { id: request.id, name: request.name, email: request.email });
 
     // 2. Notificamos al Administrador (Asíncrono pero controlado)
     const { sendAdminJoinNotification } = await import("@/lib/email");
