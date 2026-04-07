@@ -73,9 +73,9 @@ export default function UnetePage() {
     }
 
     const data = {
-      name: formData.get("name"),
+      name: `${formData.get("first_name")} ${formData.get("last_name")}`,
       email: formData.get("email"),
-      phone: formData.get("phone"),
+      phone: `${formData.get("phone_prefix")} ${formData.get("phone")}`,
       experience: formData.get("experience"),
       group: group,
       instrument: selectedInstrument,
@@ -346,8 +346,16 @@ export default function UnetePage() {
                       <input type="text" name="fax_number" tabIndex={-1} autoComplete="off" />
                     </div>
                     
-                    <label htmlFor="fi-name" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Nombre y Apellidos *</label>
-                    <input id="fi-name" name="name" type="text" placeholder="Tu nombre completo" required className="form-control" autoComplete="name" />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-4)', marginBottom: 'var(--sp-4)' }}>
+                      <div>
+                        <label htmlFor="fi-fname" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Nombre *</label>
+                        <input id="fi-fname" name="first_name" type="text" placeholder="Ej: Juan" required className="form-control" autoComplete="given-name" />
+                      </div>
+                      <div>
+                        <label htmlFor="fi-lname" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Apellidos *</label>
+                        <input id="fi-lname" name="last_name" type="text" placeholder="Apellido(s)" required className="form-control" autoComplete="family-name" />
+                      </div>
+                    </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-4)', marginBottom: 'var(--sp-4)' }}>
                       <div>
@@ -356,7 +364,18 @@ export default function UnetePage() {
                       </div>
                       <div>
                         <label htmlFor="fi-tel" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Teléfono *</label>
-                        <input id="fi-tel" name="phone" type="tel" placeholder="+34 600 000 000" required className="form-control" />
+                        <div style={{ display: 'flex', gap: '2px' }}>
+                          <select name="phone_prefix" className="form-control" style={{ width: '90px', paddingInline: '0.4rem', borderRadius: '8px 0 0 8px', borderRight: 'none', background: '#f8f9fa', fontSize: '13px' }}>
+                            <option value="+34">🇪🇸 +34</option>
+                            <option value="+44">🇬🇧 +44</option>
+                            <option value="+49">🇩🇪 +49</option>
+                            <option value="+33">🇫🇷 +33</option>
+                            <option value="+39">🇮🇹 +39</option>
+                            <option value="+351">🇵🇹 +351</option>
+                            <option value="+1">🇺🇸 +1</option>
+                          </select>
+                          <input id="fi-tel" name="phone" type="tel" placeholder="600 000 000" required className="form-control" style={{ borderRadius: '0 8px 8px 0', flex: 1 }} />
+                        </div>
                       </div>
                     </div>
 

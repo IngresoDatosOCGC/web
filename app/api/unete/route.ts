@@ -59,7 +59,16 @@ export async function POST(req: Request) {
     // 2. Notificamos al Administrador (Asíncrono pero controlado)
     const { sendAdminJoinNotification } = await import("@/lib/email");
     try {
-      await sendAdminJoinNotification({ name, email, phone, group, instrument, experience });
+      const { first_name, last_name, instrument } = body;
+      await sendAdminJoinNotification({ 
+        firstName: first_name, 
+        lastName: last_name, 
+        email, 
+        phone, 
+        group, 
+        instrument: instrument, 
+        experience 
+      });
     } catch (e) {
       console.error("Error al notificar al administrador del nuevo unete:", e);
     }

@@ -74,20 +74,45 @@ export async function sendAdminJoinNotification(data: any) {
   const fromAddress = process.env.EMAIL_FROM || "onboarding@resend.dev";
   
   const html = `
-    <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-      <h2 style="color: #0D1B2A;">Nueva solicitud de unión (Web)</h2>
-      <p>Se ha recibido una nueva solicitud desde la sección <strong>/unete</strong>.</p>
-      <hr>
-      <ul style="list-style: none; padding: 0;">
-        <li><strong>Nombre:</strong> ${data.name}</li>
-        <li><strong>Email:</strong> ${data.email}</li>
-        <li><strong>Teléfono:</strong> ${data.phone}</li>
-        <li><strong>Agrupación:</strong> ${data.group}</li>
-        <li><strong>Instrumento:</strong> ${data.instrument || 'No especificado'}</li>
-      </ul>
-      <p><strong>Experiencia:</strong><br>${data.experience || 'Sin comentarios'}</p>
-      <div style="margin-top: 20px;">
-        <a href="${process.env.NEXT_PUBLIC_APP_URL}/miembros/gestion" style="color: #478AC9; font-weight: bold;">Ver en el Panel de Gestión</a>
+    <div style="font-family: sans-serif; padding: 30px; border: 1px solid #eee; border-radius: 12px; max-width: 550px; margin: 0 auto; color: #333;">
+      <h2 style="color: #0D1B2A; border-bottom: 2px solid #C9A84C; padding-bottom: 15px; margin-top: 0;">📩 Nueva solicitud OCGC</h2>
+      
+      <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+        <tr>
+          <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold; width: 120px;">Nombre:</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${data.firstName}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold;">Apellidos:</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${data.lastName}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold;">Agrupación:</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${data.group}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold;">Instrumento:</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${data.instrument || '—'}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold;">Email:</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold; color: #478AC9;">${data.email}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold;">Teléfono:</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${data.phone}</td>
+        </tr>
+      </table>
+
+      <div style="margin-top: 25px; padding: 15px; background: #f9f9f9; border-radius: 8px; font-size: 14px;">
+        <strong style="display: block; margin-bottom: 5px; color: #0D1B2A;">Trayectoria / Comentarios:</strong>
+        <p style="margin: 0; line-height: 1.5; color: #666;">${data.experience || 'Sin comentarios adicionales.'}</p>
+      </div>
+
+      <div style="margin-top: 30px; text-align: center;">
+        <a href="${process.env.NEXT_PUBLIC_APP_URL}/miembros/gestion" style="background: #0D1B2A; color: white; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
+          Gestionar en el Panel de Administración
+        </a>
       </div>
     </div>
   `;
@@ -104,7 +129,7 @@ export async function sendAdminJoinNotification(data: any) {
         body: JSON.stringify({
           from: fromAddress,
           to: [adminEmail],
-          subject: `Nueva Solicitud: ${data.name} (${data.group})`,
+          subject: `Nueva Solicitud: ${data.firstName} ${data.lastName} (${data.group})`,
           html: html
         })
       });
