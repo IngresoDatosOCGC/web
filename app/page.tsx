@@ -2,6 +2,15 @@
 
 import Link from 'next/link';
 
+const GROUPS = [
+  { name: 'Orquesta Sinfónica', desc: 'El corazón de la OCGC. Repertorio sinfónico de todas las épocas.' },
+  { name: 'Coro (COCGC)', desc: 'Voces que elevan el espíritu. Música coral clásica y contemporánea.' },
+  { name: 'Ensemble de Flautas', desc: 'La delicadeza del viento madera en pequeño formato de cámara.' },
+  { name: 'Ensemble de Metales', desc: 'Potencia y brillo de los metales en perfecta armonía sinfónica.' },
+  { name: 'Ensemble de Violonchelos', desc: 'La calidez profunda de la cuerda grave. Una formación única.' },
+  { name: 'Big Band', desc: 'Jazz, swing y blues en estado puro para aportar energía vital.' },
+];
+
 export default function Home() {
   return (
     <>
@@ -19,7 +28,7 @@ export default function Home() {
           <p>Música sinfónica, coro y ensamble con pasión<br />desde el corazón de Gran Canaria.</p>
           <div className="main-header-actions">
             <Link href="/nosotros" className="btn btn-gold">Conócenos</Link>
-            <Link href="/unete" className="btn btn-outline-white">Únete</Link>
+            <Link href="/unete" className="btn btn-outline-white">Únete a nosotros</Link>
           </div>
         </div>
         {/* Scroll indicator */}
@@ -53,17 +62,17 @@ export default function Home() {
         <div className="about-grid">
           <div className="about-content">
             <span className="section-eyebrow">Quiénes somos</span>
-            <h2 id="about-heading">Una orquesta nacida<br />de la pasión compartida</h2>
+            <h2 id="about-heading">Una orquesta nacida<br />de la pasión colectiva</h2>
             <p>
               La Orquesta Comunitaria de Gran Canaria (OCGC) nace como respuesta a la necesidad de los músicos
               de la comunidad grancanaria de tener un espacio donde compartir su pasión por la música sinfónica.
             </p>
             <p>
               Nuestro principal motor es la unión social a través del lenguaje universal de la música, ofreciendo
-              oportunidades de aprendizaje, crecimiento y disfrute a todos sus componentes y al público.
+              oportunidades de aprendizaje y disfrute a todos sus componentes.
             </p>
             <div className="nosotros-actions">
-              <Link href="/nosotros" className="btn btn-primary">Saber más sobre nosotros</Link>
+              <Link href="/nosotros" className="btn btn-primary">Nuestra historia</Link>
               <Link href="/conciertos" className="btn btn-outline">Ver próximos conciertos</Link>
             </div>
           </div>
@@ -84,34 +93,27 @@ export default function Home() {
       <section className="section-full bg-light" aria-labelledby="groups-heading" style={{ paddingBlock: 'var(--sp-20)' }}>
         <div style={{ maxWidth: 'var(--max-w)', marginInline: 'auto', paddingInline: 'var(--sp-8)' }}>
           <div className="text-center" style={{ marginBottom: 'var(--sp-12)' }}>
-            <span className="section-eyebrow">Nuestras Agrupaciones</span>
+            <span className="section-eyebrow">La familia OCGC</span>
             <h2 id="groups-heading" className="section-title">Seis voces, un mismo corazón</h2>
-            <p className="section-subtitle">Descubre todos los grupos que forman la gran familia de la OCGC</p>
+            <p className="section-subtitle">Descubre todos los grupos que forman parte de nuestro proyecto musical.</p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 'var(--sp-5)' }}>
-            {[
-              { name: 'Orquesta Sinfónica', href: '/nosotros/orquesta', emoji: '🎻', desc: 'El corazón de la OCGC. Repertorio sinfónico de todas las épocas.' },
-              { name: 'Coro', href: '/nosotros/coro', emoji: '🎤', desc: 'Voces que elevan el espíritu. Música coral clásica y contemporánea.' },
-              { name: 'Ensemble de Flautas', href: '/nosotros/ensemble-de-flautas', emoji: '🎶', desc: 'La delicadeza del viento madera en pequeño formato.' },
-              { name: 'Ensemble de Metales', href: '/nosotros/ensemble-de-metales', emoji: '🎺', desc: 'Potencia y brillo de los metales en perfecta armonía.' },
-              { name: 'Ensemble de Violonchelos', href: '/nosotros/ensemble-de-violonchelos', emoji: '🎵', desc: 'La calidez profunda de la cuerda grave.' },
-              { name: 'Big Band', href: '/nosotros/big-band', emoji: '🎷', desc: 'Jazz, swing y big band en estado puro.' },
-            ].map(({ name, href, desc }) => (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--sp-5)' }}>
+            {GROUPS.map(({ name, desc }) => (
               <Link
                 key={name}
-                href={href}
+                href="/nosotros"
                 className="card"
-                style={{ padding: 'var(--sp-6)', display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)', textDecoration: 'none' }}
+                style={{ padding: 'var(--sp-8)', display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)', textDecoration: 'none' }}
               >
                 <div style={{
-                  width: 56, height: 56,
-                  background: 'linear-gradient(135deg, var(--clr-primary-lt), #d0ebff)',
+                  width: 52, height: 52,
+                  background: 'var(--clr-primary-lt)',
                   borderRadius: 'var(--radius-lg)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  marginBottom: 'var(--sp-2)',
+                  color: 'var(--clr-primary)',
                 }}>
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--clr-primary)" strokeWidth="1.75" aria-hidden="true">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                     <path d="M9 18V5l12-2v13"/>
                     <circle cx="6" cy="18" r="3"/>
                     <circle cx="18" cy="16" r="3"/>
@@ -119,9 +121,9 @@ export default function Home() {
                 </div>
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', color: 'var(--clr-navy)', margin: 0 }}>{name}</h3>
                 <p style={{ fontSize: 'var(--text-sm)', color: 'var(--clr-text-muted)', margin: 0, lineHeight: 1.6 }}>{desc}</p>
-                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--clr-primary)', fontWeight: 600, marginTop: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  Conocer más
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--clr-primary)', fontWeight: 700, marginTop: 'var(--sp-2)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  Saber más
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
                     <polyline points="9 18 15 12 9 6"/>
                   </svg>
                 </span>
@@ -135,10 +137,9 @@ export default function Home() {
       <section className="newsletter-section" aria-labelledby="newsletter-heading">
         <div style={{ maxWidth: 'var(--max-w)', marginInline: 'auto', paddingInline: 'var(--sp-8)' }}>
           <span className="hero-eyebrow" style={{ color: 'var(--clr-gold)' }}>Mantente al día</span>
-          <h2 id="newsletter-heading">Newsletter</h2>
-          <p className="lead">
-            ¿Quieres estar al tanto de las novedades y actividades de la OCGC?<br />
-            ¡Apúntate y recibe todas nuestras noticias directamente en tu correo!
+          <h2 id="newsletter-heading">Suscríbete a nuestra Newsletter</h2>
+          <p className="lead" style={{ maxWidth: 600, marginInline: 'auto' }}>
+            Únete a nuestra lista de correo para recibir avisos de conciertos, eventos especiales y noticias de la orquesta.
           </p>
           <form
             action="#"
@@ -149,26 +150,26 @@ export default function Home() {
           >
             <input
               type="text"
-              placeholder="Nombre completo"
+              placeholder="Tu nombre"
               required
               className="form-control"
               autoComplete="name"
             />
             <input
               type="email"
-              placeholder="Correo electrónico"
+              placeholder="Tu correo electrónico"
               required
               className="form-control newsletter-email"
               autoComplete="email"
             />
-            <div className="checkbox-group privacy-group">
+            <div className="checkbox-group privacy-group" style={{ justifyContent: 'center' }}>
               <input type="checkbox" id="privacy" required />
-              <label htmlFor="privacy">
-                Acepto la <a href="#">Política de privacidad</a>
+              <label htmlFor="privacy" style={{ color: 'rgba(255,255,255,0.7)', fontSize: 'var(--text-xs)' }}>
+                Acepto la <a href="#" style={{ color: '#fff', textDecoration: 'underline' }}>Política de privacidad</a>
               </label>
             </div>
-            <button type="submit" className="btn btn-gold btn-full-width">
-              Suscribirme
+            <button type="submit" className="btn btn-gold btn-full-width" style={{ marginTop: 'var(--sp-4)' }}>
+              Suscribirme ahora
             </button>
           </form>
         </div>
