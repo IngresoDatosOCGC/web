@@ -33,6 +33,8 @@ export async function sendInvitationEmail(to: string, name: string, code: string
     </div>
   `;
 
+  const fromAddress = process.env.EMAIL_FROM || "onboarding@resend.dev";
+
   if (process.env.RESEND_API_KEY) {
     console.log(`[Email Service] Intentando envío real a ${to} a través de Resend...`);
     try {
@@ -43,8 +45,7 @@ export async function sendInvitationEmail(to: string, name: string, code: string
           "Authorization": `Bearer ${process.env.RESEND_API_KEY}`
         },
         body: JSON.stringify({
-          // IMPORTANTE: Hasta que ocgc.es esté verificado en Resend, usa 'onboarding@resend.dev'
-          from: "OCGC <onboarding@resend.dev>", 
+          from: fromAddress, 
           to: [to],
           subject: "Invitación al Portal de Músicos — OCGC",
           html: html
@@ -70,6 +71,7 @@ export async function sendInvitationEmail(to: string, name: string, code: string
 
 export async function sendAdminJoinNotification(data: any) {
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "archivo@ocgc.es";
+  const fromAddress = process.env.EMAIL_FROM || "onboarding@resend.dev";
   
   const html = `
     <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
@@ -100,7 +102,7 @@ export async function sendAdminJoinNotification(data: any) {
           "Authorization": `Bearer ${process.env.RESEND_API_KEY}`
         },
         body: JSON.stringify({
-          from: "OCGC Sistema <onboarding@resend.dev>",
+          from: fromAddress,
           to: [adminEmail],
           subject: `Nueva Solicitud: ${data.name} (${data.group})`,
           html: html
