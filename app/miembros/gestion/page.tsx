@@ -32,6 +32,7 @@ export default function AdminOCGCPartituras() {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newEventDate, setNewEventDate] = useState('');
   const [editingMember, setEditingMember] = useState<string | null>(null);
+  const [editingMemberData, setEditingMemberData] = useState<any | null>(null);
   const [selectedMemberRoles, setSelectedMemberRoles] = useState<string[]>([]);
   
   // Estados para invitaciones
@@ -246,7 +247,7 @@ export default function AdminOCGCPartituras() {
 
   const toggleArchiverStatus = async (userId: string, isCurrentlyArchiver: boolean) => {
     try {
-      await fetch("/api/admin/users", {
+      const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -255,7 +256,11 @@ export default function AdminOCGCPartituras() {
           isArchiver: !isCurrentlyArchiver
         })
       });
-      loadMembers();
+      if (res.ok) {
+        setMembers(prev => prev.map(m => 
+          m.id === userId ? { ...m, isArchiver: !isCurrentlyArchiver } : m
+        ));
+      }
     } catch (error) {
       console.error("Error toggling archiver status:", error);
     }
@@ -263,7 +268,7 @@ export default function AdminOCGCPartituras() {
 
   const updateMemberRoles = async (userId: string) => {
     try {
-      await fetch("/api/admin/users", {
+      const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -272,8 +277,14 @@ export default function AdminOCGCPartituras() {
           roles: selectedMemberRoles
         })
       });
-      setEditingMember(null);
-      loadMembers();
+      
+      if (res.ok) {
+        // Actualización dinámica local
+        setMembers(prev => prev.map(m => 
+          m.id === userId ? { ...m, roles: selectedMemberRoles } : m
+        ));
+        setEditingMemberData(null);
+      }
     } catch (error) {
       console.error("Error updating member roles:", error);
     }
@@ -281,7 +292,7 @@ export default function AdminOCGCPartituras() {
 
   const toggleMasterStatus = async (userId: string, isCurrentlyMaster: boolean) => {
     try {
-      await fetch("/api/admin/users", {
+      const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -290,7 +301,11 @@ export default function AdminOCGCPartituras() {
           isMaster: !isCurrentlyMaster
         })
       });
-      loadMembers();
+      if (res.ok) {
+        setMembers(prev => prev.map(m => 
+          m.id === userId ? { ...m, isMaster: !isCurrentlyMaster } : m
+        ));
+      }
     } catch (error) {
       console.error("Error toggling master status:", error);
     }
@@ -298,7 +313,7 @@ export default function AdminOCGCPartituras() {
 
   const toggleBanStatus = async (userId: string, isBanned: boolean) => {
     try {
-      await fetch("/api/admin/users", {
+      const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -307,7 +322,11 @@ export default function AdminOCGCPartituras() {
           isBanned: !isBanned
         })
       });
-      loadMembers();
+      if (res.ok) {
+        setMembers(prev => prev.map(m => 
+          m.id === userId ? { ...m, isBanned: !isBanned } : m
+        ));
+      }
     } catch (error) {
       console.error("Error toggling ban status:", error);
     }
@@ -731,6 +750,7 @@ export default function AdminOCGCPartituras() {
             
             <div className="dictionary-grid" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               {Object.entries(rolesDict).map(([familia, instrumentos]) => {
+                 if (familia === 'Tuttis') return null; // Ocultar familia redundante Tutti
                  const matchInst = instrumentos.filter(i => i.name.toLowerCase().includes(searchRole.toLowerCase()));
                  if (matchInst.length === 0 && searchRole !== '') return null;
                  
@@ -761,45 +781,46 @@ export default function AdminOCGCPartituras() {
 
       {isMaster && activeTab === 'personal' && (
         <section className="admin-list-card">
-          <div className="personal-header-actions" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '1rem', background: '#f8f9fa', padding: '1.5rem', borderRadius: '12px', border: '1px solid #dee2e6', marginBottom: '2rem' }}>
-            <h3 style={{ margin: 0 }}>🎟️ Generar Nueva Invitación Nominativa</h3>
-            <div className="form-grid-2" style={{ width: '100%' }}>
+          <div className="invitation-generation-box">
+            <h3 style={{ margin: '0 0 1.2rem 0', fontSize: '1.1rem' }}>🎟️ Generar Nueva Invitación Nominativa</h3>
+            
+            <div className="invitation-form-row">
               <input 
                 type="text" 
-                placeholder="Nombre completo del músico..." 
+                placeholder="Nombre del músico..." 
                 value={inviteName} 
                 onChange={(e) => setInviteName(e.target.value)} 
-                style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid #ccc' }}
+                className="invite-input-name"
               />
               <select 
                 value={inviteSection} 
                 onChange={(e) => setInviteSection(e.target.value)} 
-                style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid #ccc' }}
+                className="invite-input-section"
               >
                 <option value="">-- Sección --</option>
-                {predefinedRoles.map(r => <option key={r} value={r}>{r}</option>)}
+                {[...predefinedRoles]
+                  .filter(r => !r.includes("- Tutti")) // Ocultar Tutti en invitaciones
+                  .sort((a,b) => a.localeCompare(b))
+                  .map(r => <option key={r} value={r}>{r}</option>)}
               </select>
-            </div>
-            <div className="form-grid-2" style={{ width: '100%' }}>
               <input 
                 type="email" 
-                placeholder="Email de destino (Si se deja vacío, genera link para copiar)" 
+                placeholder="Email (opcional)" 
                 value={inviteEmail} 
                 onChange={(e) => setInviteEmail(e.target.value)} 
-                style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid #ccc' }}
+                className="invite-input-email"
               />
               <button 
                 onClick={createInvitation} 
-                className="btn-main-admin" 
-                style={{ padding: '0.8rem 1.5rem', background: inviteEmail ? 'var(--clr-success)' : 'var(--clr-navy)' }}
+                className={`btn-generate-invite ${inviteEmail ? 'send' : 'link'}`}
                 disabled={isGeneratingInvite}
               >
-                {isGeneratingInvite ? "Generando..." : (inviteEmail ? "Generar y Enviar 📨" : "Solo Generar Link 🔗")}
+                {isGeneratingInvite ? "..." : (inviteEmail ? "Enviar 📨" : "Link 🔗")}
               </button>
             </div>
             
             {lastGeneratedLink && (
-              <div style={{ marginTop: '1.5rem', padding: '1.2rem', background: '#e7f5ff', border: '1px dashed #478AC9', borderRadius: '10px', animation: 'pulse 2s infinite' }}>
+              <div className="generated-link-alert">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ overflow: 'hidden' }}>
                     <span style={{ display: 'block', fontSize: '0.7rem', color: '#478AC9', fontWeight: 'bold', textTransform: 'uppercase' }}>✓ Enlace Generado para {inviteName || "Invitado"}</span>
@@ -903,28 +924,7 @@ export default function AdminOCGCPartituras() {
                     <td className="member-name">{m.name}</td>
                     <td className="member-email">{m.email}</td>
                     <td className="member-roles">
-                      {editingMember === m.id ? (
-                        <div className="role-selector">
-                          {predefinedRoles.map(r => (
-                            <label key={r}>
-                              <input
-                                type="checkbox"
-                                checked={selectedMemberRoles.includes(r)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedMemberRoles([...selectedMemberRoles, r]);
-                                  } else {
-                                    setSelectedMemberRoles(selectedMemberRoles.filter(sr => sr !== r));
-                                  }
-                                }}
-                              />
-                              {r}
-                            </label>
-                          ))}
-                        </div>
-                      ) : (
-                        <span>{m.roles.length > 0 ? m.roles.join(", ") : "—"}</span>
-                      )}
+                      <span>{m.roles.length > 0 ? m.roles.join(", ") : "—"}</span>
                     </td>
                     <td className="status-cell">
                       <button
@@ -954,23 +954,75 @@ export default function AdminOCGCPartituras() {
                       </button>
                     </td>
                     <td className="action-buttons">
-                      {editingMember === m.id ? (
-                        <>
-                          <button onClick={() => updateMemberRoles(m.id)} className="btn-save" title="Guardar cambios">✓</button>
-                          <button onClick={() => setEditingMember(null)} className="btn-cancel" title="Cancelar">✕</button>
-                        </>
-                      ) : (
-                        <button onClick={() => {
-                          setEditingMember(m.id);
-                          setSelectedMemberRoles(m.roles);
-                        }} className="btn-edit" title="Editar instrumentos">✎</button>
-                      )}
+                      <button onClick={() => {
+                        setEditingMemberData(m);
+                        setSelectedMemberRoles(m.roles);
+                      }} className="btn-edit" title="Editar instrumentos">✎</button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
+          {/* Modal Edición de Miembro */}
+          {editingMemberData && (
+            <div className="admin-modal-overlay">
+              <div className="admin-modal-card">
+                <div className="modal-header">
+                  <div>
+                    <h2>Editar Perfil: {editingMemberData.name}</h2>
+                    <p>{editingMemberData.email}</p>
+                  </div>
+                  <button onClick={() => setEditingMemberData(null)} className="btn-close-modal">✕</button>
+                </div>
+                
+                <div className="modal-body">
+                  <h3 style={{ fontSize: '1rem', marginBottom: '1rem', color: 'var(--clr-navy)' }}>Asignar Instrumentos / Secciones</h3>
+                  <div className="role-selector-grid">
+                    {[...predefinedRoles]
+                      .filter(r => !r.includes("- Tutti")) // Ocultar Tutti en edición de miembros
+                      .sort((a,b) => a.localeCompare(b))
+                      .map(r => (
+                        <label key={r} className={`role-chip-card ${selectedMemberRoles.includes(r) ? 'selected' : ''}`}>
+                        <input
+                          type="checkbox"
+                          checked={selectedMemberRoles.includes(r)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedMemberRoles([...selectedMemberRoles, r]);
+                            } else {
+                              setSelectedMemberRoles(selectedMemberRoles.filter(sr => sr !== r));
+                            }
+                          }}
+                          style={{ display: 'none' }}
+                        />
+                        <span className="chip-check">{selectedMemberRoles.includes(r) ? '✓' : '+'}</span>
+                        <span className="chip-text">{r}</span>
+                      </label>
+                    ))}
+                  </div>
+
+                  <div className="modal-permissions-summary" style={{ marginTop: '2rem', padding: '1.2rem', background: '#f8f9fa', borderRadius: '12px', border: '1px solid #eee' }}>
+                    <p style={{ fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '0.5rem' }}>Resumen de acceso:</p>
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                       <span style={{ fontSize: '0.8rem' }}><strong>Master:</strong> {editingMemberData.isMaster ? 'Sí' : 'No'}</span>
+                       <span style={{ fontSize: '0.8rem' }}><strong>Archivero:</strong> {editingMemberData.isArchiver ? 'Sí' : 'No'}</span>
+                       <span style={{ fontSize: '0.8rem' }}><strong>Estado:</strong> {editingMemberData.isBanned ? 'Baneado' : 'Activo'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="modal-footer">
+                  <button onClick={() => setEditingMemberData(null)} className="btn-cancel">Cancelar</button>
+                  <button onClick={() => {
+                    updateMemberRoles(editingMemberData.id);
+                    setEditingMemberData(null);
+                  }} className="btn-save" style={{ padding: '0.8rem 2rem' }}>Guardar Cambios</button>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="personal-legend">
             <p><strong>Legendas:</strong></p>
             <ul>
@@ -1058,9 +1110,191 @@ export default function AdminOCGCPartituras() {
         .btn-delete:hover { background: #F5D1D1; }
         .btn-save:hover { background: #C8E6C9; }
         .btn-cancel:hover { background: #E0E0E0; }
-        .role-selector { display: flex; flex-direction: column; gap: 0.4rem; background: #f9f9f9; padding: 0.8rem; border-radius: 6px; border: 1px solid #eee; }
-        .role-selector label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; }
-        .role-selector input { cursor: pointer; }
+
+        /* Invitaciones Inline Styles */
+        .invitation-generation-box {
+          background: #f8f9fa;
+          padding: 1.5rem;
+          border-radius: 12px;
+          border: 1px solid #dee2e6;
+          margin-bottom: 2rem;
+        }
+        .invitation-form-row {
+          display: flex;
+          gap: 0.8rem;
+          align-items: center;
+        }
+        .invitation-form-row input, .invitation-form-row select {
+          padding: 0.8rem;
+          border: 1px solid #ccc;
+          border-radius: 8px;
+          font-size: 0.9rem;
+          background: #fff;
+        }
+        .invite-input-name { flex: 2; min-width: 150px; }
+        .invite-input-section { flex: 1.5; min-width: 120px; }
+        .invite-input-email { flex: 2; min-width: 150px; }
+        
+        .btn-generate-invite {
+          padding: 0.8rem 1.5rem;
+          border: none;
+          border-radius: 8px;
+          font-weight: bold;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: 0.2s;
+          color: white;
+          min-width: 120px;
+        }
+        .btn-generate-invite.link { background: var(--clr-navy); }
+        .btn-generate-invite.send { background: #2ecc71; }
+        .btn-generate-invite:hover { transform: translateY(-1px); filter: brightness(1.1); }
+        .btn-generate-invite:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .generated-link-alert {
+          margin-top: 1.5rem;
+          padding: 1.2rem;
+          background: #e7f5ff;
+          border: 1px dashed #478AC9;
+          borderRadius: 10px;
+          animation: pulse 2s infinite;
+        }
+
+        @media (max-width: 900px) {
+          .invitation-form-row {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .invitation-form-row input, .invitation-form-row select, .btn-generate-invite {
+            width: 100%;
+          }
+        }
+
+        .role-selector-grid { 
+          display: grid; 
+          grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
+          gap: 0.6rem; 
+          background: #fff; 
+          padding: 1.2rem; 
+          border-radius: 12px; 
+          border: 1px solid #e1e8ed;
+          max-height: 400px;
+          overflow-y: auto;
+          box-shadow: inset 0 2px 10px rgba(0,0,0,0.02);
+        }
+        .role-chip-card {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          padding: 0.5rem 0.8rem;
+          background: #f8f9fa;
+          border: 1px solid #dee2e6;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          user-select: none;
+        }
+        .role-chip-card:hover {
+          border-color: var(--clr-primary);
+          background: #f1f7fd;
+          transform: translateY(-1px);
+        }
+        .role-chip-card.selected {
+          background: var(--clr-primary);
+          border-color: var(--clr-primary);
+          color: white;
+          box-shadow: 0 4px 12px rgba(71, 138, 201, 0.2);
+        }
+        .chip-check {
+          font-weight: 800;
+          font-size: 0.8rem;
+          width: 18px;
+          height: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 4px;
+          background: rgba(0,0,0,0.05);
+        }
+        .role-chip-card.selected .chip-check {
+          background: rgba(255,255,255,0.2);
+        }
+        .chip-text {
+          font-size: 0.8rem;
+          font-weight: 500;
+          line-height: 1.2;
+        }
+
+        /* Modal Styles */
+        .admin-modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.6);
+          backdrop-filter: blur(8px);
+          z-index: 3000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1rem;
+          animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .admin-modal-card {
+          background: #fff;
+          width: 100%;
+          max-width: 700px;
+          border-radius: 20px;
+          box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+          display: flex;
+          flex-direction: column;
+          max-height: 90vh;
+          overflow: hidden;
+          animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes slideUp { from { transform: translateY(20px); } to { transform: translateY(0); } }
+
+        .modal-header {
+          padding: 1.5rem 2rem;
+          border-bottom: 1px solid #f0f0f0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: #fafbfc;
+        }
+        .modal-header h2 { margin: 0; font-size: 1.4rem; color: var(--clr-navy); }
+        .modal-header p { margin: 0.2rem 0 0; font-size: 0.9rem; color: var(--clr-text-muted); }
+        
+        .btn-close-modal {
+          background: #f0f2f5;
+          border: none;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.2rem;
+          cursor: pointer;
+          transition: 0.2s;
+        }
+        .btn-close-modal:hover { background: #e4e6e9; color: var(--clr-danger); }
+
+        .modal-body {
+          padding: 2rem;
+          overflow-y: auto;
+          flex: 1;
+        }
+
+        .modal-footer {
+          padding: 1.5rem 2rem;
+          border-top: 1px solid #f0f0f0;
+          display: flex;
+          justify-content: flex-end;
+          gap: 1rem;
+          background: #f9fafb;
+        }
+
         .table-scroll { overflow-x: auto; }
         .personal-legend { margin-top: 2rem; padding: 1.5rem; background: #f0f8ff; border-radius: 8px; border-left: 4px solid #478AC9; }
         .personal-legend p { margin: 0 0 1rem; font-weight: 600; color: #333; }
