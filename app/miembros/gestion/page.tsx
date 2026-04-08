@@ -128,9 +128,11 @@ export default function AdminOCGCPartituras() {
   }, [isLoaded, isMaster, isArchiver, user, activeTab]);
 
   useEffect(() => {
-    if (activeTab === 'scores' || activeTab === 'categories' || activeTab === 'roles') {
+    if (activeTab === 'scores' || activeTab === 'categories' || activeTab === 'roles' || activeTab === 'personal') {
       loadData();
-    } else if (activeTab === 'personal' || activeTab === 'requests') {
+    }
+    
+    if (activeTab === 'personal' || activeTab === 'requests') {
       loadMembers(true);
     }
   }, [activeTab]);
