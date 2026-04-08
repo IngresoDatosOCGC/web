@@ -631,7 +631,7 @@
 
 /* Reusing classes from styles.css for consistency */
 .hide-mobile { display: flex; }
-.show-mobile-only { display: none; }
+.show-mobile-only { display: none !important; }
 
 @media (max-width: 768px) {
   .hide-mobile { display: none !important; }
