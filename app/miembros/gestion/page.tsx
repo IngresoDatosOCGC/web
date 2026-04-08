@@ -557,7 +557,8 @@ export default function AdminOCGCPartituras() {
                 <input type="text" placeholder="Buscar partitura..." value={searchScore} onChange={(e) => setSearchScore(e.target.value)} style={{ padding: '0.6rem', border: '1px solid #ddd', borderRadius: '6px', minWidth: '150px' }} />
               </div>
             </div>
-            <table className="inventory-table">
+            <div className="table-scroll">
+              <table className="inventory-table">
               <tbody>
                 {filteredScores.map(s => (
                   <tr key={s.id}>
@@ -622,7 +623,8 @@ export default function AdminOCGCPartituras() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           </section>
         </div>
       </>
@@ -653,7 +655,8 @@ export default function AdminOCGCPartituras() {
               <h3 style={{ margin: 0 }}>Programas ({filteredCategories.length})</h3>
               <input type="text" placeholder="Buscar programa..." value={searchCategory} onChange={(e) => setSearchCategory(e.target.value)} style={{ padding: '0.6rem', border: '1px solid #ddd', borderRadius: '6px', minWidth: '250px' }} />
             </div>
-            <table className="inventory-table">
+            <div className="table-scroll">
+              <table className="inventory-table">
               <tbody>
                 {filteredCategories.map(c => (
                   <tr key={c.id}>
@@ -694,7 +697,8 @@ export default function AdminOCGCPartituras() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           </section>
         </div>
       )}
@@ -757,33 +761,35 @@ export default function AdminOCGCPartituras() {
         <section className="admin-list-card">
           <div className="personal-header-actions" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '1rem', background: '#f8f9fa', padding: '1.5rem', borderRadius: '12px', border: '1px solid #dee2e6', marginBottom: '2rem' }}>
             <h3 style={{ margin: 0 }}>🎟️ Generar Nueva Invitación Nominativa</h3>
-            <div style={{ display: 'flex', gap: '1rem', width: '100%', flexWrap: 'wrap' }}>
+            <div className="form-grid-2" style={{ width: '100%' }}>
               <input 
                 type="text" 
                 placeholder="Nombre completo del músico..." 
                 value={inviteName} 
                 onChange={(e) => setInviteName(e.target.value)} 
-                style={{ flex: 2, padding: '0.8rem', borderRadius: '8px', border: '1px solid #ccc' }}
+                style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid #ccc' }}
               />
               <select 
                 value={inviteSection} 
                 onChange={(e) => setInviteSection(e.target.value)} 
-                style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', border: '1px solid #ccc' }}
+                style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid #ccc' }}
               >
                 <option value="">-- Sección --</option>
                 {predefinedRoles.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
+            </div>
+            <div className="form-grid-2" style={{ width: '100%' }}>
               <input 
                 type="email" 
                 placeholder="Email de destino (Si se deja vacío, genera link para copiar)" 
                 value={inviteEmail} 
                 onChange={(e) => setInviteEmail(e.target.value)} 
-                style={{ flex: 2, padding: '0.8rem', borderRadius: '8px', border: '1px solid #ccc' }}
+                style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid #ccc' }}
               />
               <button 
                 onClick={createInvitation} 
                 className="btn-main-admin" 
-                style={{ width: 'auto', padding: '0.8rem 1.5rem', background: inviteEmail ? 'var(--clr-success)' : 'var(--clr-navy)' }}
+                style={{ padding: '0.8rem 1.5rem', background: inviteEmail ? 'var(--clr-success)' : 'var(--clr-navy)' }}
                 disabled={isGeneratingInvite}
               >
                 {isGeneratingInvite ? "Generando..." : (inviteEmail ? "Generar y Enviar 📨" : "Solo Generar Link 🔗")}
@@ -990,6 +996,30 @@ export default function AdminOCGCPartituras() {
         .admin-nav-pills button.active { background: #478AC9; color: white; }
         .admin-content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
         .admin-form-card, .admin-list-card { background: #fbfbfc; padding: 2rem; border-radius: 12px; border: 1px solid #f0f0f0; }
+        
+        /* Responsive join requests */
+        .request-card-responsive {
+          padding: 1.5rem;
+          background: #fff;
+          border-radius: 12px;
+          border: 1px solid var(--clr-border);
+          box-shadow: var(--shadow-xs);
+          display: grid;
+          grid-template-columns: 2fr 1fr auto;
+          gap: 1.5rem;
+          align-items: start;
+        }
+        .request-contact-info { margin: 0; font-size: 0.9rem; color: var(--clr-text-muted); display: flex; gap: 1rem; flex-wrap: wrap; }
+        
+        @media (max-width: 900px) {
+          .admin-content-grid { grid-template-columns: 1fr; gap: 1rem; }
+          .request-card-responsive { grid-template-columns: 1fr; gap: 1rem; padding: 1rem; }
+          .request-interest-info { text-align: left; border-top: 1px solid #eee; padding-top: 1rem; }
+          .request-actions-area { width: 100%; display: flex; flex-direction: column; gap: 0.8rem; }
+          .admin-form-card, .admin-list-card { padding: 1.2rem; }
+          .admin-header-box { margin-bottom: 1.5rem; }
+        }
+
         .admin-form-card h2, .admin-form-card h3 { margin-top: 0; margin-bottom: 1.5rem; color: #333; }
         .admin-form-card input[type="text"], .admin-form-card input[type="file"], .admin-form-card select { width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 1rem; font-size: 0.9rem; }
         .instrument-chips-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0; }
@@ -1065,11 +1095,11 @@ export default function AdminOCGCPartituras() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-            {joinRequests
-              .filter(r => filterRequestStatus === 'all' || r.status === filterRequestStatus)
-              .map(r => (
-                <div key={r.id} style={{ padding: '1.5rem', background: '#fff', borderRadius: '12px', border: '1px solid var(--clr-border)', boxShadow: 'var(--shadow-xs)', display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '1.5rem', alignItems: 'start' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+              {joinRequests
+                .filter(r => filterRequestStatus === 'all' || r.status === filterRequestStatus)
+                .map(r => (
+                  <div key={r.id} className="request-card-responsive">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                       <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--clr-navy)' }}>{r.name}</span>
@@ -1097,13 +1127,13 @@ export default function AdminOCGCPartituras() {
                       <strong>Experiencia:</strong> {r.experience || "No especificada"}
                     </div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
+                    <div className="request-interest-info">
                     <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--clr-gold)', fontWeight: 800, textTransform: 'uppercase' }}>Interesado en:</p>
                     <p style={{ margin: 0, fontWeight: 700, color: 'var(--clr-navy)' }}>{r.group}</p>
                     <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>{r.instrument}</p>
                     <p style={{ margin: '0.5rem 0 0', fontSize: '0.7rem', color: '#999' }}>Recibida: {new Date(r.createdAt).toLocaleDateString()}</p>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div className="request-actions-area">
                     {(r.status === 'Pendiente' || r.status === 'Evaluando') && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                         <button 

@@ -1090,12 +1090,107 @@ footer {
   .concert-grid { grid-template-columns: 1fr; }
 }
 
-/* ── Mobile Menu Button ── */
+/* ── Mobile Navigation Overlay Styles ── */
+.mobile-nav-overlay {
+  position: fixed;
+  inset: 0;
+  top: 0;
+  background: rgba(13, 27, 42, 0.98);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(-20px);
+}
+
+.mobile-nav-overlay.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.mobile-nav-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+  padding: 2rem;
+}
+
+.mobile-link {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  transition: color 0.3s;
+  padding: 0.5rem;
+}
+
+.mobile-link:hover {
+  color: var(--clr-gold);
+}
+
+/* ── Specific Mobile Adjustments ── */
+@media (max-width: 768px) {
+  .logo img { height: 38px; }
+  
+  .hide-mobile { display: none !important; }
+  .show-mobile-only { display: flex !important; }
+
+  /* Forms optimization */
+  .form-modal-content {
+    padding: var(--sp-6);
+    width: 95%;
+    margin: 0 auto;
+  }
+
+  .form-modal-content h3 {
+    font-size: 1.5rem;
+    margin-bottom: var(--sp-4);
+  }
+
+  /* Grid fields stacking */
+  .form-grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem !important;
+  }
+
+  .section {
+    padding-block: var(--sp-12);
+    padding-inline: var(--sp-4);
+  }
+
+  /* Tables responsiveness pattern */
+  .table-responsive-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 1rem;
+    border-radius: var(--radius-md);
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.02);
+  }
+
+  .inventory-table, .personal-table {
+    min-width: 600px; /* Force scrollable area */
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-eyebrow { font-size: 0.65rem; }
+  .main-header-content h1 { font-size: 2.2rem; }
+  .main-header-actions { flex-direction: column; width: 100%; }
+  .main-header-actions .btn { width: 100%; }
+}
+
+/* ── Mobile Menu Toggle Animation fixes ── */
 .mobile-menu-btn {
-  display: none;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: var(--sp-2);
-  color: var(--clr-navy);
+  z-index: 2100; /* Ensure button stays above overlay */
+  position: relative;
 }

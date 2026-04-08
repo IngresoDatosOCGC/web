@@ -346,7 +346,7 @@ export default function UnetePage() {
                       <input type="text" name="fax_number" tabIndex={-1} autoComplete="off" />
                     </div>
                     
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-4)', marginBottom: 'var(--sp-4)' }}>
+                    <div className="form-grid-2">
                       <div>
                         <label htmlFor="fi-fname" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Nombre *</label>
                         <input id="fi-fname" name="first_name" type="text" placeholder="Ej: Juan" required className="form-control" autoComplete="given-name" />
@@ -357,7 +357,7 @@ export default function UnetePage() {
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-4)', marginBottom: 'var(--sp-4)' }}>
+                    <div className="form-grid-2">
                       <div>
                         <label htmlFor="fi-email" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Email *</label>
                         <input id="fi-email" name="email" type="email" placeholder="tu@email.com" required className="form-control" />

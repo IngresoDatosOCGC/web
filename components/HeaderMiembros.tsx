@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { UserButton, useUser } from "@clerk/nextjs";
 import { usePathname } from 'next/navigation';
 import '@/css/miembros.css';
@@ -8,6 +9,7 @@ import '@/css/miembros.css';
 export default function HeaderMiembros() {
   const { user } = useUser();
   const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
   const isAdmin = !!user?.publicMetadata?.isMaster || !!user?.publicMetadata?.isArchiver;
 
   const navItems = [
@@ -25,8 +27,8 @@ export default function HeaderMiembros() {
         </Link>
       </div>
 
-      {/* Navigation */}
-      <nav className="miembros-nav-bar" aria-label="Navegación de miembros">
+      {/* Navigation (Desktop) */}
+      <nav className="miembros-nav-bar hide-mobile" aria-label="Navegación de miembros">
         <ul className="miembros-menu">
           {navItems.map(({ href, label }) => (
             <li key={href}>
@@ -67,6 +69,40 @@ export default function HeaderMiembros() {
           </li>
         </ul>
       </nav>
+
+      {/* Mobile hamburger */}
+      <button
+        className="mobile-menu-btn show-mobile-only"
+        onClick={() => setMobileOpen(!mobileOpen)}
+        aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          {mobileOpen
+            ? <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>
+            : <><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="16" x2="20" y2="16"/></>
+          }
+        </svg>
+      </button>
+
+      {/* Mobile overlay */}
+      <div className={`mobile-nav-overlay ${mobileOpen ? 'open' : ''}`}>
+        <nav className="mobile-nav-content">
+          {navItems.map(({ href, label }) => (
+            <Link key={href} href={href} className="mobile-link" onClick={() => setMobileOpen(false)}>
+              {label}
+            </Link>
+          ))}
+          {isAdmin && (
+            <Link href="/miembros/gestion" className="mobile-link" style={{ color: 'var(--clr-gold)' }} onClick={() => setMobileOpen(false)}>
+              Gestión Admin
+            </Link>
+          )}
+          <div style={{ marginTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <UserButton />
+            <span style={{ color: '#fff' }}>{user?.firstName}</span>
+          </div>
+        </nav>
+      </div>
     </header>
   );
 }

@@ -71,29 +71,8 @@ export default function Header() {
       </button>
 
       {/* Mobile overlay */}
-      {mobileOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            top: 'var(--header-h)',
-            background: 'rgba(13,27,42,0.96)',
-            backdropFilter: 'blur(10px)',
-            zIndex: 999,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '2rem',
-          }}
-          onClick={() => {
-            setMobileOpen(false);
-            // Wait for DOM
-            setTimeout(() => {
-                if (typeof window !== 'undefined') window.scrollTo({top: 0, behavior: 'smooth'});
-            }, 50);
-          }}
-        >
+      <div className={`mobile-nav-overlay ${mobileOpen ? 'open' : ''}`}>
+        <nav className="mobile-nav-content">
           {[
             { href: '/', label: 'Inicio' },
             { href: '/nosotros', label: 'Nosotros' },
@@ -103,14 +82,8 @@ export default function Header() {
             <Link
               key={href}
               href={href}
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '2.5rem',
-                color: '#fff',
-                fontWeight: 600,
-                letterSpacing: '-0.01em',
-                transition: 'color 0.2s',
-              }}
+              className="mobile-link"
+              onClick={() => setMobileOpen(false)}
             >
               {label}
             </Link>
@@ -120,12 +93,12 @@ export default function Header() {
             target="_blank"
             rel="noreferrer"
             className="btn-donate"
-            style={{ marginTop: '1rem' }}
+            style={{ marginTop: '2rem', fontSize: '1rem', padding: '1rem 2.5rem' }}
           >
             Donar
           </a>
-        </div>
-      )}
+        </nav>
+      </div>
     </header>
   );
 }

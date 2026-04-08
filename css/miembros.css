@@ -587,18 +587,53 @@
   color: #fff;
 }
 
-/* ── Responsive ── */
-@media (max-width: 900px) {
-  .footer-miembros-inner { grid-template-columns: 1fr 1fr; }
-  .dash-grid-info { grid-template-columns: 1fr; }
-  .repositorio-sidebar { width: 56px; }
+/* ── Mobile Navigation (Miembros) ── */
+@media (max-width: 768px) {
+  .logo img { height: 38px; }
+  
+  .header-miembros-v2 {
+    padding: 0 var(--sp-4);
+  }
+
+  .miembros-user-area {
+    display: none; /* User button is inside mobile menu now */
+  }
+
+  .panel-container {
+    padding: var(--sp-4);
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-4);
+    padding: var(--sp-6);
+  }
+
+  .dashboard-header h1 {
+    font-size: var(--text-2xl);
+  }
+
+  /* Widgets stacking */
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .repositorio-main {
+    padding: var(--sp-6) var(--sp-4);
+  }
+
+  .repo-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
-@media (max-width: 600px) {
-  .footer-miembros-inner { grid-template-columns: 1fr; }
-  .footer-miembros-bottom { flex-direction: column; gap: var(--sp-4); text-align: center; }
-  .repositorio-container { flex-direction: column; }
-  .repositorio-sidebar { width: 100%; height: auto; flex-direction: row; padding: var(--sp-2); }
-  .repo-tab { padding: var(--sp-3); }
-  .repositorio-main { padding: var(--sp-6); }
+/* Reusing classes from styles.css for consistency */
+.hide-mobile { display: flex; }
+.show-mobile-only { display: none; }
+
+@media (max-width: 768px) {
+  .hide-mobile { display: none !important; }
+  .show-mobile-only { display: flex !important; }
 }
