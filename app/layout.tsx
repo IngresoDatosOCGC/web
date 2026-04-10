@@ -40,6 +40,21 @@ export default function RootLayout({
             href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Inter:wght@400;500;600;700;800&display=swap"
             rel="stylesheet"
           />
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                (function() {
+                  try {
+                    var theme = localStorage.getItem('theme');
+                    var supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+                    if (!theme && supportDarkMode) theme = 'dark';
+                    if (!theme) theme = 'light';
+                    document.documentElement.setAttribute('data-theme', theme);
+                  } catch (e) {}
+                })();
+              `,
+            }}
+          />
         </head>
         <body>
           <NotificationProvider>

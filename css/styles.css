@@ -14,7 +14,7 @@
 
 /* ── Design Tokens ── */
 :root {
-  /* Colors */
+  /* Colors - Light Mode (Default) */
   --clr-navy:        #0D1B2A;
   --clr-navy-mid:    #1A2A4B;
   --clr-primary:     #478AC9;
@@ -30,6 +30,46 @@
   --clr-border:      #E4E0D8;
   --clr-danger:      #C0392B;
   --clr-success:     #27AE60;
+  --clr-light:       #F8F7F4;
+  
+  /* Additional tokens for transparency contexts */
+  --clr-header-bg:   rgba(255, 255, 255, 0.97);
+  --clr-card-shadow: rgba(13, 27, 42, 0.08);
+  --clr-glass:       rgba(255, 255, 255, 0.05);
+  --clr-white-inv:   #FFFFFF;
+  --clr-black-inv:   #000000;
+  --clr-footer-bg:   #0D1B2A;
+}
+
+[data-theme='dark'] {
+  --clr-navy:        #E8F3FB; /* Used as heading color when on light bg, but we'll use --clr-text mostly */
+  --clr-navy-mid:    #478AC9;
+  --clr-primary:     #478AC9;
+  --clr-primary-dk:  #E8F3FB;
+  --clr-primary-lt:  rgba(71, 138, 201, 0.15);
+  --clr-gold:        #E6B84A;
+  --clr-gold-lt:     rgba(230, 184, 74, 0.1);
+  --clr-surface:     #1A2A4B;
+  --clr-bg:          #0D1B2A;
+  --clr-bg-alt:      #122234;
+  --clr-text:        #F8F7F4;
+  --clr-text-muted:  #AAB4C2;
+  --clr-border:      #2A3A5B;
+  --clr-danger:      #E74C3C;
+  --clr-success:     #2ECC71;
+  --clr-light:       #16213E;
+
+  --clr-header-bg:   rgba(13, 27, 42, 0.95);
+  --clr-card-shadow: rgba(0, 0, 0, 0.4);
+  --clr-glass:       rgba(0, 0, 0, 0.3);
+  --clr-white-inv:   #000000;
+  --clr-black-inv:   #FFFFFF;
+  
+  /* Overrides for fixed elements */
+  --clr-footer-bg:   #08121D;
+}
+
+:root {
 
   /* Typography — OCGC Corporate Identity */
   /* --font-display: 'Montserrat Alternates', 'Helvetica Neue', sans-serif;  */
@@ -106,6 +146,7 @@ body {
   overflow-x: hidden;
   padding-top: var(--header-h);
   -webkit-font-smoothing: antialiased;
+  transition: background-color var(--ease-mid), color var(--ease-mid);
 }
 
 img, video { max-width: 100%; height: auto; display: block; }
@@ -152,7 +193,7 @@ h4, h5, h6 {
 
 /* ── Header / Navbar ── */
 header {
-  background-color: rgba(255, 255, 255, 0.97);
+  background-color: var(--clr-header-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--clr-border);
@@ -704,7 +745,7 @@ nav {
 
 /* ── Footer ── */
 footer {
-  background: var(--clr-navy);
+  background: var(--clr-footer-bg);
   color: rgba(255,255,255,0.6);
   padding: var(--sp-16) var(--sp-8) var(--sp-8);
 }

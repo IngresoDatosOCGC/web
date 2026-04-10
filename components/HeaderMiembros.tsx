@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { UserButton, useUser } from "@clerk/nextjs";
 import { usePathname } from 'next/navigation';
+import ThemeToggle from './ThemeToggle';
 import '@/css/miembros.css';
 
 export default function HeaderMiembros() {
@@ -66,6 +67,7 @@ export default function HeaderMiembros() {
                 }
               }}
             />
+            <ThemeToggle />
           </li>
         </ul>
       </nav>
@@ -99,9 +101,12 @@ export default function HeaderMiembros() {
               </Link>
             )}
             
-            <div style={{ marginTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <UserButton />
-              <span style={{ color: '#fff', fontWeight: 600 }}>{user?.firstName}</span>
+            <div style={{ marginTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem', display: 'flex', alignItems: 'center', gap: '1rem', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <UserButton />
+                <span style={{ color: '#fff', fontWeight: 600 }}>{user?.firstName}</span>
+              </div>
+              <ThemeToggle />
             </div>
           </nav>
         </div>

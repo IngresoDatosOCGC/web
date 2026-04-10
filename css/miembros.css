@@ -5,7 +5,7 @@
 
 /* ── Header Miembros ── */
 .header-miembros-v2 {
-  background: #fff;
+  background: var(--clr-header-bg);
   border-bottom: 2px solid var(--clr-primary);
   padding: 0 var(--sp-8);
   height: var(--header-h);
@@ -48,8 +48,8 @@
 }
 
 .highlight-admin {
-  background: var(--clr-navy);
-  color: white !important;
+  background: var(--clr-navy-mid);
+  color: var(--clr-bg) !important;
   padding: var(--sp-2) var(--sp-5) !important;
   border-radius: var(--radius-full) !important;
   box-shadow: 0 4px 12px rgba(13,27,42,0.15);

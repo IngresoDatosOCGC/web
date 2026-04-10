@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import ThemeToggle from './ThemeToggle';
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
@@ -52,6 +53,7 @@ export default function Header() {
           </svg>
           Entradas
         </a>
+        <ThemeToggle />
       </nav>
 
       {/* Botón hamburguesa - SOLO VISIBLE EN MÓVIL */}
@@ -76,6 +78,9 @@ export default function Header() {
             <Link href="/nosotros" className="mobile-drawer-link" onClick={() => setMobileOpen(false)}>Nosotros</Link>
             <Link href="/conciertos" className="mobile-drawer-link" onClick={() => setMobileOpen(false)}>Conciertos</Link>
             <Link href="/unete" className="mobile-drawer-link" onClick={() => setMobileOpen(false)}>Únete</Link>
+            <div style={{ padding: '1rem', display: 'flex', justifyContent: 'center' }}>
+              <ThemeToggle />
+            </div>
             
             <div className="mobile-drawer-actions">
               <a href="https://www.paypal.com/donate/?hosted_button_id=WQGTER7DPGGB6" target="_blank" rel="noreferrer" className="btn-donar-mobile">
