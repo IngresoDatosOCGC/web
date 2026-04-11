@@ -1,23 +1,24 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useUser } from "@clerk/nextjs";
+import { useSupabaseUser } from "@/lib/supabase-auth-context";
 
 export default function TablonPage() {
-  const { isLoaded } = useUser();
+  const { user, loading: isAuthLoading } = useSupabaseUser();
   const [recentScores, setRecentScores] = useState<any[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
 
   useEffect(() => {
-    if (isLoaded) {
+    if (user) {
       fetch("/api/scores")
         .then(res => res.json())
-        .then(data => setRecentScores(data.slice(0, 5)))
+        .then(data => setRecentScores(Array.isArray(data) ? data.slice(0, 5) : []))
         .catch(err => console.error("Error loading scores:", err));
 
       fetch("/api/events")
         .then(res => res.json())
         .then(data => {
+            if (!Array.isArray(data)) return;
             const today = new Date();
             today.setHours(0,0,0,0);
             const futureEvents = data.filter((ev:any) => new Date(ev.date) >= today);
@@ -25,7 +26,7 @@ export default function TablonPage() {
         })
         .catch(err => console.error("Error loading events:", err));
     }
-  }, [isLoaded]);
+  }, [user]);
 
   const forceDownload = async (url: string, filename: string) => {
     try {
@@ -44,7 +45,7 @@ export default function TablonPage() {
     }
   };
 
-  if (!isLoaded) return null;
+  if (isAuthLoading) return null;
 
   return (
     <div className="tablon-full-container">

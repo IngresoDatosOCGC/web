@@ -1,17 +1,17 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useUser } from "@clerk/nextjs";
+import { useSupabaseUser } from "@/lib/supabase-auth-context";
 
 export default function RepositorioPageClient() {
-  const { isLoaded } = useUser();
+  const { user, loading: isAuthLoading } = useSupabaseUser();
   const [scores, setScores] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [activeCategoryId, setActiveCategoryId] = useState<number | 'todas' | 'documentos'>('todas');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isLoaded) {
+    if (user) {
       Promise.all([
         fetch("/api/scores").then(res => res.json()),
         fetch("/api/categories").then(res => res.json())
@@ -26,7 +26,7 @@ export default function RepositorioPageClient() {
         setLoading(false);
       });
     }
-  }, [isLoaded]);
+  }, [user]);
 
   const forceDownload = async (url: string, filename: string) => {
     try {
@@ -45,7 +45,7 @@ export default function RepositorioPageClient() {
     }
   };
 
-  if (!isLoaded || loading) return <div className="p-10 text-center">Cargando archivo...</div>;
+  if (isAuthLoading || loading) return <div className="p-10 text-center">Cargando archivo...</div>;
 
   const filteredScores = activeCategoryId === 'documentos' 
     ? scores.filter(s => s.isDocument)

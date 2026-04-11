@@ -1,27 +1,28 @@
 import { NextResponse } from 'next/server';
-import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 import prisma from '@/lib/prisma';
 
 export async function GET() {
-  const { userId } = await auth();
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const user = await currentUser();
-  if (!user?.publicMetadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
+
+  // Check admin via metadata (migrated structure)
+  if (!user.user_metadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   try {
     const totalUsers = await prisma.user.count();
     const totalScores = await prisma.score.count();
     const totalEvents = await prisma.event.count();
 
-    const clerk = await clerkClient();
-    const clerkUsersResponse = await clerk.users.getUserList();
-    const clerkUsers = clerkUsersResponse.data;
-    
-    // Contamos usuarios Clerk baneados localmente
-    const totalBanned = clerkUsers.filter(u => u.publicMetadata?.isBanned).length;
+    // En Supabase, para listar usuarios con el Admin SDK:
+    // Nota: Necesitas la SERVICE_ROLE_KEY para esto, pero si los usuarios están en la DB, es mejor contar en la DB.
+    // Usamos el campo 'isActive' o 'isBanned' en nuestra DB local si existe.
+    const totalBanned = await prisma.user.count({ 
+      where: { isActive: false } 
+    });
 
-    // Contar usuarios por agrupación y desglosar por sección
     const agrupaciones = await prisma.agrupacion.findMany({
       include: {
         estructuras: {

@@ -2,15 +2,19 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { UserButton, useUser } from "@clerk/nextjs";
+import { useSupabaseUser } from '@/lib/supabase-auth-context';
 import { usePathname } from 'next/navigation';
+import { LogOut, Menu, X } from 'lucide-react';
 import '@/css/miembros.css';
 
 export default function HeaderMiembros() {
-  const { user } = useUser();
+  const { user, signOut } = useSupabaseUser();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const isAdmin = !!user?.publicMetadata?.isMaster || !!user?.publicMetadata?.isArchiver;
+  
+  // En Supabase el metadata suele estar en user_metadata
+  const isAdmin = !!user?.user_metadata?.isMaster || !!user?.user_metadata?.isArchiver;
+  const firstName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0];
 
   const navItems = [
     { href: '/miembros/tablon', label: 'Tablón' },
@@ -54,18 +58,18 @@ export default function HeaderMiembros() {
           )}
 
           {/* User area */}
-          <li className="miembros-user-area">
-            {user?.firstName && (
-              <span className="miembros-hola">Hola, {user.firstName}</span>
+          <li className="miembros-user-area" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {firstName && (
+              <span className="miembros-hola">Hola, {firstName}</span>
             )}
-            <UserButton
-              appearance={{
-                elements: {
-                  avatarBox: { width: 36, height: 36 },
-                  userButtonPopoverCard: { borderRadius: '16px', boxShadow: '0 16px 48px rgba(0,0,0,0.15)' },
-                }
-              }}
-            />
+            <button 
+              onClick={() => signOut()}
+              className="btn-logout-icon"
+              title="Cerrar sesión"
+              style={{ background: 'none', border: 'none', color: 'var(--clr-gold)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            >
+              <LogOut size={20} />
+            </button>
           </li>
         </ul>
       </nav>
@@ -75,13 +79,9 @@ export default function HeaderMiembros() {
         className="mobile-menu-btn show-mobile-only"
         onClick={() => setMobileOpen(!mobileOpen)}
         aria-label="Menú"
+        style={{ background: 'none', border: 'none', color: '#fff' }}
       >
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          {mobileOpen
-            ? <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>
-            : <><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></>
-          }
-        </svg>
+        {mobileOpen ? <X size={28} /> : <Menu size={28} />}
       </button>
 
       {/* Drawer Lateral Miembros */}
@@ -99,9 +99,16 @@ export default function HeaderMiembros() {
               </Link>
             )}
             
-            <div style={{ marginTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <UserButton />
-              <span style={{ color: '#fff', fontWeight: 600 }}>{user?.firstName}</span>
+            <div style={{ marginTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <span style={{ color: '#fff', fontWeight: 600 }}>{firstName}</span>
+              </div>
+              <button 
+                onClick={() => { signOut(); setMobileOpen(false); }}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--clr-gold)', background: 'none', border: 'none', fontSize: '1rem', cursor: 'pointer', padding: 0 }}
+              >
+                <LogOut size={18} /> Cerrar sesión
+              </button>
             </div>
           </nav>
         </div>

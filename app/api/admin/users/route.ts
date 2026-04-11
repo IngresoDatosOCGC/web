@@ -1,19 +1,27 @@
 import { NextResponse } from "next/server";
-import { currentUser, clerkClient } from "@clerk/nextjs/server";
+import { createClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { logActivity } from "@/lib/logger";
 import prisma from "@/lib/prisma";
 
+// Cliente Admin para listar y actualizar metadatos sin restricción
+const supabaseAdmin = createSupabaseAdmin(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
 export async function GET() {
-  const user = await currentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   
   // Solo el Master puede gestionar músicos
-  if (!user?.publicMetadata?.isMaster) {
+  if (!user?.user_metadata?.isMaster) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
   try {
-    const [clerkResponse, dbUsers] = await Promise.all([
-      (await clerkClient()).users.getUserList({ limit: 500 }),
+    const [supabaseResponse, dbUsers] = await Promise.all([
+      supabaseAdmin.auth.admin.listUsers({ perPage: 1000 }),
       prisma.user.findMany({
         include: {
           estructuras: {
@@ -27,16 +35,16 @@ export async function GET() {
       })
     ]);
 
-    const members = clerkResponse.data.map(u => {
-      const dbUser = dbUsers.find(db => db.clerkUserId === u.id);
+    const members = supabaseResponse.data.users.map(u => {
+      const dbUser = dbUsers.find(db => db.supabaseUserId === u.id);
       return {
         id: u.id,
-        name: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "Sin nombre",
-        email: u.emailAddresses[0]?.emailAddress || "Sin email",
-        roles: (u.publicMetadata?.roles as string[]) || [], // Roles de Clerk
-        isArchiver: !!u.publicMetadata?.isArchiver,
-        isMaster: !!u.publicMetadata?.isMaster,
-        isBanned: !!u.banned || (dbUser ? !dbUser.isActive : false),
+        name: u.user_metadata?.full_name || u.email?.split('@')[0] || "Sin nombre",
+        email: u.email || "Sin email",
+        roles: (u.user_metadata?.roles as string[]) || [], 
+        isArchiver: !!u.user_metadata?.isArchiver,
+        isMaster: !!u.user_metadata?.isMaster,
+        isBanned: !!u.banned_until || (dbUser ? !dbUser.isActive : false),
         isActive: dbUser ? dbUser.isActive : true,
         isExternal: false,
         // Datos de nuestra DB
@@ -54,9 +62,9 @@ export async function GET() {
       };
     });
 
-    // 4. Añadir usuarios externos (solo en DB)
+    // Añadir usuarios externos (solo en DB)
     const externalUsers = dbUsers
-      .filter(db => !db.clerkUserId)
+      .filter(db => !db.supabaseUserId)
       .map(db => ({
         id: `ext_${db.id}`,
         dbId: db.id,
@@ -85,35 +93,25 @@ export async function GET() {
     return NextResponse.json(allMembers);
   } catch (error) {
     console.error("Error fetching members:", error);
-    return new NextResponse("Clerk Error", { status: 500 });
+    return new NextResponse("Supabase Error", { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
-  const user = await currentUser();
-  if (!user?.publicMetadata?.isMaster) return new NextResponse("Unauthorized", { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.user_metadata?.isMaster) return new NextResponse("Unauthorized", { status: 401 });
 
   const body = await req.json();
   const { userId, roles, action, isArchiver, isMaster, estructuraId, activo, atril } = body;
 
   try {
-     const isLocalOnly = typeof userId === 'string' && userId.startsWith('ext_');
-     const client = isLocalOnly ? null : await clerkClient();
-     let targetUser: any = null;
-     let targetName = userId;
+      const isLocalOnly = typeof userId === 'string' && userId.startsWith('ext_');
+      let targetName = userId;
 
-     if (!isLocalOnly) {
-       try {
-         targetUser = await client!.users.getUser(userId);
-         targetName = [targetUser.firstName, targetUser.lastName].filter(Boolean).join(" ") || targetUser.username || userId;
-       } catch (err) {
-         console.warn("Clerk User not found even if not ext_ prefix, falling back to local DB check.");
-       }
-     }
-
-      // Buscar el ID de la base de datos (dbId) para usar con syncUserWithClerk
+      // Buscar el ID de la base de datos (dbId) 
       const dbUser = await prisma.user.findFirst({ 
-        where: isLocalOnly ? { id: parseInt(userId.replace('ext_', '')) } : { clerkUserId: userId } 
+        where: isLocalOnly ? { id: parseInt(userId.replace('ext_', '')) } : { supabaseUserId: userId } 
       });
       
       if (dbUser) {
@@ -123,17 +121,19 @@ export async function POST(req: Request) {
       }
 
       const dbId = dbUser.id;
-      const { syncUserWithClerk } = await import("@/lib/clerk-sync");
+      const { syncUserWithSupabase } = await import("@/lib/supabase-sync");
 
-      // Acción para actualizar Roles manuales (Legacy / Clerk direct)
-      if (action === "update-roles" && !isLocalOnly && targetUser) {
-         const currentMetadata = (targetUser.publicMetadata || {}) as any;
-         await client!.users.updateUserMetadata(userId, {
-           publicMetadata: { ...currentMetadata, roles }
-         });
-         // Sincronizar después para asegurar coherencia con estructuras
-         await syncUserWithClerk(dbId);
-         await logActivity("Actualización de Instrumentos", user.id, { target: targetName, newRoles: roles });
+      // Acción para actualizar Roles manuales
+      if (action === "update-roles" && !isLocalOnly) {
+         const { data: { user: targetAuthUser } } = await supabaseAdmin.auth.admin.getUserById(userId);
+         if (targetAuthUser) {
+           const currentMetadata = targetAuthUser.user_metadata || {};
+           await supabaseAdmin.auth.admin.updateUserById(userId, {
+             user_metadata: { ...currentMetadata, roles }
+           });
+           await syncUserWithSupabase(dbId);
+           await logActivity("Actualización de Instrumentos", user.id, { target: targetName, newRoles: roles });
+         }
       }
 
       // Acción para Banear / Desbanear
@@ -150,11 +150,11 @@ export async function POST(req: Request) {
            }
          });
 
-         await syncUserWithClerk(dbId);
+         await syncUserWithSupabase(dbId);
          await logActivity(`Perfil ${isBanned ? 'Desactivado' : 'Activado'}`, user.id, { target: targetName });
       }
 
-      // Acción para actualizar una estructura específica (Activo/Atril)
+      // Acción para actualizar una estructura específica
       if (action === "update-estructura") {
         if (!estructuraId) return new NextResponse("Falta estructuraId", { status: 400 });
 
@@ -166,11 +166,11 @@ export async function POST(req: Request) {
           }
         });
 
-        await syncUserWithClerk(dbId);
+        await syncUserWithSupabase(dbId);
         await logActivity("Estructura Actualizada", user.id, { target: targetName });
       }
 
-      // Acción para AÑADIR una nueva estructura (UPSERT para seguridad)
+      // Acción para AÑADIR una nueva estructura
       if (action === "add-estructura") {
         const { agrupacionId, seccionId, papelId } = body;
         
@@ -193,7 +193,7 @@ export async function POST(req: Request) {
           }
         });
 
-        await syncUserWithClerk(dbId);
+        await syncUserWithSupabase(dbId);
         await logActivity("Nueva Estructura Añadida", user.id, { target: targetName });
       }
 
@@ -203,40 +203,46 @@ export async function POST(req: Request) {
 
         await prisma.estructura.delete({ where: { id: estructuraId } });
 
-        await syncUserWithClerk(dbId);
+        await syncUserWithSupabase(dbId);
         await logActivity("Estructura Eliminada", user.id, { target: targetName });
       }
 
      // Acción para cambiar permiso de Archivero
-     if (action === "toggle-archiver" && !isLocalOnly && targetUser) {
-        const currentMetadata = (targetUser.publicMetadata || {}) as any;
-        const newValue = isArchiver !== undefined ? isArchiver : !currentMetadata.isArchiver;
-        await client!.users.updateUserMetadata(userId, {
-          publicMetadata: {
-            ...currentMetadata,
-            isArchiver: newValue
-          }
-        });
-        await logActivity("Cambio permiso Archivero", user.id, { 
-          target: targetName, 
-          isArchiver: newValue 
-        });
+     if (action === "toggle-archiver" && !isLocalOnly) {
+        const { data: { user: targetAuthUser } } = await supabaseAdmin.auth.admin.getUserById(userId);
+        if (targetAuthUser) {
+          const currentMetadata = targetAuthUser.user_metadata || {};
+          const newValue = isArchiver !== undefined ? isArchiver : !currentMetadata.isArchiver;
+          await supabaseAdmin.auth.admin.updateUserById(userId, {
+            user_metadata: {
+              ...currentMetadata,
+              isArchiver: newValue
+            }
+          });
+          await logActivity("Cambio permiso Archivero", user.id, { 
+            target: targetName, 
+            isArchiver: newValue 
+          });
+        }
      }
 
       // Acción para cambiar permiso de Master
-      if (action === "toggle-master" && !isLocalOnly && targetUser) {
-        const currentMetadata = (targetUser.publicMetadata || {}) as any;
-        const newValue = isMaster !== undefined ? isMaster : !currentMetadata.isMaster;
-        await client!.users.updateUserMetadata(userId, {
-          publicMetadata: {
-            ...currentMetadata,
-            isMaster: newValue
-          }
-        });
-        await logActivity("Cambio permiso Master", user.id, { 
-          target: targetName, 
-          isMaster: newValue 
-        });
+      if (action === "toggle-master" && !isLocalOnly) {
+        const { data: { user: targetAuthUser } } = await supabaseAdmin.auth.admin.getUserById(userId);
+        if (targetAuthUser) {
+          const currentMetadata = targetAuthUser.user_metadata || {};
+          const newValue = isMaster !== undefined ? isMaster : !currentMetadata.isMaster;
+          await supabaseAdmin.auth.admin.updateUserById(userId, {
+            user_metadata: {
+              ...currentMetadata,
+              isMaster: newValue
+            }
+          });
+          await logActivity("Cambio permiso Master", user.id, { 
+            target: targetName, 
+            isMaster: newValue 
+          });
+        }
       }
 
       // Acción para actualizar datos personales básicos

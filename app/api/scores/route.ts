@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { createClient } from "@/lib/supabase/server";
 import prisma from "@/lib/prisma";
 import { buildVisibleScoresWhereInput } from "@/lib/score-visibility";
 
@@ -9,15 +9,15 @@ const scoreListArgs = {
 };
 
 export async function GET() {
-  const { userId } = await auth();
-  const user = await currentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!userId) {
+  if (!user) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  const isMaster = !!user?.publicMetadata?.isMaster;
-  const isArchiver = !!user?.publicMetadata?.isArchiver;
+  const isMaster = !!user.user_metadata?.isMaster;
+  const isArchiver = !!user.user_metadata?.isArchiver;
 
   try {
     if (isMaster || isArchiver) {
@@ -27,7 +27,7 @@ export async function GET() {
 
     const [dbUser, seccionesDB] = await Promise.all([
       prisma.user.findUnique({
-        where: { clerkUserId: userId },
+        where: { supabaseUserId: user.id },
         include: {
           estructuras: {
             where: { activo: true },
@@ -44,12 +44,12 @@ export async function GET() {
         seccion: est.seccion.seccion,
       })) ?? [];
 
-    const clerkRoles = (user?.publicMetadata?.roles as string[]) || [];
+    const userRoles = (user.user_metadata?.roles as string[]) || [];
     const predefinedSeccionNames = seccionesDB.map((s) => s.seccion);
 
     const whereVisible = buildVisibleScoresWhereInput(
       userStructures,
-      clerkRoles,
+      userRoles,
       predefinedSeccionNames
     );
 
