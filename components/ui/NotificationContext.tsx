@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
 
-type NotificationType = 'success' | 'error' | 'info';
+type NotificationType = 'success' | 'error' | 'info' | 'warning';
 
 interface NotificationContextType {
   showToast: (message: string, type?: NotificationType) => void;
@@ -33,7 +33,13 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         <div className={`global-toast ${toast.type}`}>
           <div className="toast-content">
             <span className="toast-icon">
-              {toast.type === 'success' ? '✓' : toast.type === 'error' ? '⚠️' : 'ℹ️'}
+              {toast.type === 'success'
+                ? '✓'
+                : toast.type === 'error'
+                  ? '⚠️'
+                  : toast.type === 'warning'
+                    ? '!'
+                    : 'ℹ️'}
             </span>
             <span className="toast-message">{toast.message}</span>
           </div>
