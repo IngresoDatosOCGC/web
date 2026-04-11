@@ -93,7 +93,7 @@
   min-height: calc(100vh - var(--header-h));
   background:
     linear-gradient(rgba(13,27,42,0.6), rgba(26,42,75,0.75)),
-    url('../assets/images/concert.jpg') center/cover;
+    url('/assets/images/concert.jpg') center/cover;
   padding: var(--sp-8);
 }
 

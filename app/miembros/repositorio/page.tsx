@@ -166,7 +166,7 @@ export default function RepositorioPageClient() {
         /* Main Pane */
         .repo-content-pane { flex: 1; min-width: 0; }
         .pane-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; border-bottom: 1px solid #f8fafc; padding-bottom: 1.5rem; }
-        .pane-title-row h2 { font-family: 'Inter', sans-serif; font-size: 2.2rem; font-weight: 900; color: #1a2a4b; margin: 0; }
+        .pane-title-row h2 { font-family: var(--font-display); font-size: 2.2rem; font-weight: 900; color: #1a2a4b; margin: 0; }
         .results-chip { background: #1a2a4b; color: #fff; padding: 0.4rem 1rem; border-radius: 50px; font-size: 0.75rem; font-weight: 800; }
 
         /* Inventory Cards */

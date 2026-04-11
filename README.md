@@ -77,7 +77,7 @@ Por las particularidades de `Vercel Edge`, al usar Prisma es conveniente que `DA
 
 **Cambio Visual e Identitario:**
 La inyección dinámica soporta nativamente `<html data-theme="dark">`. Los ajustes de contraste residen en `/css/styles.css`.
-Las directivas Google Fonts (`Montserrat Alternates`, `Inter`) pueden puentearse desde `/app/layout.tsx` en el componente head.
+Montserrat Alternates se ha establecido como la **fuente universal** para todo el proyecto para reforzar la identidad visual de la OCGC. Las directivas de carga residen en `/app/layout.tsx`.
 
 ---
 **Proyecto diseñado íntegramente por y para la Orquesta Comunitaria de Gran Canaria.**

@@ -121,7 +121,7 @@ export default function TablonPage() {
         
         .dashboard-column { display: flex; flex-direction: column; gap: 1.5rem; }
         .column-header { display: flex; align-items: center; gap: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #f1f5f9; }
-        .column-header h3 { font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 800; color: #1a2a4b; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; }
+        .column-header h3 { font-family: var(--font-display); font-size: 1rem; font-weight: 800; color: #1a2a4b; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; }
         .icon-circ { width: 36px; height: 36px; background: #478AC910; color: #478AC9; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid #478AC920; }
         .icon-circ.accent { background: #1a2a4b10; color: #1a2a4b; }
 
