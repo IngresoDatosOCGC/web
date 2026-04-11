@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { logActivity } from "@/lib/logger";
 
@@ -11,11 +11,11 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) return new NextResponse("Unauthorized", { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  const user = await currentUser();
-  const isMaster = !!user?.publicMetadata?.isMaster;
+  const isMaster = !!user.user_metadata?.isMaster;
   if (!isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   const { name, eventDate } = await req.json();
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     }
   });
 
-  await logActivity("Programa Creado", clerkId, { 
+  await logActivity("Programa Creado", user.id, { 
     nombre: name, 
     fecha: eventDate || "Sin fecha" 
   });

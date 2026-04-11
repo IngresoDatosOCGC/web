@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { del } from "@vercel/blob";
 import { logActivity } from "@/lib/logger";
@@ -8,11 +8,12 @@ export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) return new NextResponse("Unauthorized", { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const user = await currentUser();
-  const isArchiver = !!user?.publicMetadata?.isArchiver || !!user?.publicMetadata?.isMaster;
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
+
+  const isArchiver = !!user.user_metadata?.isArchiver || !!user.user_metadata?.isMaster;
   if (!isArchiver) return new NextResponse("Forbidden", { status: 403 });
 
   const resolvedParams = await params;
@@ -37,7 +38,7 @@ export async function DELETE(
       where: { id: scoreId }
     });
 
-    await logActivity("Partitura Eliminada", clerkId, { 
+    await logActivity("Partitura Eliminada", user.id, { 
       id: scoreId, 
       titulo: score?.title || "Desconocido" 
     });
@@ -53,11 +54,12 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) return new NextResponse("Unauthorized", { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const user = await currentUser();
-  const isArchiver = !!user?.publicMetadata?.isArchiver || !!user?.publicMetadata?.isMaster;
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
+
+  const isArchiver = !!user.user_metadata?.isArchiver || !!user.user_metadata?.isMaster;
   if (!isArchiver) return new NextResponse("Forbidden", { status: 403 });
 
   const body = await req.json();
@@ -80,7 +82,7 @@ export async function PATCH(
       include: { category: true }
     });
 
-    await logActivity("Partitura Editada", clerkId, { 
+    await logActivity("Partitura Editada", user.id, { 
       id: scoreId, 
       nuevoTitulo: updated.title,
       programa: updated.category?.name || "Sin programa"

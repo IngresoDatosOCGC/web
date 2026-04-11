@@ -1,13 +1,19 @@
 import { NextResponse } from "next/server";
-import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
+import { createClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import prisma from "@/lib/prisma";
 
-export async function POST(req: Request) {
-  const { userId: requesterId } = await auth();
-  if (!requesterId) return new NextResponse("Unauthorized", { status: 401 });
+const supabaseAdmin = createSupabaseAdmin(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-  const user = await currentUser();
-  if (!user?.publicMetadata?.isMaster) {
+export async function POST(req: Request) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
+
+  if (!user.user_metadata?.isMaster) {
     return new NextResponse("Forbidden - Only Masters can import users", { status: 403 });
   }
 
@@ -19,35 +25,38 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Nombre, Apellidos y DNI son obligatorios" }, { status: 400 });
     }
 
-    // El email solo es obligatorio si queremos crear cuenta en Clerk (para acceso)
-    // Si no hay email, simplemente se crea en la DB local como registro administrativo
-
-    let clerkUser: any = null;
+    let supabaseUser: any = null;
 
     if (!isExternal && email) {
-      // 1. Verificar si el usuario ya existe en Clerk por el email
-      const existingClerkUsers = await (await clerkClient()).users.getUserList({ emailAddress: [email] });
+      // 1. Verificar si el usuario ya existe en Supabase por el email
+      const { data: searchResults, error: searchError } = await supabaseAdmin.auth.admin.listUsers();
+      if (searchError) throw searchError;
       
-      if (existingClerkUsers.data.length > 0) {
-        clerkUser = existingClerkUsers.data[0];
+      const existingUser = searchResults.users.find(u => u.email === email);
+      
+      if (existingUser) {
+        supabaseUser = existingUser;
         // Sincronizar permisos básicos (Master/Archiver)
-        await (await clerkClient()).users.updateUserMetadata(clerkUser.id, {
-          publicMetadata: {
+        await supabaseAdmin.auth.admin.updateUserById(supabaseUser.id, {
+          user_metadata: {
+            ...supabaseUser.user_metadata,
             isMaster: !!isMaster,
             isArchiver: !!isArchiver
           }
         });
       } else {
-        // 2. Crear usuario en Clerk si no existe
-        clerkUser = await (await clerkClient()).users.createUser({
-            emailAddress: [email],
-            firstName,
-            lastName,
-            publicMetadata: {
+        // 2. Crear usuario en Supabase si no existe
+        const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
+            email,
+            email_confirm: true,
+            user_metadata: {
+              full_name: `${firstName} ${lastName}`.trim(),
               isMaster: !!isMaster,
               isArchiver: !!isArchiver
             },
         });
+        if (createError) throw createError;
+        supabaseUser = created.user;
       }
     }
 
@@ -55,7 +64,7 @@ export async function POST(req: Request) {
     const dbUser = await prisma.user.upsert({
       where: { dni: String(dni) },
       update: {
-        clerkUserId: clerkUser?.id || undefined,
+        supabaseUserId: supabaseUser?.id || undefined,
         name: firstName,
         surname: lastName,
         email: email || null,
@@ -63,7 +72,7 @@ export async function POST(req: Request) {
         isActive: true
       },
       create: {
-        clerkUserId: clerkUser?.id || null,
+        supabaseUserId: supabaseUser?.id || null,
         name: firstName,
         surname: lastName,
         dni: String(dni),
@@ -112,9 +121,9 @@ export async function POST(req: Request) {
       }
     }
 
-    // 5. Sincronizar roles avanzados con Clerk
-    const { syncUserWithClerk } = await import("@/lib/clerk-sync");
-    await syncUserWithClerk(dbUser.id);
+    // 5. Sincronizar roles avanzados con Supabase
+    const { syncUserWithSupabase } = await import("@/lib/supabase-sync");
+    await syncUserWithSupabase(dbUser.id);
 
     // 6. Registrar en el Log de Actividad
     await prisma.activityLog.create({
@@ -122,18 +131,18 @@ export async function POST(req: Request) {
         action: "Imported Member",
         details: {
           email,
-          clerkId: clerkUser?.id,
+          supabaseUserId: supabaseUser?.id,
           dni,
           agrupacion,
           seccion,
           papel,
           matricula
         },
-        userClerkId: requesterId
+        userAuthId: user.id
       }
     });
 
-    return NextResponse.json({ success: true, userId: dbUser.id, clerkId: clerkUser?.id });
+    return NextResponse.json({ success: true, userId: dbUser.id, supabaseUserId: supabaseUser?.id });
 
   } catch (error: any) {
     console.error("Error importing user:", error);

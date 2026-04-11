@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { logActivity } from "@/lib/logger";
 
@@ -7,11 +7,11 @@ export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) return new NextResponse("Unauthorized", { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  const user = await currentUser();
-  const isMaster = !!user?.publicMetadata?.isMaster;
+  const isMaster = !!user.user_metadata?.isMaster;
   if (!isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   const resolvedParams = await params;
@@ -24,7 +24,7 @@ export async function DELETE(
       where: { id: categoryId }
     });
 
-    await logActivity("Programa Eliminado", clerkId, { 
+    await logActivity("Programa Eliminado", user.id, { 
       id: categoryId, 
       nombre: category?.name || "Desconocido" 
     });
@@ -40,11 +40,11 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) return new NextResponse("Unauthorized", { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  const user = await currentUser();
-  const isMaster = !!user?.publicMetadata?.isMaster;
+  const isMaster = !!user.user_metadata?.isMaster;
   if (!isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   const { name, eventDate } = await req.json();
@@ -65,7 +65,7 @@ export async function PATCH(
       }
     });
 
-    await logActivity("Programa Editado", clerkId, { 
+    await logActivity("Programa Editado", user.id, { 
       id: categoryId, 
       nuevoNombre: name,
       nuevaFecha: eventDate || "Sin fecha"

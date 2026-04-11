@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { logActivity } from "@/lib/logger";
 
@@ -35,11 +35,11 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) return new NextResponse("Unauthorized", { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  const user = await currentUser();
-  const isMaster = !!user?.publicMetadata?.isMaster;
+  const isMaster = !!user.user_metadata?.isMaster;
   if (!isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   const { name, familia, isVisibleInPublic } = await req.json();
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
       }
     });
 
-    await logActivity("Sección Creada", clerkId, { 
+    await logActivity("Sección Creada", user.id, { 
       nombre: name, 
       familia: familia || "Otros" 
     });
@@ -66,11 +66,11 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) return new NextResponse("Unauthorized", { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  const user = await currentUser();
-  if (!user?.publicMetadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user.user_metadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   const { searchParams } = new URL(req.url);
   const idStr = searchParams.get("id");
@@ -82,7 +82,7 @@ export async function DELETE(req: Request) {
     const seccionDB = await prisma.seccion.findUnique({ where: { id } });
     await prisma.seccion.delete({ where: { id } });
 
-    await logActivity("Sección Eliminada", clerkId, { 
+    await logActivity("Sección Eliminada", user.id, { 
       id, 
       nombre: seccionDB?.seccion || "Desconocida" 
     });

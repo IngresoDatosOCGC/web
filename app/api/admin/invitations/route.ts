@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 import crypto from 'crypto';
 import prisma from '@/lib/prisma';
 import { logActivity } from '@/lib/logger';
 
 export async function GET() {
-  const { userId } = await auth();
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const user = await currentUser();
-  if (!user?.publicMetadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
+  if (!user.user_metadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   try {
     const invitations = await prisma.invitationCode.findMany({
@@ -24,11 +24,11 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) return new NextResponse("Unauthorized", { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const user = await currentUser();
-  if (!user?.publicMetadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
+  if (!user.user_metadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   try {
     const { 
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
       }
     }
 
-    await logActivity("Invitación Generada", clerkId, { 
+    await logActivity("Invitación Generada", user.id, { 
       destinatario: `${name} ${surname || ""}`.trim(), 
       emailSent: actuallySent,
       codigo: code 
@@ -89,11 +89,11 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) return new NextResponse("Unauthorized", { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const user = await currentUser();
-  if (!user?.publicMetadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
+  if (!user.user_metadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   try {
     const { searchParams } = new URL(req.url);
@@ -108,7 +108,7 @@ export async function DELETE(req: Request) {
       where: { id }
     });
 
-    await logActivity("Invitación Revocada", clerkId, { 
+    await logActivity("Invitación Revocada", user.id, { 
       id, 
       destinatario: `${invitation?.name || ""} ${invitation?.surname || ""}`.trim() || "Desconocido" 
     });

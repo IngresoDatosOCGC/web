@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 import prisma from '@/lib/prisma';
 
 export async function POST(req: Request) {
-  const { userId } = await auth();
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  const user = await currentUser();
-  const isMaster = user?.publicMetadata?.isMaster;
-  const isArchiver = user?.publicMetadata?.isArchiver;
+  const isMaster = user.user_metadata?.isMaster;
+  const isArchiver = user.user_metadata?.isArchiver;
 
   if (!isMaster && !isArchiver) {
     return new NextResponse("Forbidden", { status: 403 });
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
           roles: roles,
           scoreId: (newScore as any).id
         },
-        userClerkId: userId
+        userAuthId: user.id
       }
     });
 

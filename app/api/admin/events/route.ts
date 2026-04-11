@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 import prisma from '@/lib/prisma';
 import { EventType } from '@prisma/client';
 import { logActivity } from '@/lib/logger';
 
 export async function GET() {
-  const { userId } = await auth();
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const user = await currentUser();
-  if (!user?.publicMetadata?.isMaster && !user?.publicMetadata?.isArchiver)
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
+
+  if (!user.user_metadata?.isMaster && !user.user_metadata?.isArchiver)
     return new NextResponse("Forbidden", { status: 403 });
 
   try {
@@ -25,11 +26,11 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) return new NextResponse("Unauthorized", { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const user = await currentUser();
-  if (!user?.publicMetadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
+  if (!user.user_metadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   try {
     const body = await req.json();
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
           });
         })
       );
-      await logActivity("Importación de Eventos", clerkId, { count: created.length });
+      await logActivity("Importación de Eventos", user.id, { count: created.length });
       return NextResponse.json({ imported: created.length });
     }
 
@@ -73,7 +74,7 @@ export async function POST(req: Request) {
       include: { category: { select: { id: true, name: true } } }
     });
 
-    await logActivity("Evento Programado", clerkId, {
+    await logActivity("Evento Programado", user.id, {
       titulo: title, tipo: type, fecha: date, lugar: location || "N/A"
     });
 

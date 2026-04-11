@@ -1,14 +1,21 @@
 import { NextResponse } from "next/server";
-import { currentUser, clerkClient } from "@clerk/nextjs/server";
+import { createClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
+import prisma from "@/lib/prisma";
+
+const supabaseAdmin = createSupabaseAdmin(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 /**
  * GET /api/members - Fetch all members (Master only)
  */
 export async function GET() {
-  const user = await currentUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  // Only Master can access this endpoint
-  if (!user?.publicMetadata?.isMaster) {
+  if (!user?.user_metadata?.isMaster) {
     return new NextResponse(
       "Access denied. Only Master users can manage members.",
       { status: 401 }
@@ -16,56 +23,30 @@ export async function GET() {
   }
 
   try {
-    const clerk = await (await clerkClient()).users;
-    const response = await clerk.getUserList({ limit: 100 });
+    const { data: { users: authUsers }, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+    if (authError) throw authError;
 
-    // Use a safe cast to handle Clerk v5+ property names
-    const res = response as any;
-    const totalCount = res.totalCount ?? res.meta?.total_count ?? 0;
+    const dbUsers = await prisma.user.findMany();
 
-    // Paginate if needed
-    if (response.data.length < totalCount) {
-      const nextToken = res.meta?.next_page_token;
-      if (nextToken) {
-        const page2 = await clerk.getUserList({
-          limit: 100,
-          page_token: nextToken
-        } as any);
-        (response.data as any) = [...response.data, ...page2.data];
-      }
-    }
-
-    const members = response.data.map((u: any) => ({
-      id: u.id,
-      name: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "Sin nombre",
-      email: u.emailAddresses?.[0]?.emailAddress || "Sin email",
-      primaryEmail: u.emailAddresses?.[0]?.emailAddress,
-      roles: u.publicMetadata?.roles as string[] || [],
-      isArchiver: !!u.publicMetadata?.isArchiver,
-      isMaster: !!u.publicMetadata?.isMaster,
-      isBanned: !!u.banned,
-      createdAt: u.created_at
-    }));
+    const members = authUsers.map((u: any) => {
+      const dbUser = dbUsers.find(db => db.supabaseUserId === u.id);
+      return {
+        id: u.id,
+        name: u.user_metadata?.full_name || u.email?.split('@')[0] || "Sin nombre",
+        email: u.email || "Sin email",
+        roles: u.user_metadata?.roles as string[] || [],
+        isArchiver: !!u.user_metadata?.isArchiver,
+        isMaster: !!u.user_metadata?.isMaster,
+        isBanned: !!u.banned_until || (dbUser ? !dbUser.isActive : false),
+        createdAt: u.created_at
+      };
+    });
 
     return NextResponse.json(members);
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("Error fetching members:", error);
-
-    // Return more specific error message
-    if (error instanceof Error) {
-      const clerkError = error as { code?: string; error_code?: string };
-      const errorCode = clerkError.code || clerkError.error_code;
-
-      if (errorCode === "not_found" || errorCode === "user_not_found") {
-        return new NextResponse(
-          `User not found: ${error.message}`,
-          { status: 404 }
-        );
-      }
-    }
-
     return new NextResponse(
-      `Server error while fetching members: ${error instanceof Error ? error.message : "Unknown error"}`,
+      `Server error while fetching members: ${error.message}`,
       { status: 500 }
     );
   }
@@ -75,9 +56,10 @@ export async function GET() {
  * POST /api/members - Perform user actions (Master only)
  */
 export async function POST(req: Request) {
-  const user = await currentUser();
+  const supabase = await createClient();
+  const { data: { user: admin } } = await supabase.auth.getUser();
 
-  if (!user?.publicMetadata?.isMaster) {
+  if (!admin?.user_metadata?.isMaster) {
     return new NextResponse(
       "Access denied. Only Master users can manage members.",
       { status: 401 }
@@ -85,8 +67,6 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json();
-
-  // Validate required fields
   const { userId, action } = body;
 
   if (!userId || !action) {
@@ -96,63 +76,18 @@ export async function POST(req: Request) {
     );
   }
 
-  // Validate userId format
-  if (!userId.startsWith("user_")) {
-    return new NextResponse(
-      "Invalid userId format. Expected format: user_XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
-      { status: 400 }
-    );
-  }
-
-  // Allowed actions
-  const allowedActions = ["update-roles", "toggle-ban", "toggle-archiver", "toggle-master"];
-  if (!allowedActions.includes(action)) {
-    return new NextResponse(
-      `Invalid action "${action}". Allowed actions: ${allowedActions.join(", ")}`,
-      { status: 400 }
-    );
-  }
-
-  const clerk = await (await clerkClient()).users;
-
-  // Get current user data to handle race conditions safely
-  let currentUserData: any;
   try {
-    currentUserData = await clerk.getUser(userId);
-  } catch (error) {
-    console.error(`Error getting user ${userId} for action "${action}":`, error);
-    return new NextResponse(
-      `Error fetching user data: ${error instanceof Error ? error.message : "Unknown error"}`,
-      { status: 500 }
-    );
-  }
+    const { data: { user: targetUser }, error: getError } = await supabaseAdmin.auth.admin.getUserById(userId);
+    if (getError || !targetUser) throw new Error("User not found");
 
-  try {
-    // Execute the requested action
-    let success = true;
-    let errorMessage = "";
+    const currentMetadata = targetUser.user_metadata || {};
 
     switch (action) {
       case "update-roles":
         {
           const { roles } = body;
-          // Validate roles array
-          if (!Array.isArray(roles)) {
-            return new NextResponse(
-              "Invalid roles: must be an array",
-              { status: 400 }
-            );
-          }
-
-          // Re-fetch user after potential concurrent modification
-          const updatedUser = await clerk.getUser(userId);
-          const currentMetadata = updatedUser.publicMetadata || {};
-
-          await clerk.updateUserMetadata(userId, {
-            publicMetadata: {
-              ...currentMetadata,
-              roles: roles
-            }
+          await supabaseAdmin.auth.admin.updateUserById(userId, {
+            user_metadata: { ...currentMetadata, roles }
           });
         }
         break;
@@ -160,14 +95,22 @@ export async function POST(req: Request) {
       case "toggle-ban":
         {
           const { isBanned } = body;
-
-          // Handle true/false or string "true"/"false"
-          const banValue = !!isBanned;
-
-          if (banValue) {
-            await clerk.banUser(userId);
+          // In Supabase we can use banned_until or just a flag in our DB
+          // Let's use a flag in our DB for consistency with the rest of the app
+          await prisma.user.updateMany({
+            where: { supabaseUserId: userId },
+            data: { isActive: !isBanned }
+          });
+          
+          if (isBanned) {
+            // Ban for 100 years
+            await supabaseAdmin.auth.admin.updateUserById(userId, {
+              ban_duration: "876000h" 
+            });
           } else {
-            await clerk.unbanUser(userId);
+            await supabaseAdmin.auth.admin.updateUserById(userId, {
+              ban_duration: "none"
+            });
           }
         }
         break;
@@ -175,22 +118,9 @@ export async function POST(req: Request) {
       case "toggle-archiver":
         {
           const { isArchiver } = body;
-
-          // Re-fetch user to handle race condition
-          const updatedUser = await clerk.getUser(userId);
-          const currentMetadata = updatedUser.publicMetadata || {};
-
-          // Toggle: if undefined, invert. If explicitly true/false, use that value
-          const newArchiverValue =
-            isArchiver === undefined
-              ? !currentMetadata.isArchiver
-              : !!isArchiver;
-
-          await clerk.updateUserMetadata(userId, {
-            publicMetadata: {
-              ...currentMetadata,
-              isArchiver: newArchiverValue
-            }
+          const newValue = isArchiver === undefined ? !currentMetadata.isArchiver : !!isArchiver;
+          await supabaseAdmin.auth.admin.updateUserById(userId, {
+            user_metadata: { ...currentMetadata, isArchiver: newValue }
           });
         }
         break;
@@ -198,22 +128,9 @@ export async function POST(req: Request) {
       case "toggle-master":
         {
           const { isMaster } = body;
-
-          // Re-fetch user to handle race condition
-          const updatedUser = await clerk.getUser(userId);
-          const currentMetadata = updatedUser.publicMetadata || {};
-
-          // Toggle: if undefined, invert. If explicitly true/false, use that value
-          const newMasterValue =
-            isMaster === undefined
-              ? !currentMetadata.isMaster
-              : !!isMaster;
-
-          await clerk.updateUserMetadata(userId, {
-            publicMetadata: {
-              ...currentMetadata,
-              isMaster: newMasterValue
-            }
+          const newValue = isMaster === undefined ? !currentMetadata.isMaster : !!isMaster;
+          await supabaseAdmin.auth.admin.updateUserById(userId, {
+            user_metadata: { ...currentMetadata, isMaster: newValue }
           });
         }
         break;
@@ -223,11 +140,10 @@ export async function POST(req: Request) {
       success: true,
       message: "Action completed successfully"
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error in user action "${action}":`, error);
-
     return new NextResponse(
-      `Action failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      `Action failed: ${error.message}`,
       { status: 500 }
     );
   }
