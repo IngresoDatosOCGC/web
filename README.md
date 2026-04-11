@@ -1,132 +1,83 @@
-# Portal de Miembros OCGC - Documentación del Proyecto
+# Orquesta Comunitaria de Gran Canaria — Portal Web y Administrativo
 
-Este documento describe la arquitectura, funcionalidades y flujos de trabajo del portal digital de la **Orquesta Comunitaria de Gran Canaria (OCGC)**. El sistema está diseñado para gestionar el archivo de partituras, el registro de músicos y el control de acceso basado en roles dinámicos.
-
----
-
-## 1. Arquitectura Técnica
-
-- **Framework**: [Next.js](https://nextjs.org/) `15.1.0` (App Router estricto). Usa `proxy.ts` en lugar de `middleware.ts` para estabilidad en el entorno Edge.
-- **Autenticación**: [Clerk](https://clerk.com/) (Gestión de usuarios y metadatos de roles embebidos en el perfil público).
-- **Base de Datos**: PostgreSQL alojado en [Neon](https://neon.tech/) con ORM [Prisma](https://www.prisma.io/) _(Versión estrictamente fijada a `v6.2.1` para evitar bloqueos WASM)_.
-- **Almacenamiento de Archivos**: [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) para PDFs de partituras.
-- **Librerías Extra**: `recharts` (Gráficos), `papaparse` (Procesamiento de CSV en cliente).
-- **Estilos**: Vanilla CSS y Styled JSX.
+Este repositorio contiene el ecosistema digital completo de la **Orquesta Comunitaria de Gran Canaria (OCGC)**. El proyecto comprende la página web informativa (pública) y el ecosistema de Intranet para miembros y personal de gestión (privada), permitiendo un control centralizado de usuarios, archivo digital de partituras (repositorio de atriles) y herramientas avanzadas de administración (auditoría, dashboards gráficos y calendario de eventos).
 
 ---
 
-## 2. Modelos de Datos (Prisma)
+## 1. Stack y Arquitectura Tecnológica
 
-### Partituras y Repertorios
-- **Score**: Almacena la URL del archivo (Vercel Blob), el título y la lógica de acceso (`allowedRoles` como `String[]`).
-- **Category**: Agrupa las partituras por programas o conciertos (ej: "Sinfonía 9", "Concierto de Navidad").
-
-### Estructura de Diccionario Dinámico
-- **Seccion**: Almacena los instrumentos/roles (ej: "Violín primero", "Clarinete"). Ahora incluye el campo `familia` (Cuerda, Viento, etc.) para su organización visual en el panel.
-- **SystemConfig**: Almacena configuraciones globales del sistema en formato JSON.
-
-### Datos de Usuarios
-- **User**: Perfil personal del músico (DNI, Residencia, Empleo). Sincronizado con Clerk mediante `clerkUserId`.
-- **Estructura**: Tabla de relación que asocia a un usuario con una agrupación (Orquesta, Coro) y un instrumento específico.
-- **InvitationCode**: Tokens criptográficos nominativos (128-bit) para nuevos invitados. Ahora registra también a quién se envió (`sentToEmail`) y qué ID de usuario aceptó la invitación (`registeredUserId`).
-
-### Auditoría y Calendario
-- **ActivityLog**: Trazabilidad absoluta de acciones críticas realizadas por Administradores. Registra qué se hizo y quién lo realizó.
-- **Event**: Clasificación de hitos (Ensayo o Concierto) para su gestión en el Calendario de Actividades.
+- **Framework**: [Next.js](https://nextjs.org/) (Versión >=14, estricto App Router).
+- **Control de Temas**: Soporte integral de Modo Oscuro (Dark Mode) y Modo Claro gestionados nativamente con inyección de estado para prevenir destellos (`FOUC`). Paleta visual modulada mediante Custom Properties de CSS (`var(--clr-*)`).
+- **Autenticación y Sesiones**: [Clerk](https://clerk.com/). Control de perfiles web usando Webhooks para sincronización transparente.
+- **Base de Datos**: PostgreSQL via [Neon Tech](https://neon.tech/).
+- **ORM**: [Prisma](https://www.prisma.io/) (fijado a `v6.2.1` por compatibilidad en Edge runtimes).
+- **Storage Digital (Cloud)**: [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) para la distribución de partituras en PDF de extrema alta disponibilidad y baja latencia.
 
 ---
 
-## 3. Funcionalidades Principales
+## 2. Estructura de Directorios
 
-### A. Registro de Músicos (Onboarding Seguro)
-- **Ruta**: `/registro-usuarios` (Bloqueada por Token).
-- **Sistema de Invitaciones**: El registro ya no es accesible mediante una URL estática. Ahora requiere un **Token de Invitación Nominativo** generado por un Administrador.
-- **Seguridad Criptográfica**: Cada token tiene **128 bits de entropía** (32 caracteres hexadecimales aleatorios), lo que hace imposible el acceso por fuerza bruta o predicción.
-- **Trazabilidad**: Las invitaciones son nominativas. Al generarlas, el Admin asigna un "Nombre - Sección", permitiendo saber exactamente quién ha recibido el código y quién falta por registrarse.
-- **Caducidad y Un solo Uso**: Los tokens caducan automáticamente a los **7 días** y se desactivan permanentemente tras el primer uso exitoso.
-- **Automatización**: Al registrarse, el sistema asigna automáticamente etiquetas de "Tutti" (ej: `Orquesta - Tutti`) según la agrupación seleccionada, garantizando que el nuevo miembro vea el material general de su grupo desde el primer acceso.
+La estructura de este repositorio se ha reorganizado y profesionalizado con el fin de mejorar la experiencia de desarrollo a largo plazo.
 
-### B. Gestión y Control Admin (Master)
-- **Ruta**: `/miembros/gestion`. Actúa como "hub" integrando varios paneles:
-- **Gestión de Miembros y Partituras (Clásica)**: Subida vía Vercel Blob y filtrado de usuarios. Posibilidad de banear a perfiles (bloqueo total) y generación de base de datos de "Invitaciones".
-- **Dashboard Estadístico (`DashboardPanel`)**: Un panel con charts en tiempo real (`recharts`) que muestran densidad de músicos por sección e instrumentos.
-- **Calendario (`CalendarPanel`)**: Controlador visual del calendario de la orquesta, discriminando entre "Conciertos" (Urgentes) y "Ensayos".
-- **Auditoría (`LogsPanel`)**: Interfaz de solo lectura que consume los `ActivityLog` brindando una visibilidad total de los cambios o acciones críticas realizadas por otros administradores.
-- **Importación/Exportación Batch CSV (`CSVImportScores`)**:
-  - Transformación en cliente vía `papaparse` para subir bloques de archivos al digital desde hojas CSV sin sobrecargar el servidor principal, guardando trazabilidad.
-  - La tabla de miembros incluye botones de exportación CSV/Excel dinámica ejecutando las descargas en el momento desde cliente.
-
-### C. Repositorio Digital (Músico)
-- **Ruta**: `/miembros/repositorio`.
-- **Filtrado Inteligente**: El músico solo ve las partituras que coinciden con sus etiquetas (ej: si toca el Oboe, verá las partituras de "Oboe" y de "Orquesta - Tutti").
-- **Categorización**: Las obras se organizan visualmente por programas/conciertos en una barra lateral.
-- **Documentos**: Sección especial para reglamentos, estatutos o actas accesibles para todos los miembros.
-
-### D. Tablón de Anuncios
-- **Ruta**: `/miembros/tablon`.
-- **Novedades**: Muestra un saludo personalizado y una lista rápida de las últimas 5 partituras añadidas que sean relevantes para la sección del músico.
+```text
+/
+├── app/                  # (App Router) Páginas públicas (inicio, conciertos) y rutas de API. Contiene el bloque protegido /miembros.
+├── components/           # Componentes puramente UI y componentes de administración (Dashboards, Logs, CSV Modals, etc.).
+├── css/                  # Archivos globales de estilo (Vanilla CSS). Incluye el sistema maestro de variables y modos de color.
+├── docs/                 # Documentación técnica extendida del proyecto.
+│   ├── CONTEXTO_TECNICO_OCGC.md 
+│   ├── GUIA_IMPORTACION_PARTITURAS.md 
+│   ├── README_ETIQUETAS.md 
+│   └── TEST_ESTRES_OCGC.md
+├── lib/                  # Código modular backend (Conectores Prisma, Prisma Clients).
+├── prisma/               # Definición maestro de esquemas `schema.prisma`.
+├── public/               # Assets estáticos servidos directamente (fuentes, logos, iconos PWA).
+├── scripts/              # Scripts NodeJS de utilidad, reseteo, arreglos de DB y migraciones fuera del ciclo web.
+└── middleware.ts         # Orquestación de Edge Middleware de Auth para rutas públicas vs privadas.
+```
 
 ---
 
-## 4. Sistema de Control de Acceso (Tags)
+## 3. Topología de Datos (Prisma)
 
-El acceso no es jerárquico, sino por **intersección de etiquetas**:
-
-1. **Usuario**: Tiene una lista de roles en su perfil de Clerk (ej: `["Violonchelo", "Orquesta - Tutti"]`).
-2. **Partitura**: Tiene una lista de roles permitidos (ej: `["Violonchelo"]`).
-3. **Lógica**: Si hay al menos una coincidencia, el PDF es visible y descargable.
-4. **Excepciones**:
-   - **Master/Archivero**: Ven absolutamente todo el catálogo.
-   - **Dirección Musical**: Los usuarios con roles que comienzan por "Dirección" heredan automáticamente acceso a todo el material etiquetado como `Tutti` de su agrupación correspondiente (ej: Dirección de Coro ve todo lo de `Coro - Tutti`).
-   - **Documentos Generales**: Si el archivo está marcado como `isDocument`, es visible para cualquier usuario logueado.
-
-### E. Blindaje de Acceso (Invitaciones)
-Para prevenir registros no autorizados, el portal implementa un "Paso 0" de validación:
-1. **Generación**: Un Admin Master genera un token criptográfico asociado a un nombre y sección (ej: "Marta Gil - Clarinete").
-2. **Validación**: El servidor comprueba que el token existe en la DB, no ha sido usado y no ha expirado (ventana de 7 días).
-3. **Consumo**: Al finalizar el registro, el token se marca como `usedAt` en la base de datos, quedando invalidado permanentemente.
+- **User**: Perfil personal sincronizado automáticamente con los eventos Webhooks de Clerk.
+- **Score (Partituras)**: Archivos alojados en Vercel Blob vinculados bajo etiquetas dinámicas (`allowedRoles`) de seguridad.
+- **Category (Programas)**: Agrupaciones o Conciertos contenedores de las partituras.
+- **Seccion / Estructura**: Base de conocimiento que agrupa la naturaleza asociativa de un músico (ej. "Trompeta" -> "Banda Sinfónica").
+- **ActivityLog**: Registro de auditorías de alto nivel para todas las gestiones de administradores.
+- **Event**: Objeto en agenda para gestionar convocatorias musicales.
+- **InvitationCode**: Tokens efímeros (alta encriptación de 128-bit, 7 días de caducidad) que funcionan como filtro *previo* al alta de Clerk para admitir músicos orgánicamente.
 
 ---
 
-## 5. Mantenimiento y Despliegue
+## 4. Paneles y Funcionalidades Administrativas (`/miembros/gestion`)
 
-### Variables de Entorno (Vercel)
-- `DATABASE_URL`: Conexión a Neon. *Siempre referenciada textualmente en Prisma.*
-- `CLERK_SECRET_KEY` / `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`: Credenciales de Clerk.
-- `BLOB_READ_WRITE_TOKEN`: Permiso para subir archivos a Vercel Blob.
-- `NEXT_PUBLIC_CLERK_SIGN_IN_URL`: `/sign-in`
-- `NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL`: `/miembros/tablon`
+El centro neurálgico del organigrama directivo reside en el panel protegido de `Master`:
 
-### Prevención de Errores Prisma Serverless
-- **P1012 de Prisma 7+**: Para evitar que la API y los builds en Vercel Edge/WASM fallen trágicamente, **el proyecto está bloqueado en Prisma v6.2.1.** 
-- Nunca usar un `prisma.config.ts`, y siempre alimentar la base de datos indirectamente con la string nativa de la URL en the `schema.prisma`.
+- **Dashboard Panel**: Monitor en tiempo real alimentado con `recharts` para evaluar el balanceo de músicos y la densidad poblacional en cada tipo de agrupación.
+- **Importadores Masivos CSV/Excel**: Integración mediante `papaparse` que inyecta cientos de usuarios y partituras en paralelo consumiendo mínimos recursos en el Edge Server.
+- **Panel de Actividades y Novedades (`Tablón`)**: Herramienta enfocada al músico, filtrando notificaciones y material según su etiqueta ("Trompa Tutti", "Coro Soprano", etc.).
+- **Auditoría Transaccional**: Toda acción delegada de los mánager queda debidamente firmada en el módulo de logs (fecha, acción, emisor).
 
-## 6. Gestión de Tipografía
-
-El portal permite alternar entre dos sistemas visuales principales. Actualmente, la **fuente corporativa** está activa por defecto.
-
-### Opciones Disponibles:
-1.  **Montserrat Alternates** (Activa): Identidad corporativa de la OCGC. Moderna, geométrica y con gran legibilidad.
-2.  **Cormorant Garamond**: Opción elegante y clásica (Serif), ideal para un estilo artístico "Premium" o de bellas artes.
-
-### Cómo cambiar la fuente:
-Para alternar entre ellas, debes realizar cambios en dos archivos simultáneamente:
-
-1.  **`css/styles.css`**:
-    *   Busca la sección `/* Typography — OCGC Corporate Identity */`.
-    *   Intercambia los comentarios entre las líneas de `--font-display`.
-    *   Asegúrate de que el `@import` correspondiente en la parte superior del archivo también esté activo.
-
-2.  **`app/layout.tsx`**:
-    *   Busca el bloque de `Google Fonts`.
-    *   Descomenta el `<link>` de la fuente que desees activar y comenta la otra. Esto asegura que el navegador no descargue fuentes innecesarias.
+El enrutamiento no es jerárquico tradicional; sigue un esquema de acceso por intersección de dependencias y de etiquetas, proporcionando a los directores el pase absoluto y a los componentes su partición de atril (tutti y seccional).
 
 ---
 
-## 7. Mantenimiento y Despliegue
+## 5. Operaciones Frecuentes Mantenimiento
 
-### Comandos Útiles
-- `npx prisma db push`: Sincroniza cambios en el esquema sin migraciones pesadas.
-- `npx prisma generate`: Regenera el cliente para reconocer nuevos campos (como `forWhom` o `familia`).
+**Scripts disponibles:**
+Las herramientas manuales (ej: restauraciones) se ubican bajo la carpeta `scripts/`.
+Para ejecutar scripts locales como parches manuales usa simplemente Node sin comprometer tu Vercel:
+`node scripts/fix_instrumentos.js`
 
-*Documentación generada para el equipo técnico de la Orquesta Comunitaria de Gran Canaria.*
+**Actualización Prisma (Edge Provider):**
+Por las particularidades de `Vercel Edge`, al usar Prisma es conveniente que `DATABASE_URL` apunte a la infraestructura Neon, absteniéndose de usar `prisma.config.ts`. Si se agrega un nuevo modelo a `schema.prisma`:
+1. `npx prisma db push`
+2. `npx prisma generate`
+
+**Cambio Visual e Identitario:**
+La inyección dinámica soporta nativamente `<html data-theme="dark">`. Los ajustes de contraste residen en `/css/styles.css`.
+Las directivas Google Fonts (`Montserrat Alternates`, `Inter`) pueden puentearse desde `/app/layout.tsx` en el componente head.
+
+---
+**Proyecto diseñado íntegramente por y para la Orquesta Comunitaria de Gran Canaria.**
