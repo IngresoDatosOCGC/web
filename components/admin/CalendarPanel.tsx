@@ -316,46 +316,6 @@ export default function CalendarPanel() {
         </div>
       )}
 
-      <style jsx>{`
-        .admin-content-grid-local { display: flex; flex-direction: column; gap: 2rem; margin-top: 1rem; }
-        .panel-section-card { background: #fff; padding: 2rem; border: 1px solid #eef2f5; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
-        .form-grid-layout { display: flex; flex-direction: column; gap: 1rem; }
-        .form-row { display: flex; gap: 1rem; flex-wrap: wrap; }
-        .flex-1 { flex: 1; min-width: 150px; }
-        .flex-2 { flex: 2; min-width: 200px; }
-        .input-group { display: flex; flex-direction: column; gap: 0.5rem; width: 100%; }
-        .input-group label { font-size: 0.75rem; font-weight: 800; color: #478AC9; text-transform: uppercase; letter-spacing: 0.5px; }
-        .input-group input, .input-group select, .input-group textarea { padding: 0.9rem; border: 1px solid #dfe4ea; border-radius: 10px; font-size: 0.95rem; background: #fbfcfe; transition: 0.2s; width: 100%; box-sizing: border-box; }
-        .input-group input:focus, .input-group select:focus { border-color: #478AC9; outline: none; background: #fff; box-shadow: 0 0 0 3px rgba(71,138,201,0.1); }
-        .btn-main-premium { margin-top: 1rem; padding: 1.2rem; background: #478AC9; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; font-size: 1rem; }
-        .btn-main-premium:hover { background: #357abd; transform: translateY(-2px); box-shadow: 0 8px 25px rgba(71,138,201,0.3); }
-        .events-scroll-container { display: flex; flex-direction: column; gap: 1rem; max-height: 600px; overflow-y: auto; padding-right: 0.5rem; }
-        .event-card-premium { background: #fbfcfe; padding: 1.2rem; border-radius: 12px; border: 1px solid #eef2f5; display: flex; justify-content: space-between; align-items: center; transition: 0.3s; flex-wrap: wrap; gap: 1rem; }
-        .event-card-premium:hover { transform: translateX(5px); background: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .event-top-line { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
-        .event-title-text { margin: 0; font-size: 1.1rem; color: #2c3e50; }
-        .badge-type { padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.65rem; font-weight: bold; text-transform: uppercase; white-space: nowrap; }
-        .badge-type.ensayo { background: #e3f2fd; color: #2e86de; }
-        .badge-type.concierto { background: #fff5f5; color: #ff4757; }
-        .badge-type.reunión { background: #e8f5e9; color: #27ae60; }
-        .event-details-line { display: flex; gap: 1rem; flex-wrap: wrap; }
-        .ev-detail { font-size: 0.85rem; color: #666; font-weight: 500; display: flex; align-items: center; gap: 0.2rem; }
-        .event-actions-stack { display: flex; gap: 0.5rem; flex-shrink: 0; }
-        .action-btn-p { width: 36px; height: 36px; border-radius: 8px; border: none; cursor: pointer; transition: 0.2s; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
-        .action-btn-p.edit { background: #eef6fd; color: #478AC9; }
-        .action-btn-p.delete { background: #fff1f1; color: #ff4757; }
-        .action-btn-p:hover { transform: scale(1.1); }
-        .empty-state { text-align: center; padding: 3rem; color: #999; font-style: italic; }
-        .local-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 999999; padding: 1rem; }
-        .local-modal-card { background: #fff; width: 100%; max-width: 550px; border-radius: 20px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.3); animation: popScale 0.3s ease; display: flex; flex-direction: column; max-height: 90vh; }
-        @keyframes popScale { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .modal-header-premium { padding: 1.5rem 2rem; background: #f9fafb; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .btn-close-modal-p { background: #eee; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; }
-        .modal-body-p { padding: 2rem; overflow-y: auto; }
-        .modal-footer-p { padding: 1.5rem 2rem; background: #f9fafb; display: flex; justify-content: flex-end; gap: 1rem; border-top: 1px solid #eee; flex-wrap: wrap; }
-        .btn-cancel-p { padding: 0.8rem 1.5rem; border-radius: 10px; border: 1px solid #ddd; background: #fff; cursor: pointer; font-weight: bold; }
-        .btn-save-p { padding: 0.8rem 1.5rem; border-radius: 10px; border: none; background: #478AC9; color: white; cursor: pointer; font-weight: bold; }
-      `}</style>
     </div>
   );
 }

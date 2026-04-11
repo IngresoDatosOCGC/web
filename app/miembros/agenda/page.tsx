@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useMemo } from 'react';
 
@@ -166,75 +166,6 @@ export default function AgendaPage() {
 
   return (
     <main className="dashboard-content">
-      <style>{`
-        .agenda-wrapper { padding: 2rem; max-width: 1400px; margin: 0 auto; }
-        .agenda-hero { margin-bottom: 2rem; }
-        .agenda-hero h1 { font-size: 1.8rem; font-weight: 800; color: #1a2a4b; margin: 0 0 0.4rem; }
-        .agenda-hero p { color: #666; font-size: 0.95rem; margin: 0; }
-        
-        .agenda-controls { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem; align-items: center; }
-        .agenda-select { padding: 0.7rem 1.2rem; border: 2px solid #e8ecf0; border-radius: 10px; font-size: 0.9rem; background: #fff; cursor: pointer; min-width: 220px; font-weight: 600; color: #1a2a4b; transition: 0.2s; }
-        .agenda-select:focus { border-color: #478AC9; outline: none; }
-        
-        .type-filter-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-        .type-btn { padding: 0.5rem 1rem; border-radius: 20px; border: 2px solid transparent; cursor: pointer; font-size: 0.82rem; font-weight: 700; transition: 0.2s; background: #f0f4f8; color: #666; }
-        .type-btn:hover { transform: translateY(-1px); }
-        .type-btn.active-all { background: #1a2a4b; color: #fff; }
-        .type-btn.active-Ensayo { background: #2e86de; color: #fff; }
-        .type-btn.active-Concierto { background: #ff4757; color: #fff; }
-        .type-btn.active-Reunión { background: #27ae60; color: #fff; }
-
-        .agenda-grid { display: grid; grid-template-columns: 1fr 380px; gap: 2rem; align-items: start; }
-        @media (max-width: 1024px) { .agenda-grid { grid-template-columns: 1fr; } }
-
-        .events-section h2 { font-size: 1.1rem; font-weight: 700; color: #1a2a4b; margin: 0 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
-        .events-empty { text-align: center; padding: 3rem; color: #999; font-style: italic; background: #f9fafb; border-radius: 12px; }
-
-        .event-card { display: flex; gap: 1rem; background: #fff; border: 1px solid #eef2f5; border-radius: 14px; padding: 1.2rem 1.5rem; margin-bottom: 0.8rem; transition: 0.25s; box-shadow: 0 2px 8px rgba(0,0,0,0.03); align-items: center; }
-        .event-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
-
-        .event-date-box { flex-shrink: 0; width: 54px; height: 60px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; }
-        .event-date-day { font-size: 1.6rem; font-weight: 900; line-height: 1; }
-        .event-date-mon { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.75; }
-
-        .event-body { flex: 1; min-width: 0; }
-        .event-meta { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.3rem; flex-wrap: wrap; }
-        .event-badge { padding: 0.15rem 0.6rem; border-radius: 6px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
-        .event-program-tag { font-size: 0.72rem; color: #888; font-weight: 500; }
-        .event-title { font-size: 1rem; font-weight: 700; color: #1a2a4b; margin: 0 0 0.3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .event-detail-row { display: flex; gap: 1rem; flex-wrap: wrap; }
-        .event-detail { font-size: 0.8rem; color: #777; display: flex; align-items: center; gap: 0.25rem; }
-
-        .section-divider { font-size: 0.7rem; font-weight: 800; color: #999; text-transform: uppercase; letter-spacing: 0.1em; margin: 2rem 0 0.8rem; padding-bottom: 0.5rem; border-bottom: 1px solid #eef2f5; }
-
-        .sidebar-sticky { position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 1.5rem; }
-        .stat-card { background: #fff; border-radius: 14px; border: 1px solid #eef2f5; padding: 1.2rem 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-        .stat-card h3 { font-size: 0.75rem; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 1rem; }
-        .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f5f5f5; }
-        .stat-row:last-child { border-bottom: none; }
-        .stat-label { font-size: 0.85rem; color: #555; display: flex; align-items: center; gap: 0.4rem; }
-        .stat-value { font-size: 1.1rem; font-weight: 800; color: #1a2a4b; }
-
-        .calendar-day-cell:hover span { transform: scale(1.1); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .calendar-tooltip {
-          position: absolute; bottom: 110%; left: 50%; transform: translateX(-50%);
-          width: 180px; background: #fff; border: 1px solid #eef2f5; border-radius: 10px;
-          padding: 0.8rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 100;
-          text-align: left; pointer-events: none; animation: fadeIn 0.15s ease-out;
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(5px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-        
-        .tooltip-event-item { display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start; }
-        .tooltip-event-item:last-child { margin-bottom: 0; }
-        .tooltip-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
-        .tooltip-info { display: flex; flex-direction: column; gap: 2px; }
-        .tooltip-info strong { font-size: 0.75rem; color: #1a2a4b; line-height: 1.2; }
-        .tooltip-info span { font-size: 0.65rem; color: #888; }
-        .tooltip-arrow {
-          position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
-          width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #fff;
-        }
-      `}</style>
 
       <div className="agenda-wrapper">
         <div className="agenda-hero">

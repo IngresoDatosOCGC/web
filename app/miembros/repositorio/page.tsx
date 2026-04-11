@@ -146,50 +146,6 @@ export default function RepositorioPageClient() {
         </main>
       </div>
 
-      <style jsx>{`
-        .repositorio-fixed-view { width: 100%; }
-        .repo-grid-container { display: flex; gap: 3.5rem; align-items: flex-start; }
-        
-        /* Sidebar Navigation Fix */
-        .repo-sidebar-nav { width: 280px; flex-shrink: 0; background: #fff; border: 1px solid #eef2f6; border-radius: 16px; padding: 1.5rem; position: sticky; top: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); }
-        .sidebar-brand { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem; }
-        .sidebar-brand h4 { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: #94a3b8; margin: 0; letter-spacing: 0.1em; }
-        
-        .sidebar-divider { font-size: 0.7rem; font-weight: 800; color: #cbd5e1; margin: 2rem 0 1rem; padding-left: 0.5rem; text-transform: uppercase; border-top: 1px solid #f1f5f9; paddingTop: 1.5rem; }
-        
-        .filter-group { display: flex; flex-direction: column; gap: 0.4rem; }
-        .filter-btn { display: flex; align-items: center; gap: 1rem; width: 100%; background: none; border: none; padding: 0.85rem 1rem; border-radius: 12px; cursor: pointer; color: #64748b; font-weight: 600; font-size: 0.95rem; transition: 0.2s; text-align: left; }
-        .filter-btn:hover { background: #f8fafc; color: #1a2a4b; }
-        .filter-btn.active { background: #478AC910; color: #478AC9; font-weight: 800; }
-        .filter-btn i { width: 20px; font-size: 1rem; opacity: 0.7; }
-
-        /* Main Pane */
-        .repo-content-pane { flex: 1; min-width: 0; }
-        .pane-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; border-bottom: 1px solid #f8fafc; padding-bottom: 1.5rem; }
-        .pane-title-row h2 { font-family: var(--font-display); font-size: 2.2rem; font-weight: 900; color: #1a2a4b; margin: 0; }
-        .results-chip { background: #1a2a4b; color: #fff; padding: 0.4rem 1rem; border-radius: 50px; font-size: 0.75rem; font-weight: 800; }
-
-        /* Inventory Cards */
-        .inventory-stack { display: flex; flex-direction: column; gap: 0.8rem; }
-        .inventory-card { background: #fff; border: 1px solid #f1f5f9; border-radius: 16px; padding: 1.25rem 2rem; display: flex; justify-content: space-between; align-items: center; transition: 0.3s; }
-        .inventory-card:hover { border-color: #478AC930; transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.04); }
-        
-        .card-main { display: flex; align-items: center; gap: 2rem; }
-        .card-doc-icon { width: 44px; height: 44px; background: #fff1f2; color: #f43f5e; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 900; border: 1px solid #fee2e2; }
-        
-        .card-text h4 { margin: 0; font-size: 1.2rem; color: #1a2a4b; font-weight: 800; }
-        .card-tags { display: flex; gap: 1rem; margin-top: 0.4rem; align-items: center; }
-        .tag-category { font-size: 0.72rem; font-weight: 800; color: #478AC9; text-transform: uppercase; background: #478AC910; padding: 0.2rem 0.6rem; border-radius: 6px; }
-        .tag-roles { font-size: 0.75rem; color: #94a3b8; font-weight: 500; }
-
-        .card-actions-group { display: flex; gap: 0.75rem; }
-        .btn-action-p { background: #1a2a4b; color: white !important; border: none; padding: 0.75rem 1.5rem; border-radius: 10px; font-weight: 800; font-size: 0.75rem; cursor: pointer; transition: 0.2s; }
-        .btn-action-p:hover { background: #0f172a; box-shadow: 0 4px 15px rgba(26, 42, 75, 0.2); }
-        .btn-action-s { background: #f8fafc; color: #475569 !important; border: 1px solid #e2e8f0; padding: 0.75rem 1.5rem; border-radius: 10px; font-weight: 800; font-size: 0.75rem; text-decoration: none; transition: 0.2s; }
-        .btn-action-s:hover { background: #f1f5f9; }
-
-        .inventory-empty { padding: 5rem; text-align: center; color: #cbd5e1; border: 2px dashed #f1f5f9; border-radius: 20px; }
-      `}</style>
     </div>
   );
 }
