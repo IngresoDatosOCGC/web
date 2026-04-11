@@ -1,9 +1,9 @@
 /* ============================================================
-   OCGC — Members Area Styles
+   OCGC � Members Area Styles
    Style: Clean Dashboard | Corporate + Accessible
    ============================================================ */
 
-/* ── Header Miembros ── */
+/* ?? Header Miembros ?? */
 .header-miembros-v2 {
   background: #fff;
   border-bottom: 2px solid var(--clr-primary);
@@ -85,7 +85,7 @@
   text-transform: uppercase;
 }
 
-/* ── Login Page ── */
+/* ?? Login Page ?? */
 .login-page {
   display: flex;
   align-items: center;
@@ -164,7 +164,7 @@
   box-shadow: var(--shadow-lg);
 }
 
-/* ── Panel / Dashboard ── */
+/* ?? Panel / Dashboard ?? */
 .panel-container {
   display: flex;
   flex-direction: column;
@@ -218,7 +218,7 @@
   gap: var(--sp-6);
 }
 
-/* ── Widgets ── */
+/* ?? Widgets ?? */
 .widget {
   background: var(--clr-surface);
   border-radius: var(--radius-xl);
@@ -276,7 +276,7 @@
 .widget-list li strong { color: var(--clr-primary); font-weight: 600; }
 .widget-list li span { font-size: var(--text-sm); color: var(--clr-text-muted); }
 
-/* ── Repositorio ── */
+/* ?? Repositorio ?? */
 .repositorio-container {
   display: flex;
   min-height: 80vh;
@@ -422,7 +422,7 @@
   font-size: var(--text-lg);
 }
 
-/* ── Dashboard Sections (Tablón) ── */
+/* ?? Dashboard Sections (Tabl�n) ?? */
 .dashboard-content {
   background: var(--clr-surface);
   min-height: 100vh;
@@ -489,7 +489,7 @@
   color: var(--clr-text-muted);
 }
 
-/* ── Agenda ── */
+/* ?? Agenda ?? */
 .agenda-content {
   background: var(--clr-surface);
   min-height: 60vh;
@@ -513,11 +513,11 @@
   color: var(--clr-text-muted);
 }
 
-/* ── Tabs ── */
+/* ?? Tabs ?? */
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
-/* ── Footer Miembros ── */
+/* ?? Footer Miembros ?? */
 .footer-miembros {
   background: var(--clr-navy);
   color: rgba(255,255,255,0.6);
@@ -568,7 +568,7 @@
   margin-inline: auto;
 }
 
-/* ── Utility Buttons ── */
+/* ?? Utility Buttons ?? */
 .btn-logout {
   background: rgba(192,57,43,0.12);
   color: var(--clr-danger);
@@ -587,7 +587,7 @@
   color: #fff;
 }
 
-/* ── Mobile Navigation (Miembros) ── */
+/* ?? Mobile Navigation (Miembros) ?? */
 @media (max-width: 768px) {
   .logo img { height: 38px; }
   
@@ -638,7 +638,7 @@
   .show-mobile-only { display: flex !important; }
 }
 
-/* ── Tablón Specific Styles ── */
+/* ?? Tabl�n Specific Styles ?? */
 .tablon-full-container { width: 100%; }
 .dashboard-grid { display: grid; grid-template-columns: 1fr 340px; gap: 4rem; }
 
@@ -787,7 +787,7 @@ body { background-color: #f7f7f7 !important; min-height: 100vh; padding-top: 0 !
         .btn-save:hover { background: #C8E6C9; }
         .btn-cancel:hover { background: #E0E0E0; }
 
-        /* Estilos para gestiÃ³n de catÃ¡logos */
+        /* Estilos para gestión de catálogos */
         .catalog-scroll-list { display: flex; flex-direction: column; gap: 0.5rem; }
         .catalog-item-row { 
           display: flex; 
@@ -1086,9 +1086,9 @@ body { background-color: #f7f7f7 !important; min-height: 100vh; padding-top: 0 !
         .personal-legend p { margin: 0 0 1rem; font-weight: 600; color: #333; }
         .personal-legend ul { margin: 0; padding-left: 1.5rem; list-style: none; }
         .personal-legend li { margin: 0.5rem 0; font-size: 0.85rem; color: #666; padding-left: 1.5rem; position: relative; }
-        .personal-legend li:before { content: "â†’"; position: absolute; left: 0; }
+        .personal-legend li:before { content: "→"; position: absolute; left: 0; }
 
-        /* Estilos especÃ­ficos para el link secreto */
+        /* Estilos específicos para el link secreto */
         .personal-header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
         .secret-link-box { display: flex; align-items: center; gap: 0.8rem; background: #fff; padding: 0.6rem 1rem; border: 1px dashed #478AC9; border-radius: 8px; }
         .secret-link-box span { font-size: 0.8rem; font-weight: bold; color: #666; }
@@ -1155,7 +1155,7 @@ body { background-color: #f7f7f7 !important; min-height: 100vh; padding-top: 0 !
         .type-btn.active-all { background: #1a2a4b; color: #fff; }
         .type-btn.active-Ensayo { background: #2e86de; color: #fff; }
         .type-btn.active-Concierto { background: #ff4757; color: #fff; }
-        .type-btn.active-ReuniÃ³n { background: #27ae60; color: #fff; }
+        .type-btn.active-Reuni�n { background: #27ae60; color: #fff; }
 
         .agenda-grid { display: grid; grid-template-columns: 1fr 380px; gap: 2rem; align-items: start; }
         @media (max-width: 1024px) { .agenda-grid { grid-template-columns: 1fr; } }
@@ -1208,7 +1208,7 @@ body { background-color: #f7f7f7 !important; min-height: 100vh; padding-top: 0 !
           width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #fff;
         }
 
-/* Utilidades de Botones Peque�os */
+/* Utilidades de Botones Peque�os */
 .btn-success-sm { background: #2ecc71 !important; color: white !important; padding: 0.5rem 0.8rem !important; font-size: 0.75rem !important; }
 .btn-navy-sm { background: #1a2a4b !important; color: white !important; padding: 0.5rem 0.8rem !important; font-size: 0.75rem !important; }
 .btn-outline-navy-sm { background: transparent !important; color: #1a2a4b !important; border: 1px solid #1a2a4b !important; padding: 0.5rem 0.8rem !important; font-size: 0.75rem !important; }
@@ -1233,7 +1233,7 @@ body { background-color: #f7f7f7 !important; min-height: 100vh; padding-top: 0 !
 
 .personal-panel-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: minmax(0, 3fr) minmax(320px, 1fr);
   gap: 2rem;
   align-items: start;
 }
@@ -1302,7 +1302,7 @@ body { background-color: #f7f7f7 !important; min-height: 100vh; padding-top: 0 !
 .section-title-small { font-size: 0.95rem; font-weight: 700; color: #1a2a4b; margin-bottom: 0.8rem; }
 
 
-/* Estilos Profesionales para Cat�logos */
+/* Estilos Profesionales para Cat�logos */
 .btn-icon-edit { background: #f8f9fa; border: 1px solid #e1e8ed; color: #1a2a4b; padding: 4px 8px; border-radius: 6px; cursor: pointer; transition: 0.2s; }
 .btn-icon-edit:hover { background: #1a2a4b; color: white; border-color: #1a2a4b; }
 
@@ -1310,7 +1310,7 @@ body { background-color: #f7f7f7 !important; min-height: 100vh; padding-top: 0 !
 .cat-badge-private { background: #f1f5f9; color: #64748b; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; }
 .cat-badge-director { background: #fef3c7; color: #d97706; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; }
 
-/* Grid de Invitaci�n */
+/* Grid de Invitaci�n */
 .invitation-fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
 @media (max-width: 600px) { .invitation-fields-grid { grid-template-columns: 1fr; } }
 
@@ -1624,7 +1624,8 @@ body { background-color: #f7f7f7 !important; min-height: 100vh; padding-top: 0 !
   .admin-orchestrator-page {
     flex-direction: column !important;
   }
-  .admin-sidebar {
+  /* Con .admin-sidebar-mobile el men� pasa a drawer fijo (gesti�n m�vil) */
+  .admin-sidebar:not(.admin-sidebar-mobile) {
     width: 100%;
     position: static;
   }

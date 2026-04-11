@@ -1,8 +1,9 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { useEffect, useState } from 'react';
-import TabNavigation, { TabType } from '@/components/admin/TabNavigation';
+import { useEffect, useState } from "react";
+import TabNavigation, { TabType } from "@/components/admin/TabNavigation";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import DashboardPanel from '@/components/admin/DashboardPanel';
 import ScoresPanel from '@/components/admin/ScoresPanel';
 import CategoriesPanel from '@/components/admin/CategoriesPanel';
@@ -14,7 +15,6 @@ import CalendarPanel from '@/components/admin/CalendarPanel';
 import LogsPanel from '@/components/admin/LogsPanel';
 import AdminGuideModal from '@/components/admin/AdminGuideModal';
 import { useNotifications } from '@/components/ui/NotificationContext';
-import '@/css/miembros.css';
 
 export default function AdminOCGCPartituras() {
   const { isLoaded, user } = useUser();
@@ -26,6 +26,9 @@ export default function AdminOCGCPartituras() {
   const [activeTab, setActiveTab] = useState<TabType | null>(null);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const [mobileAdminNavOpen, setMobileAdminNavOpen] = useState(false);
+
+  const isMobileAdmin = useMediaQuery("(max-width: 1000px)");
 
   // Data states
   const [scores, setScores] = useState([]);
@@ -105,6 +108,24 @@ export default function AdminOCGCPartituras() {
   };
 
   useEffect(() => {
+    if (!isMobileAdmin) setMobileAdminNavOpen(false);
+  }, [isMobileAdmin]);
+
+  useEffect(() => {
+    if (!isMobileAdmin || !mobileAdminNavOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isMobileAdmin, mobileAdminNavOpen]);
+
+  const selectTab = (tab: TabType) => {
+    setActiveTab(tab);
+    if (isMobileAdmin) setMobileAdminNavOpen(false);
+  };
+
+  useEffect(() => {
     if (isLoaded) {
       if (!user) {
         window.location.href = "/sign-in";
@@ -131,16 +152,30 @@ export default function AdminOCGCPartituras() {
 
   return (
     <div className="admin-orchestrator-page">
-      <TabNavigation 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
-        isMaster={isMaster} 
+      <TabNavigation
+        activeTab={activeTab}
+        setActiveTab={selectTab}
+        isMaster={isMaster}
         isExpanded={isSidebarExpanded}
         onToggle={() => setIsSidebarExpanded(!isSidebarExpanded)}
+        isMobileViewport={isMobileAdmin}
+        mobileDrawerOpen={mobileAdminNavOpen}
+        onMobileDrawerClose={() => setMobileAdminNavOpen(false)}
       />
 
       <main className="admin-main-content">
-        <div className="admin-view-container">
+        {isMobileAdmin && (
+          <button
+            type="button"
+            className="admin-mobile-menu-trigger"
+            onClick={() => setMobileAdminNavOpen(true)}
+            aria-expanded={mobileAdminNavOpen}
+            aria-controls="admin-sidebar-nav"
+          >
+            <span aria-hidden>☰</span> Menú de secciones
+          </button>
+        )}
+        <div className="admin-view-container" id="admin-main-panels">
           {activeTab === 'dashboard' && isMaster && (
             <DashboardPanel members={members} scores={scores} />
           )}

@@ -16,18 +16,17 @@ const GROUPS: Group[] = [
 export default function GroupsGrid() {
   return (
     <section
-      className="section-full bg-light"
+      className="section-full bg-light groups-section"
       aria-labelledby="groups-heading"
-      style={{ paddingBlock: 'var(--sp-20)' }}
     >
-      <div style={{ maxWidth: 'var(--max-w)', marginInline: 'auto', paddingInline: 'var(--sp-8)' }}>
-        <div className="text-center" style={{ marginBottom: 'var(--sp-12)' }}>
+      <div className="groups-grid-inner">
+        <div className="text-center groups-grid-intro">
           <span className="section-eyebrow">La familia OCGC</span>
           <h2 id="groups-heading" className="section-title">Seis voces, un mismo corazón</h2>
           <p className="section-subtitle">Descubre todos los grupos que forman parte de nuestro proyecto musical.</p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--sp-5)' }}>
+        <div className="groups-grid-cards">
           {GROUPS.map(({ name, desc }) => (
             <Link
               key={name}

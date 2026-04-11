@@ -1,6 +1,7 @@
 "use client";
 
 import '@/css/miembros.css';
+import '@/css/miembros-responsive.css';
 
 export default function MiembrosLayout({
   children,

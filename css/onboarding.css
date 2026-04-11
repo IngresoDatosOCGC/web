@@ -194,12 +194,27 @@
   .onboarding-card {
     padding: var(--sp-6) var(--sp-5);
     border-radius: 0;
+    max-width: none;
+  }
+  .onboarding-card h1 {
+    font-size: clamp(1.35rem, 5vw, var(--text-3xl));
   }
   .onboarding-page {
     padding: 0;
+    align-items: flex-start;
   }
   .form-group-row {
     grid-template-columns: 1fr;
     gap: 0;
+  }
+  .form-actions {
+    flex-direction: column;
+    margin-top: var(--sp-8);
+    padding-top: var(--sp-6);
+  }
+  .btn-onboarding-primary,
+  .btn-onboarding-secondary {
+    flex: none;
+    width: 100%;
   }
 }

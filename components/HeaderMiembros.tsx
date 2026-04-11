@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { UserButton, useUser } from "@clerk/nextjs";
 import { usePathname } from 'next/navigation';
-import '@/css/miembros.css';
 
 export default function HeaderMiembros() {
   const { user } = useUser();

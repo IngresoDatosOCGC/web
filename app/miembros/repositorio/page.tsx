@@ -1,30 +1,48 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import RepoFiltersNav from "./RepoFiltersNav";
 
 export default function RepositorioPageClient() {
   const { isLoaded } = useUser();
   const [scores, setScores] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
-  const [activeCategoryId, setActiveCategoryId] = useState<number | 'todas' | 'documentos'>('todas');
+  const [activeCategoryId, setActiveCategoryId] = useState<number | "todas" | "documentos">("todas");
   const [loading, setLoading] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const isMobileRepo = useMediaQuery("(max-width: 900px)");
+
+  useEffect(() => {
+    if (!isMobileRepo) setFiltersOpen(false);
+  }, [isMobileRepo]);
+
+  useEffect(() => {
+    if (!isMobileRepo || !filtersOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isMobileRepo, filtersOpen]);
 
   useEffect(() => {
     if (isLoaded) {
       Promise.all([
-        fetch("/api/scores").then(res => res.json()),
-        fetch("/api/categories").then(res => res.json())
+        fetch("/api/scores").then((res) => res.json()),
+        fetch("/api/categories").then((res) => res.json()),
       ])
-      .then(([scoresData, catsData]) => {
-        setScores(Array.isArray(scoresData) ? scoresData : []);
-        setCategories(Array.isArray(catsData) ? catsData : []);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Error cargando repositorio:", err);
-        setLoading(false);
-      });
+        .then(([scoresData, catsData]) => {
+          setScores(Array.isArray(scoresData) ? scoresData : []);
+          setCategories(Array.isArray(catsData) ? catsData : []);
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error("Error cargando repositorio:", err);
+          setLoading(false);
+        });
     }
   }, [isLoaded]);
 
@@ -33,97 +51,129 @@ export default function RepositorioPageClient() {
       const response = await fetch(url);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = blobUrl;
       link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
-    } catch (err) {
-      window.open(url, '_blank');
+    } catch {
+      window.open(url, "_blank");
     }
   };
 
-  if (!isLoaded || loading) return <div className="p-10 text-center">Cargando archivo...</div>;
+  if (!isLoaded || loading) {
+    return <div className="p-10 text-center">Cargando archivo...</div>;
+  }
 
-  const filteredScores = activeCategoryId === 'documentos' 
-    ? scores.filter(s => s.isDocument)
-    : activeCategoryId === 'todas' 
-      ? scores.filter(s => !s.isDocument)
-      : scores.filter(s => s.categoryId === activeCategoryId && !s.isDocument);
+  const filteredScores =
+    activeCategoryId === "documentos"
+      ? scores.filter((s) => s.isDocument)
+      : activeCategoryId === "todas"
+        ? scores.filter((s) => !s.isDocument)
+        : scores.filter((s) => s.categoryId === activeCategoryId && !s.isDocument);
+
+  const activeCat = categories.find((c) => c.id === activeCategoryId);
 
   return (
     <div className="repositorio-fixed-view">
+      {isMobileRepo && filtersOpen && (
+        <button
+          type="button"
+          className="repo-filters-backdrop"
+          aria-label="Cerrar menú de filtros"
+          onClick={() => setFiltersOpen(false)}
+        />
+      )}
+
+      {isMobileRepo && (
+        <div className="repo-mobile-toolbar">
+          <button
+            type="button"
+            className="repo-filters-toggle-btn"
+            onClick={() => setFiltersOpen((o) => !o)}
+            aria-expanded={filtersOpen}
+            aria-controls="repo-filters-drawer"
+          >
+            <span className="repo-filters-toggle-icon" aria-hidden>
+              ☰
+            </span>
+            Filtros y programas
+          </button>
+        </div>
+      )}
+
       <div className="repo-grid-container">
-        
-        {/* SIDEBAR REHECHO (Vertical y claro) */}
-        <aside className="repo-sidebar-nav">
-          <div className="sidebar-brand">
-            <h4>Archivos</h4>
-          </div>
-          
-          <nav className="filter-group">
-            <button 
-              className={`filter-btn ${activeCategoryId === 'todas' ? 'active' : ''}`}
-              onClick={() => setActiveCategoryId('todas')}
-            >
-              <i className="fa-solid fa-music"></i> Partituras
-            </button>
-            <button 
-              className={`filter-btn ${activeCategoryId === 'documentos' ? 'active' : ''}`}
-              onClick={() => setActiveCategoryId('documentos')}
-            >
-              <i className="fa-solid fa-file-lines"></i> Documentos
-            </button>
-          </nav>
-
-          <div className="sidebar-divider">Programas</div>
-
-          <nav className="filter-group">
-                {categories.map(cat => (
-                  <button 
-                    key={cat.id} 
-                    className={`filter-btn ${activeCategoryId === cat.id ? 'active' : ''}`}
-                    onClick={() => setActiveCategoryId(cat.id)}
-                  >
-                    <i className="fa-solid fa-compact-disc"></i> 
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                       <span>{cat.name}</span>
-                       {cat.eventDate && (
-                         <span style={{ fontSize: '0.65rem', color: '#478AC9', fontWeight: 800 }}>
-                           {new Date(cat.eventDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'UTC' })}
-                         </span>
-                       )}
-                    </div>
-                  </button>
-                ))}
-             </nav>
+        {!isMobileRepo && (
+          <aside className="repo-sidebar-nav" aria-label="Filtros del repositorio">
+            <RepoFiltersNav
+              activeCategoryId={activeCategoryId}
+              onSelect={setActiveCategoryId}
+              categories={categories}
+            />
           </aside>
+        )}
 
-          {/* CONTENIDO PRINCIPAL */}
-          <main className="repo-content-pane">
-            <div className="pane-title-row">
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <h2>
-                  {activeCategoryId === 'todas' ? 'Partituras' 
-                    : activeCategoryId === 'documentos' ? 'Documentación' 
-                    : categories.find(c => c.id === activeCategoryId)?.name}
-                </h2>
-                {activeCategoryId !== 'todas' && activeCategoryId !== 'documentos' && (
-                  <p style={{ color: '#478AC9', fontWeight: 800, margin: 0 }}>
-                    CONCIERTO: {new Date(categories.find(c => c.id === activeCategoryId)?.eventDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })}
-                  </p>
-                )}
-              </div>
-              <span className="results-chip">{filteredScores.length} Archivos</span>
+        {isMobileRepo && (
+          <aside
+            id="repo-filters-drawer"
+            className={`repo-filters-drawer ${filtersOpen ? "is-open" : ""}`}
+            aria-hidden={!filtersOpen}
+          >
+            <div className="repo-filters-drawer-head">
+              <h4 className="repo-filters-drawer-title">Archivos</h4>
+              <button
+                type="button"
+                className="repo-filters-drawer-close"
+                onClick={() => setFiltersOpen(false)}
+                aria-label="Cerrar"
+              >
+                ✕
+              </button>
             </div>
+            <div className="repo-filters-drawer-body">
+              <RepoFiltersNav
+                activeCategoryId={activeCategoryId}
+                onSelect={setActiveCategoryId}
+                categories={categories}
+                onAfterSelect={() => setFiltersOpen(false)}
+                showBrand={false}
+              />
+            </div>
+          </aside>
+        )}
+
+        <main className="repo-content-pane">
+          <div className="pane-title-row">
+            <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+              <h2>
+                {activeCategoryId === "todas"
+                  ? "Partituras"
+                  : activeCategoryId === "documentos"
+                    ? "Documentación"
+                    : activeCat?.name}
+              </h2>
+              {activeCategoryId !== "todas" && activeCategoryId !== "documentos" && activeCat?.eventDate && (
+                <p style={{ color: "#478AC9", fontWeight: 800, margin: 0 }}>
+                  CONCIERTO:{" "}
+                  {new Date(activeCat.eventDate).toLocaleDateString("es-ES", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                    timeZone: "UTC",
+                  })}
+                </p>
+              )}
+            </div>
+            <span className="results-chip">{filteredScores.length} Archivos</span>
+          </div>
 
           <div className="inventory-stack">
             {filteredScores.length === 0 ? (
               <div className="inventory-empty">No hay archivos en esta categoría.</div>
             ) : (
-              filteredScores.map(score => (
+              filteredScores.map((score) => (
                 <div key={score.id} className="inventory-card">
                   <div className="card-main">
                     <div className="card-doc-icon">PDF</div>
@@ -131,13 +181,28 @@ export default function RepositorioPageClient() {
                       <h4>{score.title}</h4>
                       <div className="card-tags">
                         <span className="tag-category">{score.category?.name || "REPERTORIO"}</span>
-                        {score.allowedRoles?.length > 0 && <span className="tag-roles">{score.allowedRoles.join(" • ")}</span>}
+                        {score.allowedRoles?.length > 0 && (
+                          <span className="tag-roles">{score.allowedRoles.join(" • ")}</span>
+                        )}
                       </div>
                     </div>
                   </div>
                   <div className="card-actions-group">
-                    <a href={score.fileUrl} target="_blank" rel="noopener noreferrer" className="btn-action-s">ABRIR</a>
-                    <button onClick={() => forceDownload(score.fileUrl, `${score.title}.pdf`)} className="btn-action-p">BAJAR</button>
+                    <a
+                      href={score.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-action-s"
+                    >
+                      ABRIR
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => forceDownload(score.fileUrl, `${score.title}.pdf`)}
+                      className="btn-action-p"
+                    >
+                      BAJAR
+                    </button>
                   </div>
                 </div>
               ))
@@ -145,7 +210,6 @@ export default function RepositorioPageClient() {
           </div>
         </main>
       </div>
-
     </div>
   );
 }
