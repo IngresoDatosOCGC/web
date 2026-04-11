@@ -62,11 +62,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           left: 50%;
           transform: translateX(-50%);
           z-index: 10000;
-          background: #1a1a1a;
-          color: white;
+          background: var(--clr-text);
+          color: var(--clr-bg);
           padding: 0.8rem 1.4rem;
           border-radius: 12px;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+          box-shadow: var(--shadow-lg);
           min-width: 300px;
           overflow: hidden;
           animation: slideInDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -75,9 +75,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         .toast-icon { font-size: 1.2rem; }
         .toast-message { font-size: 0.9rem; font-weight: 500; }
         
-        .global-toast.success { border-left: 5px solid #00b894; }
-        .global-toast.error { border-left: 5px solid #ff7675; }
-        .global-toast.info { border-left: 5px solid #74b9ff; }
+        .global-toast.success { border-left: 5px solid var(--clr-success); }
+        .global-toast.error { border-left: 5px solid var(--clr-danger); }
+        .global-toast.info { border-left: 5px solid var(--clr-primary); }
 
         .toast-progress {
           position: absolute;
@@ -101,16 +101,16 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           animation: fadeIn 0.3s ease;
         }
         .confirm-modal-card {
-          background: white;
+          background: var(--clr-surface);
           padding: 2rem;
           border-radius: 20px;
           width: 90%;
           max-width: 400px;
-          box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+          box-shadow: var(--shadow-xl);
           text-align: center;
         }
-        .confirm-modal-card h3 { color: #0d1b2a; margin-bottom: 1rem; }
-        .confirm-modal-card p { color: #555; margin-bottom: 2rem; line-height: 1.5; }
+        .confirm-modal-card h3 { color: var(--clr-text); margin-bottom: 1rem; }
+        .confirm-modal-card p { color: var(--clr-text-muted); margin-bottom: 2rem; line-height: 1.5; }
         .confirm-modal-actions { display: flex; gap: 1rem; }
         
         .btn-cancel, .btn-confirm {
@@ -122,9 +122,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           font-weight: bold;
           transition: 0.2s;
         }
-        .btn-cancel { background: #f0f0f0; color: #666; }
-        .btn-confirm { background: #0d1b2a; color: white; }
-        .btn-confirm:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(13,27,42,0.3); }
+        .btn-cancel { background: var(--clr-border); color: var(--clr-text-muted); }
+        .btn-confirm { background: var(--clr-navy-mid); color: var(--clr-bg); }
+        .btn-confirm:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 
         @keyframes slideInDown {
           from { transform: translate(-50%, -100%); opacity: 0; }

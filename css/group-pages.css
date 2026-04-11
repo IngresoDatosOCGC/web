@@ -7,16 +7,16 @@
 }
 
 .member-section h3 {
-    color: var(--primary-color);
+    color: var(--clr-primary);
     margin-bottom: 0.5rem;
-    border-bottom: 2px solid var(--border-color);
+    border-bottom: 2px solid var(--clr-border);
     padding-bottom: 0.5rem;
 }
 
 .member-section ul {
     list-style: none;
     padding-left: 0;
-    color: #555;
+    color: var(--clr-text-muted);
     line-height: 1.8;
 }
 
@@ -58,7 +58,7 @@
 
 .centered-content p {
     margin-top: 1.5rem; 
-    color: #555; 
+    color: var(--clr-text-muted); 
     font-size: 1.1rem;
 }
 

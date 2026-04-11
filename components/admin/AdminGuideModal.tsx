@@ -98,33 +98,33 @@ export default function AdminGuideModal({ activeTab, onClose }: { activeTab: str
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '1rem' }} onClick={onClose}>
       <div 
         style={{ 
-          background: 'white', 
+          background: 'var(--clr-surface)', 
           maxWidth: '500px', 
           width: '100%', 
           borderRadius: '20px', 
           padding: '2.5rem', 
-          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', 
+          boxShadow: 'var(--shadow-xl)', 
           position: 'relative',
           fontFamily: "'Montserrat Alternates', sans-serif"
         }} 
         onClick={e => e.stopPropagation()}
       >
-        <button onClick={onClose} style={{ position: 'absolute', top: '1.2rem', right: '1.2rem', background: '#f8f9fa', border: 'none', width: '32px', height: '32px', borderRadius: '50%', fontSize: '1rem', cursor: 'pointer', color: '#666', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+        <button onClick={onClose} style={{ position: 'absolute', top: '1.2rem', right: '1.2rem', background: 'var(--clr-border)', border: 'none', width: '32px', height: '32px', borderRadius: '50%', fontSize: '1rem', cursor: 'pointer', color: 'var(--clr-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
         
-        <header style={{ marginBottom: '2rem', borderBottom: '2px solid #478AC920', paddingBottom: '1rem' }}>
+        <header style={{ marginBottom: '2rem', borderBottom: '2px solid var(--clr-border)', paddingBottom: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
             <span style={{ fontSize: '2rem' }}>{help.title.split(' ')[0]}</span>
-            <h2 style={{ margin: 0, color: '#1a2a4b', fontSize: '1.3rem', fontWeight: 800 }}>{help.title.substring(help.title.indexOf(' ') + 1)}</h2>
+            <h2 style={{ margin: 0, color: 'var(--clr-text)', fontSize: '1.3rem', fontWeight: 800 }}>{help.title.substring(help.title.indexOf(' ') + 1)}</h2>
           </div>
-          <p style={{ color: '#478AC9', margin: 0, fontSize: '0.85rem', fontWeight: 600, letterSpacing: '0.05rem' }}>GUÍA DE GESTIÓN OCGC</p>
+          <p style={{ color: 'var(--clr-primary)', margin: 0, fontSize: '0.85rem', fontWeight: 600, letterSpacing: '0.05rem' }}>GUÍA DE GESTIÓN OCGC</p>
         </header>
 
         <section style={{ paddingBottom: '1rem' }}>
           <ul style={{ padding: 0, listStyle: 'none', margin: 0, display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
             {help.steps.map((step, idx) => (
               <li key={idx} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                <span style={{ minWidth: '24px', height: '24px', background: '#478AC9', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 'bold', marginTop: '2px' }}>{idx + 1}</span>
-                <span style={{ color: '#444', lineHeight: '1.5', fontSize: '0.9rem' }}>{step}</span>
+                <span style={{ minWidth: '24px', height: '24px', background: 'var(--clr-primary)', color: 'var(--clr-bg)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 'bold', marginTop: '2px' }}>{idx + 1}</span>
+                <span style={{ color: 'var(--clr-text)', lineHeight: '1.5', fontSize: '0.9rem' }}>{step}</span>
               </li>
             ))}
           </ul>

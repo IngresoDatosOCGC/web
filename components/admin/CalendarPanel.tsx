@@ -157,14 +157,14 @@ export default function CalendarPanel() {
   };
 
   return (
-    <div className="calendar-panel" style={{ padding: '2rem', background: '#fff', borderRadius: '12px' }}>
+    <div className="calendar-panel" style={{ padding: '2rem', background: 'var(--clr-surface)', borderRadius: '12px' }}>
       <h2 style={{ marginBottom: '2rem', fontSize: '1.5rem', fontWeight: 'bold' }}>📅 Calendario de Eventos</h2>
       
       <div className="admin-content-grid-local">
         {/* ── Formulario creación ── */}
         <div className="panel-section-card creation-section">
           <form onSubmit={createEvent} className="premium-event-form">
-            <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem', color: '#2c3e50', borderBottom: '2px solid #f0f0f0', paddingBottom: '0.8rem' }}>
+            <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem', color: 'var(--clr-text)', borderBottom: '2px solid var(--clr-border)', paddingBottom: '0.8rem' }}>
               🗓️ Programar Nuevo Evento
             </h3>
             <div className="form-grid-layout">
@@ -210,20 +210,20 @@ export default function CalendarPanel() {
           </form>
 
           {/* ── Importación ── */}
-          <div style={{ marginTop: '2rem', padding: '1.5rem', border: '2px dashed #dfe4ea', borderRadius: '12px', background: '#fafbfc' }}>
-            <h4 style={{ margin: '0 0 0.5rem', color: '#2c3e50', fontSize: '0.95rem' }}>📥 Importar Calendario</h4>
-            <p style={{ margin: '0 0 1rem', fontSize: '0.8rem', color: '#888' }}>
+          <div style={{ marginTop: '2rem', padding: '1.5rem', border: '2px dashed var(--clr-border)', borderRadius: '12px', background: 'var(--clr-bg)' }}>
+            <h4 style={{ margin: '0 0 0.5rem', color: 'var(--clr-text)', fontSize: '0.95rem' }}>📥 Importar Calendario</h4>
+            <p style={{ margin: '0 0 1rem', fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>
               Acepta archivos <strong>.ics</strong> o <strong>.csv</strong> con columnas: <code>title, date (DD/MM/AAAA), time (HH:MM), type, location, description, program</code>
             </p>
             <input
               ref={fileRef}
               type="file" accept=".ics,.csv"
               onChange={handleFileImport}
-              style={{ fontSize: '0.85rem', padding: '0.5rem', borderRadius: '8px', border: '1px solid #ddd', background: '#fff', width: '100%', cursor: 'pointer', boxSizing: 'border-box' }}
+              style={{ fontSize: '0.85rem', padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--clr-border)', background: 'var(--clr-surface)', width: '100%', cursor: 'pointer', boxSizing: 'border-box' }}
               aria-label="Importar archivo de calendario"
             />
             {importStatus && (
-              <p style={{ margin: '0.7rem 0 0', fontSize: '0.85rem', fontWeight: 600, color: importStatus.startsWith('✅') ? '#27ae60' : importStatus.startsWith('❌') ? '#e74c3c' : '#888' }}>
+              <p style={{ margin: '0.7rem 0 0', fontSize: '0.85rem', fontWeight: 600, color: importStatus.startsWith('✅') ? 'var(--clr-success)' : importStatus.startsWith('❌') ? 'var(--clr-danger)' : 'var(--clr-text-muted)' }}>
                 {importStatus}
               </p>
             )}
@@ -232,12 +232,12 @@ export default function CalendarPanel() {
 
         {/* ── Lista de eventos ── */}
         <div className="panel-section-card list-section">
-          <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem', color: '#2c3e50' }}>Próximas Citas ({events.length})</h3>
+          <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem', color: 'var(--clr-text)' }}>Próximas Citas ({events.length})</h3>
           <div className="events-scroll-container">
             {events.length === 0 ? (
               <div className="empty-state"><p>No hay eventos programados.</p></div>
             ) : events.map(ev => (
-              <div key={ev.id} className="event-card-premium" style={{ borderLeft: `6px solid ${ev.type === 'Concierto' ? '#ff4757' : (ev.type === 'Ensayo' ? '#2e86de' : '#27ae60')}` }}>
+              <div key={ev.id} className="event-card-premium" style={{ borderLeft: `6px solid ${ev.type === 'Concierto' ? 'var(--clr-danger)' : (ev.type === 'Ensayo' ? 'var(--clr-primary)' : 'var(--clr-success)')}` }}>
                 <div className="event-info">
                   <div className="event-top-line">
                     <span className={`badge-type ${ev.type.toLowerCase()}`}>{ev.type}</span>
@@ -247,7 +247,7 @@ export default function CalendarPanel() {
                     <span className="ev-detail">🕒 {new Date(ev.date).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })}</span>
                     <span className="ev-detail">📅 {new Date(ev.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}</span>
                     {ev.location && <span className="ev-detail">📍 {ev.location}</span>}
-                    {ev.category && <span className="ev-detail" style={{ color: '#478AC9' }}>📂 {ev.category.name}</span>}
+                    {ev.category && <span className="ev-detail" style={{ color: 'var(--clr-primary)' }}>📂 {ev.category.name}</span>}
                   </div>
                 </div>
                 <div className="event-actions-stack">
@@ -265,7 +265,7 @@ export default function CalendarPanel() {
         <div className="local-modal-overlay">
           <div className="local-modal-card">
             <div className="modal-header-premium">
-              <div><h3 style={{ margin: 0 }}>Editar Evento</h3><p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#666' }}>ID: #{editingEvent.id}</p></div>
+              <div><h3 style={{ margin: 0 }}>Editar Evento</h3><p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>ID: #{editingEvent.id}</p></div>
               <button onClick={() => setEditingEvent(null)} className="btn-close-modal-p">✕</button>
             </div>
             <div className="modal-body-p">

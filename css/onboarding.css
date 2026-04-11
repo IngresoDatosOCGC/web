@@ -118,15 +118,15 @@
 }
 
 .alert-success {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+  background: rgba(39, 174, 96, 0.15);
+  color: var(--clr-success);
+  border: 1px solid var(--clr-success);
 }
 
 .alert-error {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+  background: rgba(231, 76, 60, 0.15);
+  color: var(--clr-danger);
+  border: 1px solid var(--clr-danger);
 }
 
 .password-requirements {
@@ -155,7 +155,7 @@
   flex: 2;
   padding: var(--sp-4);
   background: var(--clr-primary);
-  color: #fff;
+  color: var(--clr-bg);
   border: none;
   border-radius: var(--radius-lg);
   font-weight: 700;
@@ -177,7 +177,7 @@
   flex: 1;
   padding: var(--sp-4);
   background: var(--clr-light);
-  color: var(--clr-navy-mid);
+  color: var(--clr-text);
   border: 1px solid var(--clr-border);
   border-radius: var(--radius-lg);
   font-weight: 600;

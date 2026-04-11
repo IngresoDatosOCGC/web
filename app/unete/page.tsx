@@ -122,7 +122,7 @@ export default function UnetePage() {
       color: 'var(--clr-primary)',
       icon: <IconViolin />,
       formExtra: (
-        <select name="instrument" required className="form-control" style={{ background: '#fff' }} defaultValue="">
+        <select name="instrument" required className="form-control" style={{ background: 'var(--clr-surface)' }} defaultValue="">
           <option value="" disabled>Instrumento *</option>
           <optgroup label="Cuerdas">
             <option>Violín</option>
@@ -158,7 +158,7 @@ export default function UnetePage() {
       color: '#8e44ad',
       icon: <IconMic />,
       formExtra: (
-        <select name="instrument" required className="form-control" style={{ background: '#fff' }} defaultValue="">
+        <select name="instrument" required className="form-control" style={{ background: 'var(--clr-surface)' }} defaultValue="">
           <option value="" disabled>Tipo de voz *</option>
           <option>Soprano</option>
           <option>Alto / Contralto</option>
@@ -175,7 +175,7 @@ export default function UnetePage() {
       color: '#1a2a4b',
       icon: <IconSax />,
       formExtra: (
-        <select name="instrument" required className="form-control" style={{ background: '#fff' }} defaultValue="">
+        <select name="instrument" required className="form-control" style={{ background: 'var(--clr-surface)' }} defaultValue="">
           <option value="" disabled>Instrumento *</option>
           <option>Saxofón Alto</option>
           <option>Saxofón Tenor</option>
@@ -196,7 +196,7 @@ export default function UnetePage() {
       color: '#16a085',
       icon: <IconWind />,
       formExtra: (
-        <select name="instrument" required className="form-control" style={{ background: '#fff' }} defaultValue="">
+        <select name="instrument" required className="form-control" style={{ background: 'var(--clr-surface)' }} defaultValue="">
           <option value="" disabled>Instrumento *</option>
           <option>Flauta Travesera</option>
           <option>Flautín (Piccolo)</option>
@@ -212,7 +212,7 @@ export default function UnetePage() {
       color: '#d35400',
       icon: <IconDrum />,
       formExtra: (
-        <select name="instrument" required className="form-control" style={{ background: '#fff' }} defaultValue="">
+        <select name="instrument" required className="form-control" style={{ background: 'var(--clr-surface)' }} defaultValue="">
           <option value="" disabled>Instrumento *</option>
           <option>Trompeta</option>
           <option>Trompa</option>
@@ -229,7 +229,7 @@ export default function UnetePage() {
       color: '#c0392b',
       icon: <IconCello />,
       formExtra: (
-        <input name="instrument" type="text" value="Violonchelo" readOnly className="form-control" style={{ background: '#f8f9fa' }} />
+        <input name="instrument" type="text" value="Violonchelo" readOnly className="form-control" style={{ background: 'var(--clr-bg)' }} />
       ),
     },
     
@@ -392,7 +392,7 @@ export default function UnetePage() {
                       <div>
                         <label htmlFor="fi-tel" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, marginBottom: 'var(--sp-2)', color: 'var(--clr-navy-mid)' }}>Teléfono *</label>
                         <div style={{ display: 'flex', gap: '2px' }}>
-                          <select name="phone_prefix" className="form-control" style={{ width: '90px', paddingInline: '0.4rem', borderRadius: '8px 0 0 8px', borderRight: 'none', background: '#f8f9fa', fontSize: '13px' }}>
+                          <select name="phone_prefix" className="form-control" style={{ width: '90px', paddingInline: '0.4rem', borderRadius: '8px 0 0 8px', borderRight: 'none', background: 'var(--clr-bg)', fontSize: '13px' }}>
                             <option value="+34">🇪🇸 +34</option>
                             <option value="+44">🇬🇧 +44</option>
                             <option value="+49">🇩🇪 +49</option>

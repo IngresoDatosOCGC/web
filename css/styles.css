@@ -317,7 +317,7 @@ nav {
 
 .btn-primary {
   background: var(--clr-navy-mid);
-  color: #fff;
+  color: var(--clr-bg);
   border-color: var(--clr-navy-mid);
 }
 
@@ -343,13 +343,14 @@ nav {
 
 .btn-outline {
   background: transparent;
-  color: var(--clr-navy);
-  border-color: var(--clr-navy);
+  color: var(--clr-text);
+  border-color: var(--clr-border);
 }
 
 .btn-outline:hover {
   background: var(--clr-navy);
-  color: #fff;
+  color: var(--clr-bg);
+  border-color: var(--clr-navy);
 }
 
 .btn-outline-white {
@@ -384,7 +385,7 @@ nav {
 /* Ticket button */
 .btn-tickets {
   background: var(--clr-primary);
-  color: #fff;
+  color: var(--clr-bg);
   padding: var(--sp-2) var(--sp-5);
   border-radius: var(--radius-full);
   font-size: var(--text-xs);
@@ -668,7 +669,7 @@ nav {
 .bg-white { background: var(--clr-surface); }
 .bg-light { background: var(--clr-bg); }
 .bg-alt   { background: var(--clr-bg-alt); }
-.bg-navy  { background: var(--clr-navy); color: #fff; }
+.bg-navy  { background: var(--clr-navy); color: var(--clr-bg); }
 .bg-primary-lt { background: var(--clr-primary-lt); }
 
 /* ── Cards ── */

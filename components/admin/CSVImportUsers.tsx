@@ -90,28 +90,28 @@ export default function CSVImportUsers({ onImportSuccess }: { onImportSuccess: (
   };
 
   return (
-    <div style={{ background: '#fff9f9', padding: '1.5rem', borderRadius: '12px', border: '1px dashed #e74c3c' }}>
-      <h3 style={{ margin: '0 0 1rem', color: '#c0392b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+    <div style={{ background: 'rgba(231,76,60,0.05)', padding: '1.5rem', borderRadius: '12px', border: '1px dashed var(--clr-danger)' }}>
+      <h3 style={{ margin: '0 0 1rem', color: 'var(--clr-danger)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <span style={{ fontSize: '1.4rem' }}>👥</span> Importar Miembros por CSV
       </h3>
       
-      <div style={{ background: '#fff', padding: '1rem', borderRadius: '8px', border: '1px solid #ffcdd2', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
-        <p style={{ margin: '0 0 0.8rem', fontWeight: 'bold', color: '#d32f2f' }}>📌 Estructura del archivo necesaria:</p>
-        <ul style={{ margin: '0', paddingLeft: '1.2rem', color: '#555', lineHeight: '1.5' }}>
+      <div style={{ background: 'var(--clr-surface)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--clr-danger)', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
+        <p style={{ margin: '0 0 0.8rem', fontWeight: 'bold', color: 'var(--clr-danger)' }}>📌 Estructura del archivo necesaria:</p>
+        <ul style={{ margin: '0', paddingLeft: '1.2rem', color: 'var(--clr-text-muted)', lineHeight: '1.5' }}>
           <li><strong>Identificación:</strong> <code>nombre, apellidos, dni</code> (Obligatorios)</li>
           <li><strong>Acceso:</strong> <code>email</code> (Necesario para que el usuario pueda entrar).</li>
           <li><strong>Perfil Artístico:</strong> <code>agrupacion, seccion, papel</code> (ej: Orquesta / Violín / Músico).</li>
           <li><strong>Otros:</strong> <code>matricula_coche, es_master, es_archivero, es_external</code>.</li>
         </ul>
-        <div style={{ marginTop: '0.8rem', padding: '0.5rem', background: '#f8f9fa', borderRadius: '4px', borderLeft: '3px solid #e74c3c' }}>
+        <div style={{ marginTop: '0.8rem', padding: '0.5rem', background: 'var(--clr-bg-alt)', borderRadius: '4px', borderLeft: '3px solid var(--clr-danger)', color: 'var(--clr-text)' }}>
           <strong>Ejemplo:</strong> Juan,Perez,12345678X,juan@ocgc.com,Orquesta,Viola,Músico
         </div>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
         <label style={{ 
-          background: '#e74c3c', 
-          color: 'white', 
+          background: 'var(--clr-danger)', 
+          color: 'var(--clr-bg)', 
           padding: '0.6rem 1.2rem', 
           borderRadius: '6px', 
           cursor: loading ? 'not-allowed' : 'pointer',
@@ -130,9 +130,9 @@ export default function CSVImportUsers({ onImportSuccess }: { onImportSuccess: (
             style={{ display: 'none' }}
           />
         </label>
-        {loading && <span style={{ color: '#e74c3c', fontWeight: 'bold', fontSize: '0.9rem' }}>⚙️ Importando datos y sincronizando Clerk...</span>}
+        {loading && <span style={{ color: 'var(--clr-danger)', fontWeight: 'bold', fontSize: '0.9rem' }}>⚙️ Importando datos y sincronizando Clerk...</span>}
       </div>
-      {errorInfo && <p style={{ color: '#e74c3c', fontSize: '0.85rem', marginTop: '1rem', background: '#fff', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ffcdd2' }}>{errorInfo}</p>}
+      {errorInfo && <p style={{ color: 'var(--clr-danger)', fontSize: '0.85rem', marginTop: '1rem', background: 'var(--clr-surface)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--clr-danger)' }}>{errorInfo}</p>}
     </div>
   );
 }

@@ -85,18 +85,18 @@ export default function CSVImportScores({ categories, onImportSuccess }: { categ
   };
 
   return (
-    <div style={{ background: '#f0f7ff', padding: '2.5rem', borderRadius: '16px', border: '2px solid #b3d7ff', marginTop: '2.5rem', boxShadow: '0 4px 15px rgba(0,112,243,0.05)' }}>
-      <h3 style={{ margin: '0 0 1.5rem', color: '#0070f3', fontSize: '1.4rem', fontWeight: 800 }}>📂 Guía de Importación Masiva</h3>
+    <div style={{ background: 'var(--clr-bg)', padding: '2.5rem', borderRadius: '16px', border: '2px solid var(--clr-primary-lt)', marginTop: '2.5rem', boxShadow: 'var(--shadow-sm)' }}>
+      <h3 style={{ margin: '0 0 1.5rem', color: 'var(--clr-primary)', fontSize: '1.4rem', fontWeight: 800 }}>📂 Guía de Importación Masiva</h3>
       
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem', background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e1f0ff' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem', background: 'var(--clr-surface)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--clr-primary-lt)' }}>
         <div>
-          <h4 style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: '#333', fontWeight: 800 }}>Paso 1: Tu Carpeta de PDFs</h4>
-          <p style={{ fontSize: '0.85rem', color: '#666', lineHeight: '1.5' }}>Pon todos tus archivos `.pdf` en una carpeta. Los nombres deben ser simples (ej: `Sinfonia9_Viola.pdf`).</p>
+          <h4 style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: 'var(--clr-text)', fontWeight: 800 }}>Paso 1: Tu Carpeta de PDFs</h4>
+          <p style={{ fontSize: '0.85rem', color: 'var(--clr-text-muted)', lineHeight: '1.5' }}>Pon todos tus archivos `.pdf` en una carpeta. Los nombres deben ser simples (ej: `Sinfonia9_Viola.pdf`).</p>
         </div>
         <div>
-          <h4 style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: '#333', fontWeight: 800 }}>Paso 2: Tu archivo CSV</h4>
-          <p style={{ fontSize: '0.85rem', color: '#666', lineHeight: '1.5' }}>Crea un Excel con estas columnas y gúardalo como CSV. <strong>Para varios instrumentos, sepáralos por comas:</strong></p>
-          <code style={{ display: 'block', background: '#f8f9fa', padding: '0.5rem', borderRadius: '4px', fontSize: '0.75rem', marginTop: '0.5rem', border: '1px solid #eee' }}>
+          <h4 style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: 'var(--clr-text)', fontWeight: 800 }}>Paso 2: Tu archivo CSV</h4>
+          <p style={{ fontSize: '0.85rem', color: 'var(--clr-text-muted)', lineHeight: '1.5' }}>Crea un Excel con estas columnas y gúardalo como CSV. <strong>Para varios instrumentos, sepáralos por comas:</strong></p>
+          <code style={{ display: 'block', background: 'var(--clr-bg-alt)', padding: '0.5rem', borderRadius: '4px', fontSize: '0.75rem', marginTop: '0.5rem', border: '1px solid var(--clr-border)', color: 'var(--clr-text)' }}>
             titulo, nombre_programa, archivo_pdf, instrumentos, es_documento<br/>
             Sinfonía 9, Temporada 2024, S9_Viento.pdf, "Flauta, Oboe, Fagot", false
           </code>
@@ -104,19 +104,19 @@ export default function CSVImportScores({ categories, onImportSuccess }: { categ
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
-        <div style={{ background: 'rgba(255,255,255,0.5)', padding: '1.2rem', borderRadius: '10px', border: '1px dashed #0070f3' }}>
-          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.8rem', color: '#1a2a4b' }}>1️⃣ Seleccionar el CSV de Datos</label>
+        <div style={{ background: 'transparent', padding: '1.2rem', borderRadius: '10px', border: '1px dashed var(--clr-primary)' }}>
+          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.8rem', color: 'var(--clr-navy-mid)' }}>1️⃣ Seleccionar el CSV de Datos</label>
           <input type="file" accept=".csv" onChange={handleCSVSelect} disabled={loading} style={{ fontSize: '0.85rem', width: '100%' }} />
         </div>
         
-        <div style={{ background: 'rgba(255,255,255,0.5)', padding: '1.2rem', borderRadius: '10px', border: '1px dashed #0070f3' }}>
-          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.8rem', color: '#1a2a4b' }}>2️⃣ Seleccionar TODOS los PDFs</label>
+        <div style={{ background: 'transparent', padding: '1.2rem', borderRadius: '10px', border: '1px dashed var(--clr-primary)' }}>
+          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.8rem', color: 'var(--clr-navy-mid)' }}>2️⃣ Seleccionar TODOS los PDFs</label>
           <input type="file" accept=".pdf" multiple onChange={(e) => setSelectedFiles(e.target.files)} disabled={loading} style={{ fontSize: '0.85rem', width: '100%' }} />
         </div>
       </div>
 
       {csvData.length > 0 && selectedFiles && (
-        <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#e1f5fe', borderRadius: '10px', fontSize: '0.9rem', display: 'flex', justifyContent: 'center', gap: '2rem', border: '1px solid #b3e5fc', color: '#01579b' }}>
+        <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'var(--clr-primary-lt)', borderRadius: '10px', fontSize: '0.9rem', display: 'flex', justifyContent: 'center', gap: '2rem', border: '1px solid var(--clr-primary)', color: 'var(--clr-text)' }}>
           <span>📊 Filas CSV: <strong>{csvData.length}</strong></span>
           <span>📄 Archivos PDF: <strong>{selectedFiles.length}</strong></span>
         </div>
@@ -128,21 +128,21 @@ export default function CSVImportScores({ categories, onImportSuccess }: { categ
         style={{ 
           width: '100%', 
           padding: '1.2rem', 
-          background: loading ? '#ccc' : '#478AC9', 
-          color: 'white', 
+          background: loading ? 'var(--clr-text-muted)' : 'var(--clr-primary)', 
+          color: 'var(--clr-bg)', 
           border: 'none', 
           borderRadius: '30px', 
           cursor: loading ? 'not-allowed' : 'pointer', 
           fontWeight: '800', 
           fontSize: '1rem',
-          boxShadow: '0 4px 15px rgba(71, 138, 201, 0.3)',
+          boxShadow: 'var(--shadow-sm)',
           transition: 'all 0.3s'
         }}
       >
         {loading ? "⚙️ PROCESANDO CARGA MASIVA..." : "🚀 INICIAR SUBIDA DE ARCHIVOS"}
       </button>
 
-      {errorInfo && <p style={{ color: '#e74c3c', background: '#fff0f0', padding: '1rem', borderRadius: '8px', border: '1px solid #ffcdd2', fontSize: '0.85rem', marginTop: '1.5rem' }}>{errorInfo}</p>}
+      {errorInfo && <p style={{ color: 'var(--clr-danger)', background: 'rgba(231,76,60,0.1)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--clr-danger)', fontSize: '0.85rem', marginTop: '1.5rem' }}>{errorInfo}</p>}
     </div>
   );
 }
