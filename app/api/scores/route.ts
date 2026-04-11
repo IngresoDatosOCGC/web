@@ -1,86 +1,62 @@
 import { NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
+import { buildVisibleScoresWhereInput } from "@/lib/score-visibility";
+
+const scoreListArgs = {
+  include: { category: true as const },
+  orderBy: { createdAt: "desc" as const },
+};
 
 export async function GET() {
   const { userId } = await auth();
   const user = await currentUser();
-  
+
   if (!userId) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  // Obtenemos los roles/instrumentos del usuario desde su Metadata de Clerk
-  const userRoles = (user?.publicMetadata?.roles as string[]) || [];
   const isMaster = !!user?.publicMetadata?.isMaster;
   const isArchiver = !!user?.publicMetadata?.isArchiver;
 
   try {
-    // Si eres Master o Archivero, ves TODO
     if (isMaster || isArchiver) {
-      const allScores = await prisma.score.findMany({
-        include: { category: true },
-        orderBy: { createdAt: 'desc' }
-      });
+      const allScores = await prisma.score.findMany(scoreListArgs);
       return NextResponse.json(allScores);
     }
 
-    // Obtenemos las estructuras reales de la DB para la validación de pares estricta
-    const dbUser = await prisma.user.findUnique({
-      where: { clerkUserId: userId },
-      include: {
-        estructuras: {
-          where: { activo: true },
-          include: { seccion: true, agrupacion: true }
-        }
-      }
-    });
-
-    const userStructures = dbUser?.estructuras || [];
-    const clerkRoles = (user?.publicMetadata?.roles as string[]) || [];
-
-    // Traemos las partituras y el catálogo de secciones para diferenciar etiquetas
-    const [allScores, seccionesDB] = await Promise.all([
-      prisma.score.findMany({
-        include: { category: true },
-        orderBy: { createdAt: 'desc' }
+    const [dbUser, seccionesDB] = await Promise.all([
+      prisma.user.findUnique({
+        where: { clerkUserId: userId },
+        include: {
+          estructuras: {
+            where: { activo: true },
+            include: { seccion: true, agrupacion: true },
+          },
+        },
       }),
-      prisma.seccion.findMany({ select: { seccion: true } })
+      prisma.seccion.findMany({ select: { seccion: true } }),
     ]);
 
-    const predefinedSecciones = seccionesDB.map(s => s.seccion);
+    const userStructures =
+      dbUser?.estructuras.map((est) => ({
+        agrupacion: est.agrupacion.agrupacion,
+        seccion: est.seccion.seccion,
+      })) ?? [];
 
-    const filteredScores = allScores.filter(score => {
-      // 1. Documentos generales: visibles para todos
-      if (score.isDocument) return true;
+    const clerkRoles = (user?.publicMetadata?.roles as string[]) || [];
+    const predefinedSeccionNames = seccionesDB.map((s) => s.seccion);
 
-      // 2. Partituras sin restricciones: visibles para todos
-      if (score.allowedRoles.length === 0 && score.allowedAgrupaciones.length === 0) return true;
+    const whereVisible = buildVisibleScoresWhereInput(
+      userStructures,
+      clerkRoles,
+      predefinedSeccionNames
+    );
 
-      // 3. Validar contra las estructuras activas del usuario (Validación de Pares Estricta)
-      const hasStrictMatch = userStructures.some(est => {
-        // ¿La agrupación de esta estructura es una de las permitidas?
-        const matchAgrupacion = score.allowedAgrupaciones.length === 0 || score.allowedAgrupaciones.includes(est.agrupacion.agrupacion);
-        
-        // ¿La sección de esta estructura es una de las permitidas? (Roles en partitura = Secciones en DB)
-        const matchSeccion = score.allowedRoles.length === 0 || score.allowedRoles.includes(est.seccion.seccion);
-        
-        // El usuario solo ve la partitura si coincide AMBOS en la MISMA estructura
-        return matchAgrupacion && matchSeccion;
-      });
-
-      if (hasStrictMatch) return true;
-
-      // 4. Comprobación de seguridad para Etiquetas Especiales (como "Tutti" o "Directiva")
-      // Esto permite que roles que no son "instrumentos" (ej: "Director") sigan funcionando
-      const hasSpecialTag = score.allowedRoles.some(r => 
-        clerkRoles.includes(r) && !predefinedSecciones.includes(r)
-      );
-      
-      return hasSpecialTag;
+    const filteredScores = await prisma.score.findMany({
+      ...scoreListArgs,
+      where: whereVisible,
     });
-
-    return NextResponse.json(filteredScores);
 
     return NextResponse.json(filteredScores);
   } catch (error) {
