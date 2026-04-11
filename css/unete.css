@@ -4,3 +4,22 @@
 .form-modal-content .form-control { margin-bottom: var(--sp-4); }
 .form-modal-content textarea.form-control { resize: vertical; min-height: 100px; }
 .form-modal-content .btn-submit { width: 100%; }
+
+/* --- Modern & Discrete Scrollbar --- */
+.modal-scroll-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 20px 0; /* Makes the scrollbar 'shorter' than the full height */
+}
+
+.modal-scroll-area::-webkit-scrollbar-thumb {
+  background: rgba(13, 27, 42, 0.2);
+  border-radius: 10px;
+}
+
+.modal-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: rgba(13, 27, 42, 0.4);
+}

@@ -16,54 +16,65 @@ export default function DashboardPanel({ members, scores }: { members: any[], sc
   if (!stats) return <p>Cargando estadísticas...</p>;
 
   return (
-    <div className="dashboard-panel" style={{ padding: '2rem', background: '#fff', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
-      <h2 style={{ marginBottom: '2rem' }}>📊 Dashboard de Agrupaciones</h2>
-      
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-        <div style={{ padding: '1.5rem', background: '#f8f9fa', borderRadius: '8px', borderLeft: '4px solid #478AC9' }}>
-          <h3 style={{ margin: '0 0 0.5rem', fontSize: '1rem', color: '#666' }}>Músicos Totales</h3>
-          <p style={{ margin: 0, fontSize: '2rem', fontWeight: 'bold', color: '#2c3e50' }}>{stats.totalUsers}</p>
+    <div className="dashboard-panel">
+      <div className="stats-grid">
+        <div className="stat-card-premium blue">
+          <h3>Músicos Totales</h3>
+          <p className="value">{stats.totalUsers}</p>
         </div>
-        <div style={{ padding: '1.5rem', background: '#f8f9fa', borderRadius: '8px', borderLeft: '4px solid #f39c12' }}>
-          <h3 style={{ margin: '0 0 0.5rem', fontSize: '1rem', color: '#666' }}>Partituras General</h3>
-          <p style={{ margin: 0, fontSize: '2rem', fontWeight: 'bold', color: '#2c3e50' }}>{stats.totalScores}</p>
+        <div className="stat-card-premium gold">
+          <h3>Partituras General</h3>
+          <p className="value">{stats.totalScores}</p>
         </div>
-        <div style={{ padding: '1.5rem', background: '#f8f9fa', borderRadius: '8px', borderLeft: '4px solid #27ae60' }}>
-          <h3 style={{ margin: '0 0 0.5rem', fontSize: '1rem', color: '#666' }}>Eventos Activos</h3>
-          <p style={{ margin: 0, fontSize: '2rem', fontWeight: 'bold', color: '#2c3e50' }}>{stats.totalEvents}</p>
+        <div className="stat-card-premium green">
+          <h3>Eventos Activos</h3>
+          <p className="value">{stats.totalEvents}</p>
         </div>
-        <div style={{ padding: '1.5rem', background: '#f8f9fa', borderRadius: '8px', borderLeft: '4px solid #e74c3c' }}>
-          <h3 style={{ margin: '0 0 0.5rem', fontSize: '1rem', color: '#666' }}>Bajas / Inactivos</h3>
-          <p style={{ margin: 0, fontSize: '2rem', fontWeight: 'bold', color: '#2c3e50' }}>
+        <div className="stat-card-premium red">
+          <h3>Bajas / Inactivos</h3>
+          <p className="value">
             {members.filter(m => m.isBanned).length}
           </p>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '3rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2.5rem' }}>
         {stats.agrupacionesStats?.length > 0 ? stats.agrupacionesStats.map((agrup: any, index: number) => (
-          <div key={index} style={{ border: '1px solid #eee', borderRadius: '12px', padding: '1.5rem' }}>
-            <h3 style={{ marginBottom: '1rem', color: '#333' }}>
-              {agrup.name} <span style={{ fontSize: '0.9rem', color: '#888', fontWeight: 'normal' }}>({agrup.count} miembros)</span>
+          <div key={index} className="chart-container-card">
+            <h3 className="chart-title">
+              {agrup.name} <span>({agrup.count} miembros registrados)</span>
             </h3>
             {agrup.sections && agrup.sections.length > 0 ? (
               <div style={{ height: '350px', width: '100%' }}>
                 <ResponsiveContainer>
                   <BarChart data={agrup.sections} margin={{ top: 20, right: 30, left: 20, bottom: 50 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} interval={0} tick={{fontSize: 12}} />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#478AC9" radius={[4, 4, 0, 0]} name="Músicos" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis 
+                      dataKey="name" 
+                      angle={-45} 
+                      textAnchor="end" 
+                      height={70} 
+                      interval={0} 
+                      tick={{fontSize: 11, fill: '#64748b', fontWeight: 500}} 
+                      axisLine={{stroke: '#e2e8f0'}}
+                    />
+                    <YAxis tick={{fontSize: 11, fill: '#64748b'}} axisLine={{stroke: '#e2e8f0'}} />
+                    <Tooltip 
+                      contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}} 
+                      cursor={{fill: '#f1f5f9'}}
+                    />
+                    <Bar dataKey="count" fill="#478AC9" radius={[6, 6, 0, 0]} name="Músicos" barSize={40} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             ) : (
-                <p style={{ color: '#999', fontStyle: 'italic', padding: '2rem 0' }}>No hay secciones registradas para esta agrupación.</p>
+                <div className="empty-state-dash" style={{ padding: '2rem' }}>
+                  No hay secciones registradas para esta agrupación.
+                </div>
             )}
           </div>
         )) : (
-          <p>No hay agrupaciones registradas en el sistema.</p>
+          <div className="empty-state-dash">No hay agrupaciones registradas en el sistema.</div>
         )}
       </div>
     </div>
