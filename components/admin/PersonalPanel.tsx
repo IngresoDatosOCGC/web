@@ -260,7 +260,7 @@ export default function PersonalPanel({
   return (
     <div className="personal-panel-grid">
       {/* Left Column: List and Management */}
-      <section className="admin-list-card">
+      <section className="admin-list-card" style={{ minWidth: 0 }}>
         <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3>Gestión de Personal ({members.length})</h3>
           <div style={{ display: 'flex', gap: '0.8rem' }}>
@@ -289,22 +289,21 @@ export default function PersonalPanel({
           <table className="personal-table">
             <thead>
               <tr>
-                <th>Nombre</th>
-                <th>Acceso</th>
-                <th className="th-center">Mst</th>
-                <th className="th-center">Arc</th>
-                <th className="th-center">Edo</th>
-                <th className="th-center">Acc</th>
+                <th>Usuario</th>
+                <th className="th-center" style={{ width: '50px' }}>Mst</th>
+                <th className="th-center" style={{ width: '50px' }}>Arc</th>
+                <th className="th-center" style={{ width: '50px' }}>Edo</th>
+                <th className="th-center" style={{ width: '50px' }}>Acc</th>
               </tr>
             </thead>
             <tbody>
               {filteredMembers.map(m => (
                 <tr key={m.id} className={`${m.isBanned ? 'tr-banned' : ''} ${m.isExternal ? 'tr-external' : ''}`}>
                   <td>
-                    <div style={{ fontWeight: 600 }}>{m.name}</div>
-                    {m.isExternal && <span className="badge-external">Externo</span>}
+                    <div style={{ fontWeight: 600, color: 'var(--clr-navy)' }}>{m.name}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)', marginTop: '2px' }}>{m.email || '(Sin email)'}</div>
+                    {m.isExternal && <span className="badge-external" style={{ marginTop: '4px', display: 'inline-block' }}>Externo</span>}
                   </td>
-                  <td style={{ fontSize: '0.8rem', color: '#666' }}>{m.email || '(Sin email)'}</td>
                   <td className="td-center">
                     <button onClick={() => toggleMasterStatus(m.id, m.isMaster)} className={`btn-status-toggle ${m.isMaster ? 'on' : 'off'}`}>{m.isMaster ? "✓" : "🚫"}</button>
                   </td>
