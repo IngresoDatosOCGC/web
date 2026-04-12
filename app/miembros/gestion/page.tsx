@@ -18,7 +18,7 @@ import { useNotifications } from '@/components/ui/NotificationContext';
 import '@/css/miembros.css';
 
 export default function AdminOCGCPartituras() {
-  const { user, loading: isAuthLoading, isMaster, isArchiver } = useSupabaseAuth();
+  const { user, isLoading: isAuthLoading, isMaster, isArchiver } = useSupabaseAuth();
   const { showToast } = useNotifications();
   const router = useRouter();
   

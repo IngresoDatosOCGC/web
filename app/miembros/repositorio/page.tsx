@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSupabaseAuth } from "@/lib/supabase-auth-context";
 
 export default function RepositorioPageClient() {
-  const { user, loading: isAuthLoading } = useSupabaseAuth();
+  const { user, isLoading: isAuthLoading } = useSupabaseAuth();
   const [scores, setScores] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [activeCategoryId, setActiveCategoryId] = useState<number | 'todas' | 'documentos'>('todas');
