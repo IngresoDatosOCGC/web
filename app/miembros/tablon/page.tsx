@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useSupabaseUser } from "@/lib/supabase-auth-context";
+import { useSupabaseAuth } from "@/lib/supabase-auth-context";
 
 export default function TablonPage() {
-  const { user, loading: isAuthLoading } = useSupabaseUser();
+  const { user, loading: isAuthLoading } = useSupabaseAuth();
   const [recentScores, setRecentScores] = useState<any[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
 

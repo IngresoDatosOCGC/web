@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { logActivity } from "@/lib/logger";
+import { getSessionUser } from "@/lib/auth-utils";
 
 // GET devuelve el diccionario de secciones agrupado por familia
 export async function GET() {
@@ -35,12 +35,10 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  const isMaster = !!user.user_metadata?.isMaster;
-  if (!isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   const { name, familia, isVisibleInPublic } = await req.json();
 
@@ -53,7 +51,7 @@ export async function POST(req: Request) {
       }
     });
 
-    await logActivity("Sección Creada", user.id, { 
+    await logActivity("Sección Creada", user.supabaseUserId || '', { 
       nombre: name, 
       familia: familia || "Otros" 
     });
@@ -66,11 +64,10 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  if (!user.user_metadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   const { searchParams } = new URL(req.url);
   const idStr = searchParams.get("id");
@@ -82,7 +79,7 @@ export async function DELETE(req: Request) {
     const seccionDB = await prisma.seccion.findUnique({ where: { id } });
     await prisma.seccion.delete({ where: { id } });
 
-    await logActivity("Sección Eliminada", user.id, { 
+    await logActivity("Sección Eliminada", user.supabaseUserId || '', { 
       id, 
       nombre: seccionDB?.seccion || "Desconocida" 
     });

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import prisma from "@/lib/prisma";
+import { getSessionUser } from "@/lib/auth-utils";
+import { syncUserMetadata } from "@/lib/supabase-sync";
 
 const supabaseAdmin = createSupabaseAdmin(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,11 +10,8 @@ const supabaseAdmin = createSupabaseAdmin(
 );
 
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return new NextResponse("Unauthorized", { status: 401 });
-
-  if (!user.user_metadata?.isMaster) {
+  const admin = await getSessionUser();
+  if (!admin?.isMaster) {
     return new NextResponse("Forbidden - Only Masters can import users", { status: 403 });
   }
 
@@ -36,23 +34,13 @@ export async function POST(req: Request) {
       
       if (existingUser) {
         supabaseUser = existingUser;
-        // Sincronizar permisos básicos (Master/Archiver)
-        await supabaseAdmin.auth.admin.updateUserById(supabaseUser.id, {
-          user_metadata: {
-            ...supabaseUser.user_metadata,
-            isMaster: !!isMaster,
-            isArchiver: !!isArchiver
-          }
-        });
       } else {
         // 2. Crear usuario en Supabase si no existe
         const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
             email,
             email_confirm: true,
             user_metadata: {
-              full_name: `${firstName} ${lastName}`.trim(),
-              isMaster: !!isMaster,
-              isArchiver: !!isArchiver
+              full_name: `${firstName} ${lastName}`.trim()
             },
         });
         if (createError) throw createError;
@@ -60,7 +48,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // 3. Sincronizar con la Base de Datos Local (Prisma)
+    // 3. Sincronizar con la Base de Datos Local (Prisma) - Fuente de Verdad
     const dbUser = await prisma.user.upsert({
       where: { dni: String(dni) },
       update: {
@@ -69,6 +57,8 @@ export async function POST(req: Request) {
         surname: lastName,
         email: email || null,
         isExternal: !!isExternal,
+        isMaster: !!isMaster,
+        isArchiver: !!isArchiver,
         isActive: true
       },
       create: {
@@ -78,6 +68,8 @@ export async function POST(req: Request) {
         dni: String(dni),
         email: email || null,
         isExternal: !!isExternal,
+        isMaster: !!isMaster,
+        isArchiver: !!isArchiver,
         isActive: true
       }
     });
@@ -121,9 +113,10 @@ export async function POST(req: Request) {
       }
     }
 
-    // 5. Sincronizar roles avanzados con Supabase
-    const { syncUserWithSupabase } = await import("@/lib/supabase-sync");
-    await syncUserWithSupabase(dbUser.id);
+    // 🔄 Sincronizar caché de app_metadata (Si tiene cuenta en Supabase)
+    if (dbUser.supabaseUserId) {
+      await syncUserMetadata(dbUser.id);
+    }
 
     // 6. Registrar en el Log de Actividad
     await prisma.activityLog.create({
@@ -138,7 +131,7 @@ export async function POST(req: Request) {
           papel,
           matricula
         },
-        userAuthId: user.id
+        userAuthId: admin.supabaseUserId || ''
       }
     });
 

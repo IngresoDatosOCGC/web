@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import prisma from '@/lib/prisma';
 import { EventType } from '@prisma/client';
 import { logActivity } from '@/lib/logger';
+import { getSessionUser } from "@/lib/auth-utils";
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  if (!user.user_metadata?.isMaster && !user.user_metadata?.isArchiver)
+  // Solo Master o Archivero pueden ver la lista completa técnica
+  if (!user.isMaster && !user.isArchiver)
     return new NextResponse("Forbidden", { status: 403 });
 
   try {
@@ -26,11 +26,12 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
-  if (!user.user_metadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  
+  // Solo el Master puede crear eventos
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   try {
     const body = await req.json();
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
           });
         })
       );
-      await logActivity("Importación de Eventos", user.id, { count: created.length });
+      await logActivity("Importación de Eventos", user.supabaseUserId || '', { count: created.length });
       return NextResponse.json({ imported: created.length });
     }
 
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
       include: { category: { select: { id: true, name: true } } }
     });
 
-    await logActivity("Evento Programado", user.id, {
+    await logActivity("Evento Programado", user.supabaseUserId || '', {
       titulo: title, tipo: type, fecha: date, lugar: location || "N/A"
     });
 

@@ -1,18 +1,16 @@
 import prisma from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { logActivity } from "@/lib/logger";
+import { getSessionUser } from "@/lib/auth-utils";
 
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  const isMaster = !!user.user_metadata?.isMaster;
-  if (!isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   const resolvedParams = await params;
   const categoryId = parseInt(resolvedParams.id);
@@ -24,7 +22,7 @@ export async function DELETE(
       where: { id: categoryId }
     });
 
-    await logActivity("Programa Eliminado", user.id, { 
+    await logActivity("Programa Eliminado", user.supabaseUserId || '', { 
       id: categoryId, 
       nombre: category?.name || "Desconocido" 
     });
@@ -40,12 +38,10 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  const isMaster = !!user.user_metadata?.isMaster;
-  if (!isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   const { name, eventDate } = await req.json();
 
@@ -65,7 +61,7 @@ export async function PATCH(
       }
     });
 
-    await logActivity("Programa Editado", user.id, { 
+    await logActivity("Programa Editado", user.supabaseUserId || '', { 
       id: categoryId, 
       nuevoNombre: name,
       nuevaFecha: eventDate || "Sin fecha"

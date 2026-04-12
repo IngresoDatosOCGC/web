@@ -2,18 +2,17 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useSupabaseUser } from '@/lib/supabase-auth-context';
+import { useSupabaseAuth } from '@/lib/supabase-auth-context';
 import { usePathname } from 'next/navigation';
 import { LogOut, Menu, X } from 'lucide-react';
 import '@/css/miembros.css';
 
 export default function HeaderMiembros() {
-  const { user, signOut } = useSupabaseUser();
+  const { user, isMaster, isArchiver, signOut } = useSupabaseAuth();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   
-  // En Supabase el metadata suele estar en user_metadata
-  const isAdmin = !!user?.user_metadata?.isMaster || !!user?.user_metadata?.isArchiver;
+  const isAdmin = isMaster || isArchiver;
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0];
 
   const navItems = [

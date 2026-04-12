@@ -1,20 +1,21 @@
 import prisma from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { del } from "@vercel/blob";
 import { logActivity } from "@/lib/logger";
+import { getSessionUser } from "@/lib/auth-utils";
 
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  const isArchiver = !!user.user_metadata?.isArchiver || !!user.user_metadata?.isMaster;
-  if (!isArchiver) return new NextResponse("Forbidden", { status: 403 });
+  // Verificar si es Archivero o Master en la DB
+  if (!user.isArchiver && !user.isMaster) {
+    return new NextResponse("Forbidden", { status: 403 });
+  }
 
   const resolvedParams = await params;
   const scoreId = parseInt(resolvedParams.id);
@@ -38,7 +39,7 @@ export async function DELETE(
       where: { id: scoreId }
     });
 
-    await logActivity("Partitura Eliminada", user.id, { 
+    await logActivity("Partitura Eliminada", user.supabaseUserId || '', { 
       id: scoreId, 
       titulo: score?.title || "Desconocido" 
     });
@@ -54,13 +55,14 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  const isArchiver = !!user.user_metadata?.isArchiver || !!user.user_metadata?.isMaster;
-  if (!isArchiver) return new NextResponse("Forbidden", { status: 403 });
+  // Verificar si es Archivero o Master en la DB
+  if (!user.isArchiver && !user.isMaster) {
+    return new NextResponse("Forbidden", { status: 403 });
+  }
 
   const body = await req.json();
   const { title, categoryId, allowedRoles, allowedAgrupaciones, isDocument } = body;
@@ -82,7 +84,7 @@ export async function PATCH(
       include: { category: true }
     });
 
-    await logActivity("Partitura Editada", user.id, { 
+    await logActivity("Partitura Editada", user.supabaseUserId || '', { 
       id: scoreId, 
       nuevoTitulo: updated.title,
       programa: updated.category?.name || "Sin programa"

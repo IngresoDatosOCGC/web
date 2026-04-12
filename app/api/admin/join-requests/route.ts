@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import prisma from '@/lib/prisma';
 import { logActivity } from '@/lib/logger';
+import { getSessionUser } from "@/lib/auth-utils";
 
 // 🔍 Listar solicitudes (Admin Only)
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
-  if (!user.user_metadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   try {
     const requests = await (prisma as any).joinRequest.findMany({
@@ -24,11 +23,10 @@ export async function GET() {
 
 // ✍️ Actualizar estado (Admin Only)
 export async function PATCH(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
-  if (!user.user_metadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   try {
     const { id, status } = await req.json();
@@ -39,7 +37,7 @@ export async function PATCH(req: Request) {
       data: { status }
     });
 
-    await logActivity("Solicitud de unión Actualizada", user.id, { 
+    await logActivity("Solicitud de unión Actualizada", user.supabaseUserId || '', { 
       músico: updated.name, 
       nuevoEstado: status 
     });
@@ -53,11 +51,10 @@ export async function PATCH(req: Request) {
 
 // 🗑️ Eliminar solicitud (Admin Only)
 export async function DELETE(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
-  if (!user.user_metadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   try {
     const { searchParams } = new URL(req.url);
@@ -72,7 +69,7 @@ export async function DELETE(req: Request) {
       where: { id }
     });
 
-    await logActivity("Solicitud de unión Eliminada", user.id, { 
+    await logActivity("Solicitud de unión Eliminada", user.supabaseUserId || '', { 
       id, 
       músico: request?.name || "Desconocido" 
     });

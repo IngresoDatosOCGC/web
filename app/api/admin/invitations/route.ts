@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import crypto from 'crypto';
 import prisma from '@/lib/prisma';
 import { logActivity } from '@/lib/logger';
+import { getSessionUser } from "@/lib/auth-utils";
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
-  if (!user.user_metadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   try {
     const invitations = await prisma.invitationCode.findMany({
@@ -24,11 +23,10 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
-  if (!user.user_metadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   try {
     const { 
@@ -75,7 +73,7 @@ export async function POST(req: Request) {
       }
     }
 
-    await logActivity("Invitación Generada", user.id, { 
+    await logActivity("Invitación Generada", user.supabaseUserId || '', { 
       destinatario: `${name} ${surname || ""}`.trim(), 
       emailSent: actuallySent,
       codigo: code 
@@ -89,11 +87,10 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
-  if (!user.user_metadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   try {
     const { searchParams } = new URL(req.url);
@@ -108,7 +105,7 @@ export async function DELETE(req: Request) {
       where: { id }
     });
 
-    await logActivity("Invitación Revocada", user.id, { 
+    await logActivity("Invitación Revocada", user.supabaseUserId || '', { 
       id, 
       destinatario: `${invitation?.name || ""} ${invitation?.surname || ""}`.trim() || "Desconocido" 
     });

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import prisma from "@/lib/prisma";
 import { logActivity } from "@/lib/logger";
+import { getSessionUser } from "@/lib/auth-utils";
+import { syncUserMetadata } from "@/lib/supabase-sync";
 
 const supabaseAdmin = createSupabaseAdmin(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,10 +11,9 @@ const supabaseAdmin = createSupabaseAdmin(
 );
 
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const { data: { user: admin } } = await supabase.auth.getUser();
+  const admin = await getSessionUser();
   
-  if (!admin?.user_metadata?.isMaster) {
+  if (!admin?.isMaster) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
@@ -44,9 +44,7 @@ export async function POST(req: Request) {
       password,
       email_confirm: true,
       user_metadata: { 
-        full_name: `${dbUser.name} ${dbUser.surname}`.trim(),
-        isMaster: targetRole === 'master' ? targetValue : false,
-        isArchiver: targetRole === 'archiver' ? targetValue : false
+        full_name: `${dbUser.name} ${dbUser.surname}`.trim()
       }
     });
 
@@ -54,20 +52,22 @@ export async function POST(req: Request) {
     const supabaseUser = authData.user;
 
     // 4. Actualizar el usuario en la DB local con el nuevo ID de Supabase e email
+    // Aquí marcamos los permisos en la DB (Verdad Única)
     await prisma.user.update({
       where: { id: dbId },
       data: {
         supabaseUserId: supabaseUser.id,
         email: email,
-        isExternal: false
+        isExternal: false,
+        isMaster: targetRole === 'master' ? !!targetValue : dbUser.isMaster,
+        isArchiver: targetRole === 'archiver' ? !!targetValue : dbUser.isArchiver
       }
     });
 
-    // 5. Sincronizar roles avanzados
-    const { syncUserWithSupabase } = await import("@/lib/supabase-sync");
-    await syncUserWithSupabase(dbId);
+    // 🔄 Sincronizar caché de app_metadata
+    await syncUserMetadata(dbId);
 
-    await logActivity("User Upgraded to Platform", admin.id, { 
+    await logActivity("User Upgraded to Platform", admin.supabaseUserId || '', { 
       dbId, 
       supabaseUserId: supabaseUser.id, 
       name: `${dbUser.name} ${dbUser.surname}`,

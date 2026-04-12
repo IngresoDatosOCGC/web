@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
 import { logActivity } from "@/lib/logger";
+import { getSessionUser } from "@/lib/auth-utils";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -15,11 +15,10 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  if (!user.user_metadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   const { name, isVisibleInPublic, isDirector } = await req.json();
   if (!name) return new NextResponse("Name missing", { status: 400 });
@@ -32,7 +31,7 @@ export async function POST(req: Request) {
         isDirector: isDirector !== undefined ? isDirector : false
       }
     });
-    await logActivity("Papel Artístico Creada", user.id, { name });
+    await logActivity("Papel Artístico Creada", user.supabaseUserId || '', { name });
     return NextResponse.json(created);
   } catch (error) {
     return new NextResponse("Error creating papel", { status: 500 });
@@ -40,11 +39,10 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  if (!user.user_metadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   try {
     const { id, name, isVisibleInPublic, isDirector } = await req.json();
@@ -59,7 +57,7 @@ export async function PATCH(req: Request) {
       }
     });
 
-    await logActivity("Papel Actualizado", user.id, { id, name });
+    await logActivity("Papel Actualizado", user.supabaseUserId || '', { id, name });
     return NextResponse.json(updated);
   } catch (error) {
     return new NextResponse("Error updating papel", { status: 500 });
@@ -67,11 +65,10 @@ export async function PATCH(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  if (!user.user_metadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   const { searchParams } = new URL(req.url);
   const idStr = searchParams.get("id");
@@ -81,7 +78,7 @@ export async function DELETE(req: Request) {
     const deleted = await prisma.papel.delete({
       where: { id: parseInt(idStr) }
     });
-    await logActivity("Papel Artístico Eliminado", user.id, { name: deleted.papel });
+    await logActivity("Papel Artístico Eliminado", user.supabaseUserId || '', { name: deleted.papel });
     return NextResponse.json({ success: true });
   } catch (error) {
     return new NextResponse("Error deleting papel", { status: 500 });

@@ -130,7 +130,7 @@ export default function CSVImportUsers({ onImportSuccess }: { onImportSuccess: (
             style={{ display: 'none' }}
           />
         </label>
-        {loading && <span style={{ color: '#e74c3c', fontWeight: 'bold', fontSize: '0.9rem' }}>⚙️ Importando datos y sincronizando Clerk...</span>}
+        {loading && <span style={{ color: '#e74c3c', fontWeight: 'bold', fontSize: '0.9rem' }}>⚙️ Importando datos y sincronizando Supabase...</span>}
       </div>
       {errorInfo && <p style={{ color: '#e74c3c', fontSize: '0.85rem', marginTop: '1rem', background: '#fff', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ffcdd2' }}>{errorInfo}</p>}
     </div>

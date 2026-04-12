@@ -1,4 +1,4 @@
-import { AuthProvider } from "@/lib/supabase-auth-context";
+import { SupabaseAuthProvider } from "@/lib/supabase-auth-context";
 import { Metadata, Viewport } from "next";
 import ClientLayout from "@/components/ClientLayout";
 import { NotificationProvider } from "@/components/ui/NotificationContext";
@@ -30,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthProvider>
+    <SupabaseAuthProvider>
       <html lang="es">
         <head>
           {/* Google Fonts — Montserrat Alternates (corporativo) + Inter (cuerpo) */}
@@ -51,6 +51,6 @@ export default function RootLayout({
           </NotificationProvider>
         </body>
       </html>
-    </AuthProvider>
+    </SupabaseAuthProvider>
   );
 }

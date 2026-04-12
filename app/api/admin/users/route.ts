@@ -1,145 +1,91 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { logActivity } from "@/lib/logger";
 import prisma from "@/lib/prisma";
+import { getSessionUser } from "@/lib/auth-utils";
+import { syncUserMetadata } from "@/lib/supabase-sync";
 
-// Cliente Admin para listar y actualizar metadatos sin restricción
+// Cliente Admin para listar usuarios de Auth si es necesario
 const supabaseAdmin = createSupabaseAdmin(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const admin = await getSessionUser();
   
   // Solo el Master puede gestionar músicos
-  if (!user?.user_metadata?.isMaster) {
+  if (!admin?.isMaster) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
   try {
-    const [supabaseResponse, dbUsers] = await Promise.all([
-      supabaseAdmin.auth.admin.listUsers({ perPage: 1000 }),
-      prisma.user.findMany({
-        include: {
-          estructuras: {
-            include: {
-              agrupacion: true,
-              seccion: true,
-              papel: true
-            }
+    const dbUsers = await prisma.user.findMany({
+      include: {
+        estructuras: {
+          include: {
+            agrupacion: true,
+            seccion: true,
+            papel: true
           }
         }
-      })
-    ]);
-
-    const members = supabaseResponse.data.users.map(u => {
-      const dbUser = dbUsers.find(db => db.supabaseUserId === u.id);
-      return {
-        id: u.id,
-        name: u.user_metadata?.full_name || u.email?.split('@')[0] || "Sin nombre",
-        email: u.email || "Sin email",
-        roles: (u.user_metadata?.roles as string[]) || [], 
-        isArchiver: !!u.user_metadata?.isArchiver,
-        isMaster: !!u.user_metadata?.isMaster,
-        isBanned: !!u.banned_until || (dbUser ? !dbUser.isActive : false),
-        isActive: dbUser ? dbUser.isActive : true,
-        isExternal: false,
-        // Datos de nuestra DB
-        dbId: dbUser?.id,
-        birthDate: dbUser?.birthDate,
-        hasCertificate: !!dbUser?.hasCertificate,
-        estructuras: dbUser?.estructuras.map(e => ({
-          id: e.id,
-          agrupacion: e.agrupacion.agrupacion,
-          seccion: e.seccion.seccion,
-          papel: e.papel.papel,
-          activo: e.activo,
-          atril: e.atril
-        })) || []
-      };
+      }
     });
 
-    // Añadir usuarios externos (solo en DB)
-    const externalUsers = dbUsers
-      .filter(db => !db.supabaseUserId)
-      .map(db => ({
-        id: `ext_${db.id}`,
-        dbId: db.id,
-        name: `${db.name} ${db.surname}`.trim() || "Externo sin nombre",
-        email: db.email || "—",
-        roles: db.estructuras.map(e => e.seccion.seccion),
-        isArchiver: false,
-        isMaster: false,
-        isBanned: !db.isActive,
-        isExternal: db.isExternal,
-        isActive: db.isActive,
-        birthDate: db.birthDate,
-        hasCertificate: !!db.hasCertificate,
-        estructuras: db.estructuras.map(e => ({
-          id: e.id,
-          agrupacion: e.agrupacion.agrupacion,
-          seccion: e.seccion.seccion,
-          papel: e.papel.papel,
-          activo: e.activo,
-          atril: e.atril
-        }))
-      }));
-
-    const allMembers = [...members, ...externalUsers];
+    const allMembers = dbUsers.map(db => ({
+      id: db.supabaseUserId || `ext_${db.id}`,
+      dbId: db.id,
+      name: `${db.name} ${db.surname}`.trim() || "Sin nombre",
+      email: db.email || "—",
+      roles: db.estructuras.filter(e => e.activo).map(e => e.seccion.seccion),
+      isArchiver: !!db.isArchiver,
+      isMaster: !!db.isMaster,
+      isActive: db.isActive,
+      isExternal: db.isExternal,
+      birthDate: db.birthDate,
+      hasCertificate: !!db.hasCertificate,
+      estructuras: db.estructuras.map(e => ({
+        id: e.id,
+        agrupacion: e.agrupacion.agrupacion,
+        seccion: e.seccion.seccion,
+        papel: e.papel.papel,
+        activo: e.activo,
+        atril: e.atril
+      }))
+    }));
 
     return NextResponse.json(allMembers);
   } catch (error) {
-    console.error("Error fetching members:", error);
-    return new NextResponse("Supabase Error", { status: 500 });
+    console.error("Error fetching members from DB:", error);
+    return new NextResponse("Database Error", { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user?.user_metadata?.isMaster) return new NextResponse("Unauthorized", { status: 401 });
+  const admin = await getSessionUser();
+  if (!admin?.isMaster) return new NextResponse("Unauthorized", { status: 401 });
 
   const body = await req.json();
-  const { userId, roles, action, isArchiver, isMaster, estructuraId, activo, atril } = body;
+  const { userId, action, isArchiver, isMaster, estructuraId, activo, atril } = body;
 
   try {
       const isLocalOnly = typeof userId === 'string' && userId.startsWith('ext_');
-      let targetName = userId;
-
+      
       // Buscar el ID de la base de datos (dbId) 
       const dbUser = await prisma.user.findFirst({ 
         where: isLocalOnly ? { id: parseInt(userId.replace('ext_', '')) } : { supabaseUserId: userId } 
       });
       
-      if (dbUser) {
-        targetName = `${dbUser.name} ${dbUser.surname}`.trim();
-      } else {
+      if (!dbUser) {
         return new NextResponse("Usuario no encontrado en la DB local", { status: 404 });
       }
 
       const dbId = dbUser.id;
-      const { syncUserWithSupabase } = await import("@/lib/supabase-sync");
-
-      // Acción para actualizar Roles manuales
-      if (action === "update-roles" && !isLocalOnly) {
-         const { data: { user: targetAuthUser } } = await supabaseAdmin.auth.admin.getUserById(userId);
-         if (targetAuthUser) {
-           const currentMetadata = targetAuthUser.user_metadata || {};
-           await supabaseAdmin.auth.admin.updateUserById(userId, {
-             user_metadata: { ...currentMetadata, roles }
-           });
-           await syncUserWithSupabase(dbId);
-           await logActivity("Actualización de Instrumentos", user.id, { target: targetName, newRoles: roles });
-         }
-      }
+      const targetName = `${dbUser.name} ${dbUser.surname}`.trim();
 
       // Acción para Banear / Desbanear
       if (action === "toggle-ban") {
          const { isBanned } = body; 
-         
          await prisma.user.update({
            where: { id: dbId },
            data: { 
@@ -149,15 +95,12 @@ export async function POST(req: Request) {
              }
            }
          });
-
-         await syncUserWithSupabase(dbId);
-         await logActivity(`Perfil ${isBanned ? 'Desactivado' : 'Activado'}`, user.id, { target: targetName });
+         await logActivity(`Perfil ${isBanned ? 'Desactivado' : 'Activado'}`, admin.supabaseUserId || '', { target: targetName });
       }
 
       // Acción para actualizar una estructura específica
       if (action === "update-estructura") {
         if (!estructuraId) return new NextResponse("Falta estructuraId", { status: 400 });
-
         await prisma.estructura.update({
           where: { id: estructuraId },
           data: {
@@ -165,15 +108,12 @@ export async function POST(req: Request) {
             atril: atril !== undefined ? (atril === "" ? null : parseInt(atril)) : undefined
           }
         });
-
-        await syncUserWithSupabase(dbId);
-        await logActivity("Estructura Actualizada", user.id, { target: targetName });
+        await logActivity("Estructura Actualizada", admin.supabaseUserId || '', { target: targetName });
       }
 
       // Acción para AÑADIR una nueva estructura
       if (action === "add-estructura") {
         const { agrupacionId, seccionId, papelId } = body;
-        
         await prisma.estructura.upsert({
           where: {
             userId_papelId_agrupacionId_seccionId: {
@@ -192,57 +132,40 @@ export async function POST(req: Request) {
             activo: true
           }
         });
-
-        await syncUserWithSupabase(dbId);
-        await logActivity("Nueva Estructura Añadida", user.id, { target: targetName });
+        await logActivity("Nueva Estructura Añadida", admin.supabaseUserId || '', { target: targetName });
       }
 
       // Acción para ELIMINAR una estructura
       if (action === "delete-estructura") {
         if (!estructuraId) return new NextResponse("Falta estructuraId", { status: 400 });
-
         await prisma.estructura.delete({ where: { id: estructuraId } });
-
-        await syncUserWithSupabase(dbId);
-        await logActivity("Estructura Eliminada", user.id, { target: targetName });
+        await logActivity("Estructura Eliminada", admin.supabaseUserId || '', { target: targetName });
       }
 
-     // Acción para cambiar permiso de Archivero
-     if (action === "toggle-archiver" && !isLocalOnly) {
-        const { data: { user: targetAuthUser } } = await supabaseAdmin.auth.admin.getUserById(userId);
-        if (targetAuthUser) {
-          const currentMetadata = targetAuthUser.user_metadata || {};
-          const newValue = isArchiver !== undefined ? isArchiver : !currentMetadata.isArchiver;
-          await supabaseAdmin.auth.admin.updateUserById(userId, {
-            user_metadata: {
-              ...currentMetadata,
-              isArchiver: newValue
-            }
-          });
-          await logActivity("Cambio permiso Archivero", user.id, { 
-            target: targetName, 
-            isArchiver: newValue 
-          });
-        }
+     // Acción para cambiar permiso de Archivero (EN LA DB)
+     if (action === "toggle-archiver") {
+        const newValue = isArchiver !== undefined ? isArchiver : !dbUser.isArchiver;
+        await prisma.user.update({
+          where: { id: dbId },
+          data: { isArchiver: newValue }
+        });
+        await logActivity("Cambio permiso Archivero", admin.supabaseUserId || '', { 
+          target: targetName, 
+          isArchiver: newValue 
+        });
      }
 
-      // Acción para cambiar permiso de Master
-      if (action === "toggle-master" && !isLocalOnly) {
-        const { data: { user: targetAuthUser } } = await supabaseAdmin.auth.admin.getUserById(userId);
-        if (targetAuthUser) {
-          const currentMetadata = targetAuthUser.user_metadata || {};
-          const newValue = isMaster !== undefined ? isMaster : !currentMetadata.isMaster;
-          await supabaseAdmin.auth.admin.updateUserById(userId, {
-            user_metadata: {
-              ...currentMetadata,
-              isMaster: newValue
-            }
-          });
-          await logActivity("Cambio permiso Master", user.id, { 
-            target: targetName, 
-            isMaster: newValue 
-          });
-        }
+      // Acción para cambiar permiso de Master (EN LA DB)
+      if (action === "toggle-master") {
+        const newValue = isMaster !== undefined ? isMaster : !dbUser.isMaster;
+        await prisma.user.update({
+          where: { id: dbId },
+          data: { isMaster: newValue }
+        });
+        await logActivity("Cambio permiso Master", admin.supabaseUserId || '', { 
+          target: targetName, 
+          isMaster: newValue 
+        });
       }
 
       // Acción para actualizar datos personales básicos
@@ -255,8 +178,12 @@ export async function POST(req: Request) {
             hasCertificate: !!hasCertificate
           }
         });
-        await logActivity("Perfil Personal Actualizado", user.id, { target: targetName });
+        await logActivity("Perfil Personal Actualizado", admin.supabaseUserId || '', { target: targetName });
       }
+
+      // 🔄 SINCRONIZACIÓN DE CACHÉ (app_metadata)
+      // Actualizamos la caché de Supabase Auth para que la UI refleje el cambio rápidamente
+      await syncUserMetadata(dbId);
 
       return NextResponse.json({ success: true });
   } catch (err) {

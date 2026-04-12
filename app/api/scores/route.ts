@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import prisma from "@/lib/prisma";
 import { buildVisibleScoresWhereInput } from "@/lib/score-visibility";
+import { getSessionUser } from "@/lib/auth-utils";
 
 const scoreListArgs = {
   include: { category: true as const },
@@ -9,25 +9,23 @@ const scoreListArgs = {
 };
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  const isMaster = !!user.user_metadata?.isMaster;
-  const isArchiver = !!user.user_metadata?.isArchiver;
-
   try {
-    if (isMaster || isArchiver) {
+    // Si es Master o Archivero, ve todo el archivo digital
+    if (user.isMaster || user.isArchiver) {
       const allScores = await prisma.score.findMany(scoreListArgs);
       return NextResponse.json(allScores);
     }
 
-    const [dbUser, seccionesDB] = await Promise.all([
+    // Buscamos el perfil detallado para ver qué partituras le corresponden
+    const [dbUserFull, seccionesDB] = await Promise.all([
       prisma.user.findUnique({
-        where: { supabaseUserId: user.id },
+        where: { id: user.id },
         include: {
           estructuras: {
             where: { activo: true },
@@ -39,12 +37,13 @@ export async function GET() {
     ]);
 
     const userStructures =
-      dbUser?.estructuras.map((est) => ({
+      dbUserFull?.estructuras.map((est) => ({
         agrupacion: est.agrupacion.agrupacion,
         seccion: est.seccion.seccion,
       })) ?? [];
 
-    const userRoles = (user.user_metadata?.roles as string[]) || [];
+    // Ahora los roles/secciones vienen de la DB, no de metadata
+    const userRoles = dbUserFull?.estructuras.filter(e => e.activo).map(e => e.seccion.seccion) || [];
     const predefinedSeccionNames = seccionesDB.map((s) => s.seccion);
 
     const whereVisible = buildVisibleScoresWhereInput(

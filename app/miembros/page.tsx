@@ -1,17 +1,28 @@
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import prisma from "@/lib/prisma";
+import { getSessionUser } from "@/lib/auth-utils";
 
 export default async function MiembrosPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const userProfile = await getSessionUser();
   
-  if (!user) {
+  if (!userProfile) {
     redirect("/sign-in");
   }
 
-  const userRoles = (user.user_metadata?.roles as string[]) || [];
-  const isMaster = !!user.user_metadata?.isMaster;
+  // Obtenemos los roles artísticos directamente de la DB detallada
+  const dbUser = await prisma.user.findUnique({
+    where: { id: userProfile.id },
+    include: {
+      estructuras: {
+        where: { activo: true },
+        include: { seccion: true }
+      }
+    }
+  });
+
+  const userRoles = dbUser?.estructuras.map(e => e.seccion.seccion) || [];
+  const isMaster = !!dbUser?.isMaster;
 
   return (
     <div style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}>
@@ -24,10 +35,10 @@ export default async function MiembrosPage() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "1rem", background: 'white', padding: '0.5rem 1rem', borderRadius: '12px', boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--clr-gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold' }}>
-            {user.user_metadata?.full_name?.[0] || 'U'}
+            {dbUser?.name?.[0] || 'U'}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontWeight: 600 }}>{user.user_metadata?.full_name || 'Miembro'}</span>
+            <span style={{ fontWeight: 600 }}>{`${dbUser?.name} ${dbUser?.surname}`.trim() || 'Miembro'}</span>
             <Link href="/api/auth/sign-out" style={{ fontSize: '0.8rem', color: 'var(--clr-error)' }}>Cerrar sesión</Link>
           </div>
         </div>

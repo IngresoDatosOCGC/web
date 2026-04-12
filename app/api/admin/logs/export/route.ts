@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import prisma from "@/lib/prisma";
+import { getSessionUser } from "@/lib/auth-utils";
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
-  if (!user.user_metadata?.isMaster) {
+  if (!user.isMaster) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 

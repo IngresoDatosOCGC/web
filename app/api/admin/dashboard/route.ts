@@ -1,24 +1,20 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import prisma from '@/lib/prisma';
+import { getSessionUser } from "@/lib/auth-utils";
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const admin = await getSessionUser();
 
-  if (!user) return new NextResponse("Unauthorized", { status: 401 });
+  if (!admin) return new NextResponse("Unauthorized", { status: 401 });
 
-  // Check admin via metadata (migrated structure)
-  if (!user.user_metadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  // Verificar admin vía DB (Fuente de verdad definitiva)
+  if (!admin.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   try {
     const totalUsers = await prisma.user.count();
     const totalScores = await prisma.score.count();
     const totalEvents = await prisma.event.count();
 
-    // En Supabase, para listar usuarios con el Admin SDK:
-    // Nota: Necesitas la SERVICE_ROLE_KEY para esto, pero si los usuarios están en la DB, es mejor contar en la DB.
-    // Usamos el campo 'isActive' o 'isBanned' en nuestra DB local si existe.
     const totalBanned = await prisma.user.count({ 
       where: { isActive: false } 
     });

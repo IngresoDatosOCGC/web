@@ -1,6 +1,6 @@
 "use client";
 
-import { useSupabaseUser } from "@/lib/supabase-auth-context";
+import { useSupabaseAuth } from "@/lib/supabase-auth-context";
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import TabNavigation, { TabType } from '@/components/admin/TabNavigation';
@@ -18,13 +18,10 @@ import { useNotifications } from '@/components/ui/NotificationContext';
 import '@/css/miembros.css';
 
 export default function AdminOCGCPartituras() {
-  const { user, loading: isAuthLoading } = useSupabaseUser();
+  const { user, loading: isAuthLoading, isMaster, isArchiver } = useSupabaseAuth();
   const { showToast } = useNotifications();
   const router = useRouter();
   
-  const isMaster = !!user?.user_metadata?.isMaster;
-  const isArchiver = !!user?.user_metadata?.isArchiver || isMaster;
-
   const [activeTab, setActiveTab] = useState<TabType | null>(null);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
@@ -120,7 +117,7 @@ export default function AdminOCGCPartituras() {
         if (isMaster) loadMembersData();
       }
     }
-  }, [isAuthLoading, user]);
+  }, [isAuthLoading, user, isMaster, isArchiver]);
 
   if (isAuthLoading || !user) {
     return (

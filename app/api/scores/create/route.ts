@@ -1,21 +1,18 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import prisma from "@/lib/prisma";
 import { put } from "@vercel/blob";
 import { logActivity } from "@/lib/logger";
+import { getSessionUser } from "@/lib/auth-utils";
 
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   
   if (!user) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  const isMaster = !!user.user_metadata?.isMaster;
-  const isArchiver = !!user.user_metadata?.isArchiver;
-
-  if (!isMaster && !isArchiver) {
+  // Verificar permisos en la DB (Verdad Única)
+  if (!user.isMaster && !user.isArchiver) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
@@ -74,7 +71,7 @@ export async function POST(req: Request) {
     });
     
     // LOG ACTIVIDAD
-    await logActivity("Nueva Partitura Publicada", user.id, { 
+    await logActivity("Nueva Partitura Publicada", user.supabaseUserId || '', { 
       titulo: title, 
       programa: newScore.category?.name || "Sin programa",
       esDocumento: isDocument 

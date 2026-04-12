@@ -1,10 +1,10 @@
 "use client";
 
-import { useSupabaseUser } from "@/lib/supabase-auth-context";
+import { useSupabaseAuth } from "@/lib/supabase-auth-context";
 import { LogOut } from "lucide-react";
 
 export default function UserMenu() {
-  const { user, signOut } = useSupabaseUser();
+  const { user, signOut } = useSupabaseAuth();
 
   if (!user) return null;
 

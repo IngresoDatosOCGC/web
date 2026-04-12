@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import prisma from "@/lib/prisma";
 import { logActivity } from "@/lib/logger";
+import { getSessionUser } from "@/lib/auth-utils";
+import { syncUserMetadata } from "@/lib/supabase-sync";
 
 const supabaseAdmin = createSupabaseAdmin(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,11 +11,10 @@ const supabaseAdmin = createSupabaseAdmin(
 );
 
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const { data: { user: admin } } = await supabase.auth.getUser();
+  const admin = await getSessionUser();
   
   // Solo el Master puede crear usuarios manualmente
-  if (!admin?.user_metadata?.isMaster) {
+  if (!admin?.isMaster) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
@@ -41,9 +41,7 @@ export async function POST(req: Request) {
         password,
         email_confirm: true,
         user_metadata: { 
-          full_name: `${firstName} ${surname || ""}`.trim(),
-          isMaster: !!isMaster,
-          isArchiver: !!isArchiver
+          full_name: `${firstName} ${surname || ""}`.trim()
         }
       });
 
@@ -51,7 +49,7 @@ export async function POST(req: Request) {
       supabaseUser = authData.user;
     }
 
-    // 2. Crear el usuario en la DB Local
+    // 2. Crear el usuario en la DB Local (Fuente de Verdad)
     const newUser = await prisma.user.upsert({
       where: { dni: String(dni) },
       update: {
@@ -61,6 +59,8 @@ export async function POST(req: Request) {
         email: email || null,
         phone: phone || null,
         isExternal: !!isExternal,
+        isMaster: !!isMaster,
+        isArchiver: !!isArchiver,
         isActive: true
       },
       create: {
@@ -71,6 +71,8 @@ export async function POST(req: Request) {
         email: email || null,
         phone: phone || null,
         isExternal: !!isExternal,
+        isMaster: !!isMaster,
+        isArchiver: !!isArchiver,
         isActive: true
       }
     });
@@ -114,11 +116,12 @@ export async function POST(req: Request) {
       }
     }
 
-    // 5. Sincronizar roles avanzados con Supabase
-    const { syncUserWithSupabase } = await import("@/lib/supabase-sync");
-    await syncUserWithSupabase(newUser.id);
+    // 🔄 Sincronizar caché de app_metadata (Si se creó cuenta de Supabase)
+    if (newUser.supabaseUserId) {
+      await syncUserMetadata(newUser.id);
+    }
 
-    await logActivity("Manual User Created", admin.id, { 
+    await logActivity("Manual User Created", admin.supabaseUserId || '', { 
       supabaseUserId: supabaseUser?.id, 
       name: `${firstName} ${surname}`, 
       isExternal, 
@@ -140,7 +143,6 @@ export async function POST(req: Request) {
       else if (target.includes("email")) errorMessage = "El correo ya está registrado en la base de datos local.";
       else errorMessage = "Ya existe un registro con esos datos únicos.";
     }
-    // Otros errores (Supabase, etc)
     else {
       errorMessage = error.message || error.toString();
     }

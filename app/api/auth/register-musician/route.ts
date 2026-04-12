@@ -1,8 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { syncUserMetadata } from "@/lib/supabase-sync";
 
-// Cliente Admin para crear el usuario en Auth sin confirmación de email (opcional)
+// Cliente Admin para crear el usuario en Auth
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -13,7 +14,7 @@ export async function POST(req: Request) {
     const data = await req.json();
     const {
       firstName, surname, dni, email, phone, dob,
-      agrupacion, instrument, desk,
+      agrupacion, instrument,
       isla, municipio, empadronamiento,
       trabajo, estudios,
       username, password,
@@ -29,12 +30,6 @@ export async function POST(req: Request) {
     if (invite.usedAt) return new NextResponse(JSON.stringify({ error: "Este código ya ha sido utilizado." }), { status: 410 });
     if (new Date(invite.expiresAt) < new Date()) return new NextResponse(JSON.stringify({ error: "Este código ha caducado." }), { status: 410 });
 
-    // Marcar como usado
-    await prisma.invitationCode.update({
-      where: { id: invite.id },
-      data: { usedAt: new Date() }
-    });
-
     const groupPairs = [
       { ag: data.agrupacion, inst: data.instrument },
       { ag: data.agrupacion2, inst: data.instrument2 },
@@ -42,7 +37,6 @@ export async function POST(req: Request) {
     ].filter(p => p.ag && p.inst);
 
     // 1. Crear el usuario en Supabase Auth
-    // Nota: Usamos admin para que el email se marque como confirmado automáticamente si se desea
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email,
       password: password,
@@ -83,7 +77,7 @@ export async function POST(req: Request) {
       })
     ]);
 
-    // 3. Crear o Actualizar el usuario principal
+    // 3. Crear o Actualizar el usuario principal (Fuente de Verdad)
     const newUser = await prisma.user.upsert({
       where: { dni: dni || "" },
       update: {
@@ -142,23 +136,25 @@ export async function POST(req: Request) {
       }
     }
 
-    // 5. Sincronizar roles avanzados con Supabase
-    const { syncUserWithSupabase } = await import("@/lib/supabase-sync");
-    await syncUserWithSupabase(newUser.id);
+    // 5. Marcar código como usado AHORA que todo salió bien
+    await prisma.invitationCode.update({
+      where: { id: invite.id },
+      data: { usedAt: new Date() }
+    });
+
+    // 🔄 Sincronizar caché de app_metadata para el nuevo usuario
+    await syncUserMetadata(newUser.id);
 
     return NextResponse.json({ success: true, userId: authUser.user.id, dbId: newUser.id });
   } catch (error: any) {
     console.error("Error Registrando Miembro:", error);
-    
     let errorMessage = error.message || "Error desconocido en el registro";
-    
     if (error.code === 'P2002') {
       const target = error.meta?.target || "";
       if (target.includes("dni")) errorMessage = "El DNI ya está registrado.";
       else if (target.includes("email")) errorMessage = "El correo ya está registrado.";
       else errorMessage = "Ya existe un registro con esos datos.";
     }
-
     return new NextResponse(JSON.stringify({ error: errorMessage }), { status: 400 });
   }
 }

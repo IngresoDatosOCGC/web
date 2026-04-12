@@ -1,89 +1,60 @@
 import { createClient } from "@supabase/supabase-js";
 import prisma from "./prisma";
 
-// Cliente de Supabase con Service Role para operaciones administrativas (sync metadata)
+// Cliente Admin para actualizar app_metadata (Caché de roles)
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 /**
- * Sincroniza los metadatos de un usuario en Supabase basándose en su estado en la DB local.
+ * Sincroniza los roles y permisos de la Base de Datos (Prisma) 
+ * hacia la Caché de Supabase Auth (app_metadata).
+ * 
+ * 👉 La DB es la Verdad Absoluta.
+ * 👉 app_metadata es solo caché para rendimiento UI.
  */
-export async function syncUserWithSupabase(dbUserId: number) {
-  const user = await prisma.user.findUnique({
-    where: { id: dbUserId },
-    include: {
-      estructuras: {
-        where: { activo: true },
-        include: { agrupacion: true, seccion: true, papel: true }
+export async function syncUserMetadata(dbId: number) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: dbId },
+      include: {
+        estructuras: {
+          where: { activo: true },
+          include: { seccion: true }
+        }
       }
+    });
+
+    if (!user || !user.supabaseUserId) return;
+
+    // Calcular permisos granulares para la caché
+    const permissions: string[] = [];
+    if (user.isMaster) {
+      permissions.push('admin:all', 'users:manage', 'scores:manage', 'events:manage');
     }
-  });
-
-  if (!user || !user.supabaseUserId) return null;
-
-  const authId = user.supabaseUserId;
-  const activeStructures = user.estructuras;
-  
-  const combinedRoles = new Set<string>();
-  const activeAgrupaciones = new Set<string>();
-  let hasDirectorRole = false;
-
-  activeStructures.forEach(s => {
-    const agrup = s.agrupacion.agrupacion.trim();
-    const secc = s.seccion.seccion.trim();
-    const papel = s.papel.papel.trim();
-
-    combinedRoles.add(secc);
-    combinedRoles.add(papel);
-    combinedRoles.add(`${agrup}:${secc}`);
-    combinedRoles.add(`Agrupación:${agrup}`);
-    activeAgrupaciones.add(agrup);
-
-    if (agrup === "Orquesta Comunitaria Gran Canaria") combinedRoles.add("Orquesta - Tutti");
-    if (agrup === "Coro Comunitario Gran Canaria") combinedRoles.add("Coro - Tutti");
-    if (agrup === "Ensemble de Flautas") combinedRoles.add("Ensemble Flautas - Tutti");
-    if (agrup === "Ensemble de Metales") combinedRoles.add("Ensemble Metales - Tutti");
-    if (agrup === "Ensemble de Chelos") combinedRoles.add("Ensemble Chelos - Tutti");
-    if (agrup === "OCGC Big Band") combinedRoles.add("Big Band - Tutti");
-
-    if (papel.toLowerCase().includes("director") || papel.toLowerCase().includes("jefe")) {
-        hasDirectorRole = true;
+    if (user.isArchiver || user.isMaster) {
+      permissions.push('scores:edit', 'scores:upload', 'scores:view_all');
     }
-  });
 
-  // Obtener metadata actual
-  const { data: { user: authUser }, error: fetchError } = await supabaseAdmin.auth.admin.getUserById(authId);
-  if (fetchError || !authUser) return null;
+    const roles = Array.from(new Set(user.estructuras.map(e => e.seccion.seccion)));
 
-  const currentMetadata = authUser.user_metadata || {};
+    // Actualizar app_metadata en Supabase Auth
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(user.supabaseUserId, {
+      app_metadata: {
+        isMaster: !!user.isMaster,
+        isArchiver: !!user.isArchiver,
+        roles: roles,
+        permissions: permissions
+      }
+    });
 
-  const newMetadata = {
-    ...currentMetadata,
-    roles: Array.from(combinedRoles),
-    agrupaciones: Array.from(activeAgrupaciones),
-    isDirector: hasDirectorRole,
-    // Aseguramos que el nombre esté sincronizado por si acaso
-    full_name: `${user.name} ${user.surname}`.trim()
-  };
-
-  // Sincronizar en Supabase Auth
-  await supabaseAdmin.auth.admin.updateUserById(authId, {
-    user_metadata: newMetadata
-  });
-
-  // Gestión de Bloqueo (Banned): 
-  // En Supabase podemos usar el campo de baneo o simplemente un metadata de control.
-  // Pero lo más efectivo es 'ban' de Auth.
-  const isSpecialUser = currentMetadata.isMaster || currentMetadata.isArchiver;
-  
-  if (activeStructures.length > 0 || isSpecialUser) {
-    // Quitar baneo (En Supabase es poner banned_until en el pasado o vacío si se soporta vía API)
-    // Pero Supabase Auth Admin no tiene un método 'ban' directo como Clerk, 
-    // se suele usar bindeo de políticas (RLS) o deshabilitar cuenta.
-    // Para simplificar, deshabilitamos si no tiene permisos.
+    if (error) {
+      console.error(`❌ Error actualizando caché para ${user.email}:`, error.message);
+    } else {
+      console.log(`✅ Caché (app_metadata) sincronizada para: ${user.email}`);
+    }
+  } catch (err) {
+    console.error("❌ Fallo crítico en sincronización de metadatos:", err);
   }
-
-  return newMetadata;
 }
