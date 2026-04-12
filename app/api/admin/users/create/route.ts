@@ -1,16 +1,20 @@
-import { createClerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import prisma from "@/lib/prisma";
 import { logActivity } from "@/lib/logger";
+import { getSessionUser } from "@/lib/auth-utils";
+import { syncUserMetadata } from "@/lib/supabase-sync";
 
-const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+const supabaseAdmin = createSupabaseAdmin(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function POST(req: Request) {
-  const admin = await currentUser();
+  const admin = await getSessionUser();
   
   // Solo el Master puede crear usuarios manualmente
-  if (!admin?.publicMetadata?.isMaster) {
+  if (!admin?.isMaster) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
@@ -26,51 +30,49 @@ export async function POST(req: Request) {
       return new NextResponse(JSON.stringify({ error: "Faltan campos obligatorios para el registro interno (Nombre y DNI)" }), { status: 400 });
     }
 
-    // El email/usuario/con sólo son obligatorios si queremos acceso al sistema
-    // Si faltan, se asume que es un registro puramente de base de datos local
+    let supabaseUser: any = null;
 
-    let clerkUser: any = null;
-    let uniqueRoles: string[] = [];
+    const canCreateSupabaseAccount = !isExternal && email && password;
 
-    const canCreateClerkAccount = !isExternal && email && username && password;
-
-    if (canCreateClerkAccount) {
-      // 1. Crear el usuario en Clerk (básico)
-      clerkUser = await clerkClient.users.createUser({
-        firstName,
-        lastName: surname,
-        emailAddress: [email],
-        username,
+    if (canCreateSupabaseAccount) {
+      // 1. Crear el usuario en Supabase Auth
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email,
         password,
-        publicMetadata: { 
-          isMaster: !!isMaster,
-          isArchiver: !!isArchiver
-        },
-        skipPasswordRequirement: false,
-        skipPasswordChecks: true
+        email_confirm: true,
+        user_metadata: { 
+          full_name: `${firstName} ${surname || ""}`.trim()
+        }
       });
+
+      if (authError) throw authError;
+      supabaseUser = authData.user;
     }
 
-    // 2. Crear el usuario en la DB Local
+    // 2. Crear el usuario en la DB Local (Fuente de Verdad)
     const newUser = await prisma.user.upsert({
       where: { dni: String(dni) },
       update: {
-        clerkUserId: clerkUser?.id || undefined, // No pisar si ya tenía uno y ahora no pasamos clerkUser
+        supabaseUserId: supabaseUser?.id || undefined, 
         name: firstName,
         surname: surname,
         email: email || null,
         phone: phone || null,
         isExternal: !!isExternal,
+        isMaster: !!isMaster,
+        isArchiver: !!isArchiver,
         isActive: true
       },
       create: {
-        clerkUserId: clerkUser?.id || null,
+        supabaseUserId: supabaseUser?.id || null,
         name: firstName,
         surname: surname || "",
         dni: String(dni),
         email: email || null,
         phone: phone || null,
         isExternal: !!isExternal,
+        isMaster: !!isMaster,
+        isArchiver: !!isArchiver,
         isActive: true
       }
     });
@@ -114,12 +116,13 @@ export async function POST(req: Request) {
       }
     }
 
-    // 5. Sincronizar roles avanzados con Clerk
-    const { syncUserWithClerk } = await import("@/lib/clerk-sync");
-    await syncUserWithClerk(newUser.id);
+    // 🔄 Sincronizar caché de app_metadata (Si se creó cuenta de Supabase)
+    if (newUser.supabaseUserId) {
+      await syncUserMetadata(newUser.id);
+    }
 
-    await logActivity("Manual User Created", admin.id, { 
-      clerkId: clerkUser?.id, 
+    await logActivity("Manual User Created", admin.supabaseUserId || '', { 
+      supabaseUserId: supabaseUser?.id, 
       name: `${firstName} ${surname}`, 
       isExternal, 
       dni, 
@@ -133,18 +136,13 @@ export async function POST(req: Request) {
     
     let errorMessage = "Error desconocido en el registro";
     
-    // 1. Errores específicos de Clerk (API)
-    if (error.clerkError || error.errors) {
-      errorMessage = error.errors?.[0]?.longMessage || error.errors?.[0]?.message || "Error en el servicio de Clerk.";
-    } 
-    // 2. Errores de Prisma (Base de Datos)
-    else if (error.code === 'P2002') {
+    // Errores de Prisma (Base de Datos)
+    if (error.code === 'P2002') {
       const target = error.meta?.target || "";
       if (target.includes("dni")) errorMessage = "El DNI ya está registrado en la base de datos local.";
       else if (target.includes("email")) errorMessage = "El correo ya está registrado en la base de datos local.";
       else errorMessage = "Ya existe un registro con esos datos únicos.";
     }
-    // 3. Otros errores genéricos
     else {
       errorMessage = error.message || error.toString();
     }

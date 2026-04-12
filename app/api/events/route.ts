@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 import prisma from '@/lib/prisma';
 
 export async function GET(req: Request) {
-  const { userId } = await auth();
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const categoryId = searchParams.get('categoryId');

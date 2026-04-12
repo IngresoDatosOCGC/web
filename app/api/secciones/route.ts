@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
-import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { logActivity } from "@/lib/logger";
+import { getSessionUser } from "@/lib/auth-utils";
 
 // GET devuelve todas las secciones artísticas
 export async function GET(req: Request) {
@@ -21,11 +21,10 @@ export async function GET(req: Request) {
 
 // POST permite añadir una nueva sección artística a la estructura
 export async function POST(req: Request) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) return new NextResponse("Unauthorized", { status: 401 });
+  const user = await getSessionUser();
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  const user = await currentUser();
-  if (!user?.publicMetadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   const { seccion, familia, isVisibleInPublic } = await req.json();
 
@@ -38,7 +37,7 @@ export async function POST(req: Request) {
       }
     });
 
-    await logActivity("Sección Artística Creada", clerkId, { seccion });
+    await logActivity("Sección Artística Creada", user.supabaseUserId || '', { seccion });
 
     return NextResponse.json(newSeccion);
   } catch (error) {
@@ -47,11 +46,10 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) return new NextResponse("Unauthorized", { status: 401 });
+  const user = await getSessionUser();
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  const user = await currentUser();
-  if (!user?.publicMetadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   const { searchParams } = new URL(req.url);
   const idStr = searchParams.get("id");
@@ -63,19 +61,19 @@ export async function DELETE(req: Request) {
       where: { id: parseInt(idStr) }
     });
 
-    await logActivity("Sección Artística Eliminada", clerkId, { seccion: deleted.seccion });
+    await logActivity("Sección Artística Eliminada", user.supabaseUserId || '', { seccion: deleted.seccion });
 
     return NextResponse.json(deleted);
   } catch (error) {
     return new NextResponse("Error deleting section", { status: 500 });
   }
 }
-export async function PATCH(req: Request) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) return new NextResponse("Unauthorized", { status: 401 });
 
-  const user = await currentUser();
-  if (!user?.publicMetadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+export async function PATCH(req: Request) {
+  const user = await getSessionUser();
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
+
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   try {
     const { id, seccion, familia, isVisibleInPublic } = await req.json();
@@ -90,7 +88,7 @@ export async function PATCH(req: Request) {
       }
     });
 
-    await logActivity("Sección Actualizada", clerkId, { id, seccion });
+    await logActivity("Sección Actualizada", user.supabaseUserId || '', { id, seccion });
     return NextResponse.json(updated);
   } catch (error) {
     return new NextResponse("Error updating section", { status: 500 });

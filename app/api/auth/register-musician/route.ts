@@ -1,20 +1,25 @@
-import { createClerkClient } from "@clerk/nextjs/server";
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { syncUserMetadata } from "@/lib/supabase-sync";
 
-const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+// Cliente Admin para crear el usuario en Auth
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function POST(req: Request) {
   try {
     const data = await req.json();
     const {
       firstName, surname, dni, email, phone, dob,
-      agrupacion, instrument, desk,
+      agrupacion, instrument,
       isla, municipio, empadronamiento,
-      trabajo, estudios, vehicleRegistration,
+      trabajo, estudios,
       username, password,
-      hasCertificate, // Nuevo campo
-      inviteCode // El código de invitación de un solo uso
+      hasCertificate,
+      inviteCode
     } = data;
 
     // 0. Validar y consumir el código de invitación
@@ -25,35 +30,29 @@ export async function POST(req: Request) {
     if (invite.usedAt) return new NextResponse(JSON.stringify({ error: "Este código ya ha sido utilizado." }), { status: 410 });
     if (new Date(invite.expiresAt) < new Date()) return new NextResponse(JSON.stringify({ error: "Este código ha caducado." }), { status: 410 });
 
-    // Marcar como usado inmediatamente para evitar ataques de carrera (race conditions)
-    await prisma.invitationCode.update({
-      where: { id: invite.id },
-      data: { usedAt: new Date() }
-    });
-
-    // 1. Preparar los pares Agrupación/Sección para crear la Estructura en DB
     const groupPairs = [
       { ag: data.agrupacion, inst: data.instrument },
       { ag: data.agrupacion2, inst: data.instrument2 },
       { ag: data.agrupacion3, inst: data.instrument3 }
     ].filter(p => p.ag && p.inst);
 
-    // 2. Crear el usuario en Clerk (solo configuración básica, syncUserWithClerk pondrá los roles después)
-    const clerkUser = await clerkClient.users.createUser({
-      firstName,
-      lastName: surname,
-      emailAddress: [email],
-      username,
-      password,
-      publicMetadata: {}, // Se llenará en el paso 6
-      skipPasswordRequirement: false,
-      skipPasswordChecks: true
+    // 1. Crear el usuario en Supabase Auth
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: email,
+      password: password,
+      email_confirm: true,
+      user_metadata: {
+        full_name: `${firstName} ${surname}`.trim(),
+        username: username
+      }
     });
 
-    const papelMusico = await prisma.papel.findUnique({ where: { papel: "Músico" } });
-    if (!papelMusico) throw new Error("Papel 'Músico' no encontrado en el catálogo. Ejecuta el seed.");
+    if (authError) throw authError;
 
-    // 3. Buscar/Crear Residencia y Empleo (obligatorios según el nuevo formulario)
+    const papelMusico = await prisma.papel.findUnique({ where: { papel: "Músico" } });
+    if (!papelMusico) throw new Error("Papel 'Músico' no encontrado en el catálogo.");
+
+    // 2. Buscar/Crear Residencia y Empleo
     const [residenciaRecord, empleoRecord] = await Promise.all([
       prisma.residencia.upsert({
         where: {
@@ -78,11 +77,11 @@ export async function POST(req: Request) {
       })
     ]);
 
-    // 4. Crear o Actualizar el usuario principal (UPSERT por DNI)
+    // 3. Crear o Actualizar el usuario principal (Fuente de Verdad)
     const newUser = await prisma.user.upsert({
       where: { dni: dni || "" },
       update: {
-        clerkUserId: clerkUser.id,
+        supabaseUserId: authUser.user.id,
         name: firstName,
         surname: surname || "",
         email: email,
@@ -95,7 +94,7 @@ export async function POST(req: Request) {
         isActive: true
       },
       create: {
-        clerkUserId: clerkUser.id,
+        supabaseUserId: authUser.user.id,
         name: firstName,
         surname: surname || "",
         dni: dni || "",
@@ -110,7 +109,7 @@ export async function POST(req: Request) {
       }
     });
 
-    // 5. Crear todas las filas de Estructura solicitadas (UPSERT para evitar fallos si ya existía administrativamente)
+    // 4. Estructuras
     for (const pair of groupPairs) {
       const dbAgrup = await prisma.agrupacion.findUnique({ where: { agrupacion: pair.ag } });
       const dbInst = await prisma.seccion.findUnique({ where: { seccion: pair.inst } });
@@ -137,32 +136,25 @@ export async function POST(req: Request) {
       }
     }
 
-    // 6. Sincronizar roles avanzados con Clerk usando la lógica maestra
-    const { syncUserWithClerk } = await import("@/lib/clerk-sync");
-    await syncUserWithClerk(newUser.id);
+    // 5. Marcar código como usado AHORA que todo salió bien
+    await prisma.invitationCode.update({
+      where: { id: invite.id },
+      data: { usedAt: new Date() }
+    });
 
-    return NextResponse.json({ success: true, userId: clerkUser.id, dbId: newUser.id });
+    // 🔄 Sincronizar caché de app_metadata para el nuevo usuario
+    await syncUserMetadata(newUser.id);
+
+    return NextResponse.json({ success: true, userId: authUser.user.id, dbId: newUser.id });
   } catch (error: any) {
     console.error("Error Registrando Miembro:", error);
-    
-    let errorMessage = "Error desconocido en el registro";
-    
-    // Si el error viene de Clerk
-    if (error.clerkError || error.errors) {
-      errorMessage = error.errors?.[0]?.message || error.message || "Error en el servicio de autenticación (Clerk)";
-    } 
-    // Si el error viene de Prisma por campos duplicados (P2002)
-    else if (error.code === 'P2002') {
+    let errorMessage = error.message || "Error desconocido en el registro";
+    if (error.code === 'P2002') {
       const target = error.meta?.target || "";
       if (target.includes("dni")) errorMessage = "El DNI ya está registrado.";
       else if (target.includes("email")) errorMessage = "El correo ya está registrado.";
       else errorMessage = "Ya existe un registro con esos datos.";
     }
-    // Otros errores
-    else {
-      errorMessage = error.message || error.toString();
-    }
-
     return new NextResponse(JSON.stringify({ error: errorMessage }), { status: 400 });
   }
 }

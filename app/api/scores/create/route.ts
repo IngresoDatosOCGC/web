@@ -1,21 +1,18 @@
 import { NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { put } from "@vercel/blob";
 import { logActivity } from "@/lib/logger";
+import { getSessionUser } from "@/lib/auth-utils";
 
 export async function POST(req: Request) {
-  const { userId: clerkId } = await auth();
+  const user = await getSessionUser();
   
-  if (!clerkId) {
+  if (!user) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  const user = await currentUser();
-  const isMaster = !!user?.publicMetadata?.isMaster;
-  const isArchiver = !!user?.publicMetadata?.isArchiver;
-
-  if (!isMaster && !isArchiver) {
+  // Verificar permisos en la DB (Verdad Única)
+  if (!user.isMaster && !user.isArchiver) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
@@ -74,7 +71,7 @@ export async function POST(req: Request) {
     });
     
     // LOG ACTIVIDAD
-    await logActivity("Nueva Partitura Publicada", clerkId, { 
+    await logActivity("Nueva Partitura Publicada", user.supabaseUserId || '', { 
       titulo: title, 
       programa: newScore.category?.name || "Sin programa",
       esDocumento: isDocument 

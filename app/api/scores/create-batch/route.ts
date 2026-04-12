@@ -1,16 +1,14 @@
 import { NextResponse } from 'next/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
 import prisma from '@/lib/prisma';
+import { getSessionUser } from "@/lib/auth-utils";
 
 export async function POST(req: Request) {
-  const { userId } = await auth();
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+  const user = await getSessionUser();
+  
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  const user = await currentUser();
-  const isMaster = user?.publicMetadata?.isMaster;
-  const isArchiver = user?.publicMetadata?.isArchiver;
-
-  if (!isMaster && !isArchiver) {
+  // Seguridad real desde DB
+  if (!user.isMaster && !user.isArchiver) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
@@ -47,7 +45,7 @@ export async function POST(req: Request) {
           roles: roles,
           scoreId: (newScore as any).id
         },
-        userClerkId: userId
+        userAuthId: user.supabaseUserId || ''
       }
     });
 

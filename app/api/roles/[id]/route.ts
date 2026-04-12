@@ -1,17 +1,15 @@
 import prisma from "@/lib/prisma";
-import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth-utils";
 
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { userId } = await auth();
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+  const user = await getSessionUser();
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  const user = await currentUser();
-  const isMaster = !!user?.publicMetadata?.isMaster;
-  if (!isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   const resolvedParams = await params;
 
@@ -30,12 +28,10 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { userId } = await auth();
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+  const user = await getSessionUser();
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  const user = await currentUser();
-  const isMaster = !!user?.publicMetadata?.isMaster;
-  if (!isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   const { name } = await req.json();
 

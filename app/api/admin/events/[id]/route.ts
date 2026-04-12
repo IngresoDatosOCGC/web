@@ -1,18 +1,17 @@
 import { NextResponse } from 'next/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
 import prisma from '@/lib/prisma';
 import { EventType } from '@prisma/client';
 import { logActivity } from '@/lib/logger';
+import { getSessionUser } from "@/lib/auth-utils";
 
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) return new NextResponse("Unauthorized", { status: 401 });
+  const user = await getSessionUser();
 
-  const user = await currentUser();
-  if (!user?.publicMetadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   const resolvedParams = await params;
   const eventId = parseInt(resolvedParams.id);
@@ -23,7 +22,7 @@ export async function DELETE(
 
     await prisma.event.delete({ where: { id: eventId } });
 
-    await logActivity("Evento Cancelado/Eliminado", clerkId, { 
+    await logActivity("Evento Cancelado/Eliminado", user.supabaseUserId || '', { 
       id: eventId, 
       titulo: event.title,
       fecha: event.date
@@ -40,11 +39,10 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) return new NextResponse("Unauthorized", { status: 401 });
+  const user = await getSessionUser();
 
-  const user = await currentUser();
-  if (!user?.publicMetadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   const resolvedParams = await params;
   const eventId = parseInt(resolvedParams.id);
@@ -66,7 +64,7 @@ export async function PATCH(
       include: { category: { select: { id: true, name: true } } }
     });
 
-    await logActivity("Evento Reprogramado/Editado", clerkId, { 
+    await logActivity("Evento Reprogramado/Editado", user.supabaseUserId || '', { 
       id: eventId, 
       nuevoTitulo: updated.title,
       nuevaFecha: updated.date,

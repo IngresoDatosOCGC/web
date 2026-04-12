@@ -1,31 +1,65 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from 'next/server'
+import { updateSession } from '@/lib/supabase/middleware'
+import { createServerClient } from '@supabase/ssr'
 
-// Rutas que SIEMPRE requieren login
-const isProtectedRoute = createRouteMatcher(['/miembros(.*)', '/api/(.*)']);
-// Rutas que son públicas (aunque estén en /api)
-const isPublicRoute = createRouteMatcher([
-  '/api/auth/register-musician',
-  '/api/auth/validate-invite',
-  '/api/roles',
-  '/api/agrupaciones',
-  '/api/unete',
-  '/unete'
-]);
-
-export default clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req) && !isPublicRoute(req)) {
-    const { userId } = await auth();
-    if (!userId) return (await auth()).redirectToSignIn();
-
-    // Redirección forzada: si entran en la base /miembros, al Tablón directo
-    const url = new URL(req.url);
-    if (url.pathname === "/miembros") {
-      return NextResponse.redirect(new URL("/miembros/tablon", req.url));
+export async function middleware(request: NextRequest) {
+  // 1. Actualizar la sesión (refresh token si es necesario)
+  let response = await updateSession(request)
+  
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          response = NextResponse.next({
+            request,
+          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
+        },
+      },
     }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const url = new URL(request.url)
+  const isMiembrosPath = url.pathname.startsWith('/miembros')
+  const isApiPath = url.pathname.startsWith('/api')
+  
+  // Lista de exclusión de rutas públicas (basado en el original)
+  const publicRoutes = [
+    '/api/auth/register-musician',
+    '/api/auth/validate-invite',
+    '/api/roles',
+    '/api/agrupaciones',
+    '/api/unete',
+    '/unete',
+    '/sign-in',
+    '/sign-up'
+  ]
+
+  const isPublicRoute = publicRoutes.some(route => url.pathname.startsWith(route))
+
+  // Si requiere protección y no hay usuario, redirigir a sign-in
+  if ((isMiembrosPath || isApiPath) && !isPublicRoute && !user) {
+    return NextResponse.redirect(new URL('/sign-in', request.url))
   }
-});
+
+  // Redirección forzada de /miembros a /miembros/tablon
+  if (user && url.pathname === "/miembros") {
+    return NextResponse.redirect(new URL("/miembros/tablon", request.url))
+  }
+
+  return response
+}
 
 export const config = {
   matcher: ['/((?!.*\\..*|_next).*)', '/', '/(api|trpc)(.*)'],
-};
+}

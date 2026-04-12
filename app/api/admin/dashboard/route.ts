@@ -1,27 +1,24 @@
 import { NextResponse } from 'next/server';
-import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import prisma from '@/lib/prisma';
+import { getSessionUser } from "@/lib/auth-utils";
 
 export async function GET() {
-  const { userId } = await auth();
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+  const admin = await getSessionUser();
 
-  const user = await currentUser();
-  if (!user?.publicMetadata?.isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!admin) return new NextResponse("Unauthorized", { status: 401 });
+
+  // Verificar admin vía DB (Fuente de verdad definitiva)
+  if (!admin.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   try {
     const totalUsers = await prisma.user.count();
     const totalScores = await prisma.score.count();
     const totalEvents = await prisma.event.count();
 
-    const clerk = await clerkClient();
-    const clerkUsersResponse = await clerk.users.getUserList();
-    const clerkUsers = clerkUsersResponse.data;
-    
-    // Contamos usuarios Clerk baneados localmente
-    const totalBanned = clerkUsers.filter(u => u.publicMetadata?.isBanned).length;
+    const totalBanned = await prisma.user.count({ 
+      where: { isActive: false } 
+    });
 
-    // Contar usuarios por agrupación y desglosar por sección
     const agrupaciones = await prisma.agrupacion.findMany({
       include: {
         estructuras: {

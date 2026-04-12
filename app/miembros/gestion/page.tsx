@@ -1,7 +1,8 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
+import { useSupabaseAuth } from "@/lib/supabase-auth-context";
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import TabNavigation, { TabType } from '@/components/admin/TabNavigation';
 import DashboardPanel from '@/components/admin/DashboardPanel';
 import ScoresPanel from '@/components/admin/ScoresPanel';
@@ -17,29 +18,27 @@ import { useNotifications } from '@/components/ui/NotificationContext';
 import '@/css/miembros.css';
 
 export default function AdminOCGCPartituras() {
-  const { isLoaded, user } = useUser();
+  const { user, loading: isAuthLoading, isMaster, isArchiver } = useSupabaseAuth();
   const { showToast } = useNotifications();
+  const router = useRouter();
   
-  const isMaster = !!user?.publicMetadata?.isMaster;
-  const isArchiver = !!user?.publicMetadata?.isArchiver || isMaster;
-
   const [activeTab, setActiveTab] = useState<TabType | null>(null);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
 
   // Data states
-  const [scores, setScores] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [agrupaciones, setAgrupaciones] = useState([]);
-  const [secciones, setSecciones] = useState([]);
-  const [papeles, setPapeles] = useState([]);
-  const [tagsDict, setTagsDict] = useState({});
+  const [scores, setScores] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [agrupaciones, setAgrupaciones] = useState<any[]>([]);
+  const [secciones, setSecciones] = useState<any[]>([]);
+  const [papeles, setPapeles] = useState<any[]>([]);
+  const [tagsDict, setTagsDict] = useState<any>({});
   const [predefinedTags, setPredefinedTags] = useState<string[]>([]);
   
   // Members data (master only)
-  const [members, setMembers] = useState([]);
-  const [invitations, setInvitations] = useState([]);
-  const [joinRequests, setJoinRequests] = useState([]);
+  const [members, setMembers] = useState<any[]>([]);
+  const [invitations, setInvitations] = useState<any[]>([]);
+  const [joinRequests, setJoinRequests] = useState<any[]>([]);
 
   const loadData = async (silent = false) => {
     try {
@@ -63,15 +62,15 @@ export default function AdminOCGCPartituras() {
         tagsRes.json()
       ]);
 
-      setScores(scoresData);
-      setCategories(catData);
-      setAgrupaciones(agrData);
-      setSecciones(secData);
-      setPapeles(papData);
-      // tagsData de /api/roles es un objeto familias -> secciones[]
-      const flatTags = Object.values(tagsData).flat().map((t: any) => t.name);
+      setScores(Array.isArray(scoresData) ? scoresData : []);
+      setCategories(Array.isArray(catData) ? catData : []);
+      setAgrupaciones(Array.isArray(agrData) ? agrData : []);
+      setSecciones(Array.isArray(secData) ? secData : []);
+      setPapeles(Array.isArray(papData) ? papData : []);
+      
+      const flatTags = tagsData ? Object.values(tagsData).flat().map((t: any) => t.name) : [];
       setPredefinedTags(flatTags);
-      setTagsDict(tagsData);
+      setTagsDict(tagsData || {});
 
       if (silent) showToast("✓ Catálogos actualizados");
     } catch (error) {
@@ -94,9 +93,9 @@ export default function AdminOCGCPartituras() {
         joinRes.json()
       ]);
 
-      setMembers(usersData);
-      setInvitations(invData);
-      setJoinRequests(joinData);
+      setMembers(Array.isArray(usersData) ? usersData : []);
+      setInvitations(Array.isArray(invData) ? invData : []);
+      setJoinRequests(Array.isArray(joinData) ? joinData : []);
 
       if (silent) showToast("✓ Lista de miembros actualizada");
     } catch (error) {
@@ -105,11 +104,11 @@ export default function AdminOCGCPartituras() {
   };
 
   useEffect(() => {
-    if (isLoaded) {
+    if (!isAuthLoading) {
       if (!user) {
-        window.location.href = "/sign-in";
+        router.push("/sign-in");
       } else if (!isMaster && !isArchiver) {
-        window.location.href = "/miembros/tablon";
+        router.push("/miembros/tablon");
       } else {
         if (activeTab === null) {
           setActiveTab(isMaster ? "dashboard" : "scores");
@@ -118,9 +117,9 @@ export default function AdminOCGCPartituras() {
         if (isMaster) loadMembersData();
       }
     }
-  }, [isLoaded, user]);
+  }, [isAuthLoading, user, isMaster, isArchiver]);
 
-  if (!isLoaded || !user) {
+  if (isAuthLoading || !user) {
     return (
       <div className="admin-loading-screen">
         <div className="loader"></div>
@@ -177,7 +176,7 @@ export default function AdminOCGCPartituras() {
               agrupaciones={agrupaciones}
               papeles={papeles}
               secciones={secciones}
-              onRefresh={() => loadData(true)}
+              onRefresh={() => loadData(true)} 
             />
           )}
 

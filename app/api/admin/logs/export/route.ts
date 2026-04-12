@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
+import { getSessionUser } from "@/lib/auth-utils";
 
 export async function GET() {
-  const { userId } = await auth();
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+  const user = await getSessionUser();
 
-  const user = await currentUser();
-  if (!user?.publicMetadata?.isMaster) {
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
+  if (!user.isMaster) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
@@ -16,14 +15,14 @@ export async function GET() {
       orderBy: { createdAt: 'desc' }
     });
 
-    const header = "ID,Fecha,Acción,UsuarioMetadata,DNI,Detalles(Estructurado)\n";
+    const header = "ID,Fecha,Acción,UsuarioAuthID,Detalles(Estructurado)\n";
     const csvContent = logs.map(l => {
       // Extraemos la info resumida si el details es JSON
       const d = l.details as any;
       const detailsStr = typeof d === 'object' 
         ? JSON.stringify(d).replace(/"/g, '""') 
         : String(l.details || '').replace(/"/g, '""');
-      return `${l.id},"${new Date(l.createdAt).toLocaleString()}","${l.action}","${l.userClerkId}","${detailsStr}"`;
+      return `${l.id},"${new Date(l.createdAt).toLocaleString()}","${l.action}","${l.userAuthId}","${detailsStr}"`;
     }).join('\n');
 
     return new NextResponse(header + csvContent, {

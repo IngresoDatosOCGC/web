@@ -1,19 +1,21 @@
 import prisma from "@/lib/prisma";
-import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { del } from "@vercel/blob";
 import { logActivity } from "@/lib/logger";
+import { getSessionUser } from "@/lib/auth-utils";
 
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) return new NextResponse("Unauthorized", { status: 401 });
+  const user = await getSessionUser();
 
-  const user = await currentUser();
-  const isArchiver = !!user?.publicMetadata?.isArchiver || !!user?.publicMetadata?.isMaster;
-  if (!isArchiver) return new NextResponse("Forbidden", { status: 403 });
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
+
+  // Verificar si es Archivero o Master en la DB
+  if (!user.isArchiver && !user.isMaster) {
+    return new NextResponse("Forbidden", { status: 403 });
+  }
 
   const resolvedParams = await params;
   const scoreId = parseInt(resolvedParams.id);
@@ -37,7 +39,7 @@ export async function DELETE(
       where: { id: scoreId }
     });
 
-    await logActivity("Partitura Eliminada", clerkId, { 
+    await logActivity("Partitura Eliminada", user.supabaseUserId || '', { 
       id: scoreId, 
       titulo: score?.title || "Desconocido" 
     });
@@ -53,12 +55,14 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) return new NextResponse("Unauthorized", { status: 401 });
+  const user = await getSessionUser();
 
-  const user = await currentUser();
-  const isArchiver = !!user?.publicMetadata?.isArchiver || !!user?.publicMetadata?.isMaster;
-  if (!isArchiver) return new NextResponse("Forbidden", { status: 403 });
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
+
+  // Verificar si es Archivero o Master en la DB
+  if (!user.isArchiver && !user.isMaster) {
+    return new NextResponse("Forbidden", { status: 403 });
+  }
 
   const body = await req.json();
   const { title, categoryId, allowedRoles, allowedAgrupaciones, isDocument } = body;
@@ -80,7 +84,7 @@ export async function PATCH(
       include: { category: true }
     });
 
-    await logActivity("Partitura Editada", clerkId, { 
+    await logActivity("Partitura Editada", user.supabaseUserId || '', { 
       id: scoreId, 
       nuevoTitulo: updated.title,
       programa: updated.category?.name || "Sin programa"

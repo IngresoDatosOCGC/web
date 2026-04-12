@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // =============================================
@@ -55,7 +56,7 @@ model SystemConfig {
 
 model User {
   id            Int          @id @default(autoincrement())
-  clerkUserId   String?      @unique
+  supabaseUserId String?      @unique
   name          String
   surname       String
   dni           String       @unique
@@ -73,6 +74,8 @@ model User {
 
   isActive      Boolean      @default(true)
   isExternal    Boolean      @default(false)
+  isMaster      Boolean      @default(false)
+  isArchiver    Boolean      @default(false)
   estructuras   Estructura[]
   matriculas    Matricula[]
 }
@@ -82,7 +85,7 @@ model Estructura {
   userId           Int
   user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   papelId          Int
-  papel            Papel                @relation(fields: [papelId], references: [id])
+  papel                Papel                @relation(fields: [papelId], references: [id])
   agrupacionId     Int
   agrupacion       Agrupacion           @relation(fields: [agrupacionId], references: [id])
   seccionId        Int
@@ -186,11 +189,11 @@ model ActivityLog {
   id          Int      @id @default(autoincrement())
   action      String   // Qué se hizo (ej: "Usuario Baneado", "Partitura Subida")
   details     Json?    // Detalles adicionales en formato JSON estructurado
-  userClerkId String?  // Quién hizo la acción (Admin)
+  userAuthId  String?  // Quién hizo la acción (Admin)
   createdAt   DateTime @default(now())
 
   @@index([createdAt])
-  @@index([userClerkId])
+  @@index([userAuthId])
 }
 
 model JoinRequest {

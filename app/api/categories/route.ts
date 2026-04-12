@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
-import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { logActivity } from "@/lib/logger";
+import { getSessionUser } from "@/lib/auth-utils";
 
 export async function GET() {
   const categories = await prisma.category.findMany({
@@ -11,12 +11,10 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) return new NextResponse("Unauthorized", { status: 401 });
+  const user = await getSessionUser();
+  if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  const user = await currentUser();
-  const isMaster = !!user?.publicMetadata?.isMaster;
-  if (!isMaster) return new NextResponse("Forbidden", { status: 403 });
+  if (!user.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   const { name, eventDate } = await req.json();
 
@@ -27,7 +25,7 @@ export async function POST(req: Request) {
     }
   });
 
-  await logActivity("Programa Creado", clerkId, { 
+  await logActivity("Programa Creado", user.supabaseUserId || '', { 
     nombre: name, 
     fecha: eventDate || "Sin fecha" 
   });
