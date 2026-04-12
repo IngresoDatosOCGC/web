@@ -11,6 +11,7 @@ export async function getSessionUser() {
     select: {
       id: true,
       email: true,
+      supabaseUserId: true,
       isMaster: true,
       isArchiver: true
     }
