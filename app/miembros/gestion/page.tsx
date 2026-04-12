@@ -131,13 +131,13 @@ export default function AdminOCGCPartituras() {
 
   return (
     <div className="admin-orchestrator-page">
-      <TabNavigation 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
-        isMaster={isMaster} 
-        isExpanded={isSidebarExpanded}
-        onToggle={() => setIsSidebarExpanded(!isSidebarExpanded)}
-      />
+      <div className="admin-sidebar-wrapper">
+        <TabNavigation 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          isMaster={isMaster} 
+        />
+      </div>
 
       <main className="admin-main-content">
         <div className="admin-view-container">

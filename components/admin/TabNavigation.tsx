@@ -12,100 +12,96 @@ interface TabNavigationProps {
   onToggle: () => void;
 }
 
-export default function TabNavigation({ activeTab, setActiveTab, isMaster, isExpanded, onToggle }: TabNavigationProps) {
+export default function TabNavigation({ activeTab, setActiveTab, isMaster }: Omit<TabNavigationProps, 'isExpanded' | 'onToggle'>) {
+  const [isHovered, setIsHovered] = React.useState(false);
+  const isShowExpanded = isHovered;
+
   return (
-    <aside className={`admin-sidebar ${isExpanded ? 'expanded' : 'collapsed'}`}>
-      <button className="sidebar-toggle-btn" onClick={onToggle}>
-        {isExpanded ? '◀' : '▶'}
+    <aside 
+      className={`admin-sidebar ${isShowExpanded ? 'expanded' : 'collapsed'}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <button 
+        onClick={() => setActiveTab('dashboard')} 
+        className={activeTab === 'dashboard' ? 'active' : ''}
+        title="Dashboard"
+      >
+        <span className="sidebar-icon">📊</span>
+        {isShowExpanded && <span className="sidebar-text">Dashboard</span>}
       </button>
-
-      <div className="sidebar-group">
-        <label>{isExpanded ? 'General' : 'GEN'}</label>
+      {isMaster && (
         <button 
-          onClick={() => setActiveTab('dashboard')} 
-          className={activeTab === 'dashboard' ? 'active' : ''}
-          title="Dashboard"
+          onClick={() => setActiveTab('personal')} 
+          className={activeTab === 'personal' ? 'active' : ''}
+          title="Gestión de Miembros"
         >
-          <span className="sidebar-icon">📊</span>
-          {isExpanded && <span className="sidebar-text">Dashboard</span>}
+          <span className="sidebar-icon">👥</span>
+          {isShowExpanded && <span className="sidebar-text">Gestión de Miembros</span>}
         </button>
-        {isMaster && (
-          <button 
-            onClick={() => setActiveTab('personal')} 
-            className={activeTab === 'personal' ? 'active' : ''}
-            title="Gestión de Miembros"
-          >
-            <span className="sidebar-icon">👥</span>
-            {isExpanded && <span className="sidebar-text">Gestión de Miembros</span>}
-          </button>
-        )}
-        {isMaster && (
-          <button 
-            onClick={() => setActiveTab('requests')} 
-            className={activeTab === 'requests' ? 'active' : ''}
-            title="Solicitudes"
-          >
-            <span className="sidebar-icon">📩</span>
-            {isExpanded && <span className="sidebar-text">Solicitudes</span>}
-          </button>
-        )}
-      </div>
-
-      <div className="sidebar-group">
-        <label>{isExpanded ? 'Archivo Musical' : 'ARC'}</label>
+      )}
+      {isMaster && (
         <button 
-          onClick={() => setActiveTab('scores')} 
-          className={activeTab === 'scores' ? 'active' : ''}
-          title="Partituras"
+          onClick={() => setActiveTab('requests')} 
+          className={activeTab === 'requests' ? 'active' : ''}
+          title="Solicitudes"
         >
-          <span className="sidebar-icon">🎼</span>
-          {isExpanded && <span className="sidebar-text">Partituras y Docs</span>}
+          <span className="sidebar-icon">📩</span>
+          {isShowExpanded && <span className="sidebar-text">Solicitudes</span>}
         </button>
+      )}
+      <button 
+        onClick={() => setActiveTab('scores')} 
+        className={activeTab === 'scores' ? 'active' : ''}
+        title="Partituras"
+      >
+        <span className="sidebar-icon">🎼</span>
+        {isShowExpanded && <span className="sidebar-text">Partituras y Docs</span>}
+      </button>
+      <button 
+        onClick={() => setActiveTab('roles')} 
+        className={activeTab === 'roles' ? 'active' : ''}
+        title="Diccionario"
+      >
+        <span className="sidebar-icon">🏷️</span>
+        {isShowExpanded && <span className="sidebar-text">Diccionario Técnico</span>}
+      </button>
+      {isMaster && (
         <button 
-          onClick={() => setActiveTab('roles')} 
-          className={activeTab === 'roles' ? 'active' : ''}
-          title="Diccionario"
+          onClick={() => setActiveTab('sections')} 
+          className={activeTab === 'sections' ? 'active' : ''}
+          title="Estructuras"
         >
-          <span className="sidebar-icon">🏷️</span>
-          {isExpanded && <span className="sidebar-text">Diccionario Técnico</span>}
+          <span className="sidebar-icon">🎺</span>
+          {isShowExpanded && <span className="sidebar-text">Secciones y Grupos</span>}
         </button>
-        {isMaster && (
-          <button 
-            onClick={() => setActiveTab('sections')} 
-            className={activeTab === 'sections' ? 'active' : ''}
-            title="Estructuras"
-          >
-            <span className="sidebar-icon">🎺</span>
-            {isExpanded && <span className="sidebar-text">Secciones y Grupos</span>}
-          </button>
-        )}
+      )}
+      <button 
+        onClick={() => setActiveTab('categories')} 
+        className={activeTab === 'categories' ? 'active' : ''}
+        title="Programas"
+      >
+        <span className="sidebar-icon">📂</span>
+        {isShowExpanded && <span className="sidebar-text">Programas / Conciertos</span>}
+      </button>
+      <button 
+        onClick={() => setActiveTab('calendar')} 
+        className={activeTab === 'calendar' ? 'active' : ''}
+        title="Agenda"
+      >
+        <span className="sidebar-icon">📅</span>
+        {isShowExpanded && <span className="sidebar-text">Agenda y Ensayos</span>}
+      </button>
+      {isMaster && (
         <button 
-          onClick={() => setActiveTab('categories')} 
-          className={activeTab === 'categories' ? 'active' : ''}
-          title="Programas"
+          onClick={() => setActiveTab('logs')} 
+          className={activeTab === 'logs' ? 'active' : ''}
+          title="Auditoría"
         >
-          <span className="sidebar-icon">📂</span>
-          {isExpanded && <span className="sidebar-text">Programas / Conciertos</span>}
+          <span className="sidebar-icon">📜</span>
+          {isShowExpanded && <span className="sidebar-text">Registros</span>}
         </button>
-        <button 
-          onClick={() => setActiveTab('calendar')} 
-          className={activeTab === 'calendar' ? 'active' : ''}
-          title="Agenda"
-        >
-          <span className="sidebar-icon">📅</span>
-          {isExpanded && <span className="sidebar-text">Agenda y Ensayos</span>}
-        </button>
-        {isMaster && (
-          <button 
-            onClick={() => setActiveTab('logs')} 
-            className={activeTab === 'logs' ? 'active' : ''}
-            title="Auditoría"
-          >
-            <span className="sidebar-icon">📜</span>
-            {isExpanded && <span className="sidebar-text">Registros</span>}
-          </button>
-        )}
-      </div>
+      )}
     </aside>
   );
 }

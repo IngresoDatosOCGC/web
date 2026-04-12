@@ -14,7 +14,7 @@
   justify-content: space-between;
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 10;
   box-shadow: 0 2px 16px rgba(71,138,201,0.08);
 }
 
@@ -1192,7 +1192,7 @@ body { background-color: #f7f7f7 !important; min-height: 100vh; padding-top: 0 !
         .calendar-tooltip {
           position: absolute; bottom: 110%; left: 50%; transform: translateX(-50%);
           width: 180px; background: #fff; border: 1px solid #eef2f5; border-radius: 10px;
-          padding: 0.8rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 100;
+          padding: 0.8rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 10;
           text-align: left; pointer-events: none; animation: fadeIn 0.15s ease-out;
         }
         @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(5px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
@@ -1208,7 +1208,7 @@ body { background-color: #f7f7f7 !important; min-height: 100vh; padding-top: 0 !
           width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #fff;
         }
 
-/* Utilidades de Botones Pequeños */
+/* Utilidades de Botones Pequeï¿½os */
 .btn-success-sm { background: #2ecc71 !important; color: white !important; padding: 0.5rem 0.8rem !important; font-size: 0.75rem !important; }
 .btn-navy-sm { background: #1a2a4b !important; color: white !important; padding: 0.5rem 0.8rem !important; font-size: 0.75rem !important; }
 .btn-outline-navy-sm { background: transparent !important; color: #1a2a4b !important; border: 1px solid #1a2a4b !important; padding: 0.5rem 0.8rem !important; font-size: 0.75rem !important; }
@@ -1302,7 +1302,7 @@ body { background-color: #f7f7f7 !important; min-height: 100vh; padding-top: 0 !
 .section-title-small { font-size: 0.95rem; font-weight: 700; color: #1a2a4b; margin-bottom: 0.8rem; }
 
 
-/* Estilos Profesionales para Catálogos */
+/* Estilos Profesionales para Catï¿½logos */
 .btn-icon-edit { background: #f8f9fa; border: 1px solid #e1e8ed; color: #1a2a4b; padding: 4px 8px; border-radius: 6px; cursor: pointer; transition: 0.2s; }
 .btn-icon-edit:hover { background: #1a2a4b; color: white; border-color: #1a2a4b; }
 
@@ -1310,7 +1310,7 @@ body { background-color: #f7f7f7 !important; min-height: 100vh; padding-top: 0 !
 .cat-badge-private { background: #f1f5f9; color: #64748b; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; }
 .cat-badge-director { background: #fef3c7; color: #d97706; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; }
 
-/* Grid de Invitación */
+/* Grid de Invitaciï¿½n */
 .invitation-fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
 @media (max-width: 600px) { .invitation-fields-grid { grid-template-columns: 1fr; } }
 
@@ -1603,88 +1603,154 @@ body { background-color: #f7f7f7 !important; min-height: 100vh; padding-top: 0 !
 .admin-orchestrator-page {
   display: flex !important;
   flex-direction: row !important;
-  gap: 2.5rem !important;
-  padding: 0 !important; /* The container-white-ocgc already has padding */
+  gap: 0 !important;
+  padding: 0 !important;
   align-items: flex-start;
+  min-height: 100vh;
+  position: relative;
 }
 
-.admin-sidebar {
-  width: 260px;
+/* El Wrapper es el que reserva el sitio (80px) */
+.admin-sidebar-wrapper {
+  z-index: 10; /* Bajamos de 1000 a 100 */
+  width: 80px;
   flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+/* La barra lateral vive dentro del wrapper */
+.admin-sidebar {
+  width: 80px;
+  height: calc(100vh - 40px);
   position: sticky;
-  top: 2rem;
+  top: 20px;
+  left: 0;
+  background: white;
+  border: 1px solid #f1f5f9;
+  border-radius: 20px;
+  margin: 0; /* Eliminamos el margen que la desplazaba */
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Alineamos los grupos al centro */
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+.admin-sidebar.expanded {
+  z-index: 20 !important;
+  width: 350px !important;
+  align-items: stretch; /* En modo expandido volvemos al modo lista completa */
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  box-shadow: 15px 0 40px rgba(0,0,0,0.1);
 }
 
 .admin-main-content {
   flex: 1;
-  min-width: 0; /* Prevent overflow issue in flex */
+  min-width: 0;
+  padding: 20px 40px;
 }
 
-@media (max-width: 1000px) {
-  .admin-orchestrator-page {
-    flex-direction: column !important;
-  }
-  .admin-sidebar {
-    width: 100%;
-    position: static;
-  }
+.admin-view-container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-
-/* Sidebar Collapsible Styles */
-.admin-sidebar.collapsed {
-  width: 80px !important;
-  padding: 1.5rem 0.8rem !important;
+/* Grupos y botones internos */
+.sidebar-group {
+  padding: 1.5rem 0; /* Padding vertical solo */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   align-items: center;
 }
 
-.admin-sidebar.collapsed .sidebar-group label {
-  font-size: 0.5rem;
-  padding-left: 0;
+.admin-sidebar.expanded .sidebar-group {
+  align-items: stretch;
+  padding: 1.5rem 1rem;
+}
+
+.sidebar-group label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.2rem;
   text-align: center;
+  transition: opacity 0.2s;
 }
 
-.admin-sidebar.collapsed button {
-  justify-content: center;
-  padding: 0.8rem;
+.admin-sidebar.expanded .sidebar-group label {
+  text-align: left;
+  padding-left: 0.5rem;
 }
 
-.sidebar-toggle-btn {
-  position: absolute;
-  top: 1rem;
-  right: -12px;
-  width: 24px;
-  height: 24px;
-  background: #1a2a4b;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
+.admin-sidebar button {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 0.6rem;
-  z-index: 10;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  justify-content: center; /* Centrado base */
+  padding: 12px;
+  border-radius: 14px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  width: 50px;
+  height: 50px;
 }
 
-.admin-sidebar.collapsed .sidebar-toggle-btn {
-  right: -12px;
+.admin-sidebar.expanded button {
+  justify-content: flex-start;
+  width: 100%;
+  height: auto;
+  padding: 12px 14px;
+}
+
+
+.admin-sidebar button:hover {
+  background: #f1f5f9;
+  color: #1a2a4b;
+  transform: scale(1.02);
+}
+
+.admin-sidebar button.active {
+  background: #1a2a4b;
+  color: white;
+  box-shadow: 0 8px 20px rgba(26, 42, 75, 0.2);
 }
 
 .sidebar-icon {
-  font-size: 1.2rem;
+  font-size: 1.4rem; /* Un poco mÃ¡s grandes para que se vean bien */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.admin-sidebar.collapsed button:hover .sidebar-icon {
+  transform: scale(1.1);
 }
 
 .sidebar-text {
-  white-space: nowrap;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: opacity 0.2s;
 }
 
 
-.admin-sidebar {
-  position: relative;
+/* Responsive */
+@media (max-width: 1024px) {
+  .admin-orchestrator-page { flex-direction: column; }
+  .admin-sidebar-wrapper { width: 100%; height: auto; margin-bottom: 20px; }
+  .admin-sidebar { width: 100% !important; height: auto; position: static; margin: 0; }
 }
-
 
 /* SPECIFIC COMPONENT STYLES FROM USER IMAGES */
 
