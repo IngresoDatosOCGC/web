@@ -8,7 +8,7 @@ import { LogOut, Menu, X } from 'lucide-react';
 import '@/css/miembros.css';
 
 export default function HeaderMiembros() {
-  const { user, session, isMaster, isArchiver, signOut } = useSupabaseAuth();
+  const { user, session, isMaster, isArchiver, isSeller, signOut } = useSupabaseAuth();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   
@@ -72,6 +72,9 @@ export default function HeaderMiembros() {
                   Gestión
                 </Link>
               </li>
+            )}
+            
+            {(isAdmin || isSeller) && (
               <li>
                 <a
                   href="#"
@@ -83,6 +86,7 @@ export default function HeaderMiembros() {
                   Subpanel 🔗
                 </a>
               </li>
+            )}
             </>
           )}
 

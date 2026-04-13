@@ -52,6 +52,10 @@ export async function GET() {
       );
     }
 
+    if (dbUser.isSeller || dbUser.isMaster) {
+      permissions.push('service_b:access');
+    }
+
     // Respondemos con la "Verdad" de la base de datos
     return NextResponse.json({
       dbId: dbUser.id,
@@ -59,6 +63,7 @@ export async function GET() {
       fullName: `${dbUser.name} ${dbUser.surname}`.trim(),
       isMaster: !!dbUser.isMaster,
       isArchiver: !!dbUser.isArchiver,
+      isSeller: !!dbUser.isSeller,
       roles: artisticRoles,
       permissions: permissions
     });

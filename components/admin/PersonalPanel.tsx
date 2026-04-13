@@ -244,7 +244,7 @@ export default function PersonalPanel({
         setIsManualCreateOpen(false);
         setManualUser({
           firstName: '', surname: '', email: '', dni: '', matricula: '', phone: '',
-          username: '', password: '', isMaster: false, isArchiver: false, isExternal: false,
+          username: '', password: '', isMaster: false, isArchiver: false, isSeller: false, isExternal: false,
           artisticProfiles: [{ agrupacion: '', seccion: '', papel: 'Músico' }]
         });
         onRefreshMembers();

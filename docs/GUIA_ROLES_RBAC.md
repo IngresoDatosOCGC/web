@@ -62,25 +62,32 @@ if (!userRole && !user.user_metadata?.isMaster) {
 
 ---
 
-## 🛡️ Cómo Aplicar Permisos en el Código Principal
+## 🗂️ Checklist de Archivos: Añadir un Nuevo Rol
 
-### En el Servidor (APIs)
-Utiliza siempre `getSessionUser()` para verificar el rol contra la DB real:
-```typescript
-const user = await getSessionUser();
-if (!user?.isMaster && !user?.isSeller) {
-  return new NextResponse("Acceso Denegado", { status: 403 });
-}
-```
+Cuando decidas crear un nuevo rol (ej: `isTesorero`), **debes** actualizar estos archivos en orden para que el sistema sea consistente:
 
-### En el Cliente (Componentes)
-Utiliza el hook `useSupabaseAuth` (o lee el token) para la interfaz reactiva:
-```tsx
-const { user } = useSupabaseAuth();
-const canAccess = user?.app_metadata?.isSeller || user?.app_metadata?.isMaster;
+### 1. Corazón del Sistema (Backend & DB)
+- [ ] `prisma/schema.prisma`: Añadir el campo booleano al modelo `User`.
+- [ ] `lib/supabase-sync.ts`: Sincronizar el flag con la caché de Supabase (`app_metadata`).
+- [ ] `app/api/auth/me/route.ts`: Incluir el nuevo flag en la respuesta y asignar sus permisos granulares.
 
-{canAccess && <Link href="...">Panel de Ventas</Link>}
-```
+### 2. Infraestructura Frontend (Contexto)
+- [ ] `lib/supabase-auth-context.tsx`: Añadir el flag a los tipos (`AuthProfile`, `AuthContextType`) y exponerlo en el Provider.
+
+### 3. APIs de Gestión (Panel Admin)
+- [ ] `app/api/admin/users/route.ts`: Añadir la acción `toggle-nuevo-rol` en el `POST` y mapearlo en el `GET`.
+- [ ] `app/api/admin/users/create/route.ts`: Incluir el flag en la lógica de creación manual de usuarios.
+
+### 4. Interfaz de Usuario (UI)
+- [ ] `components/admin/PersonalPanel.tsx`: 
+    - Actualizar estado inicial y reset de `manualUser`.
+    - Añadir la función `toggleStatus`.
+    - Añadir columna en la tabla y checkbox en el modal.
+    - Actualizar filtros de búsqueda (`useMemo`).
+- [ ] `components/HeaderMiembros.tsx`: Controlar la visibilidad de enlaces o botones basados en el nuevo rol.
+
+### 5. (Opcional) Microservicios
+- [ ] `servidor_x/api/index.js`: Actualizar el middleware de autorización para permitir el paso al nuevo rol.
 
 ---
 

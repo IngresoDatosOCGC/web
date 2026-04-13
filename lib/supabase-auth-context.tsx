@@ -10,6 +10,7 @@ interface AuthProfile {
   permissions: string[];
   isMaster: boolean;
   isArchiver: boolean;
+  isSeller: boolean;
   name: string;
   surname: string;
 }
@@ -21,6 +22,7 @@ interface AuthContextType {
   isLoading: boolean;
   isMaster: boolean;   // Cacheado en app_metadata (Fast UI)
   isArchiver: boolean; // Cacheado en app_metadata (Fast UI)
+  isSeller: boolean;   // Cacheado en app_metadata (Fast UI)
   signOut: () => Promise<void>;
   hasPermission: (permission: string) => boolean;
   refreshProfile: () => Promise<void>;
@@ -108,6 +110,7 @@ export const SupabaseAuthProvider = ({ children }: { children: React.ReactNode }
   // UI Flags desde app_metadata (Caché rápida para el renderizado inicial)
   const isMaster = !!(profile?.isMaster ?? user?.app_metadata?.isMaster);
   const isArchiver = !!(profile?.isArchiver ?? user?.app_metadata?.isArchiver);
+  const isSeller = !!(profile?.isSeller ?? user?.app_metadata?.isSeller);
 
   return (
     <AuthContext.Provider value={{ 
@@ -117,6 +120,7 @@ export const SupabaseAuthProvider = ({ children }: { children: React.ReactNode }
       isLoading, 
       isMaster, 
       isArchiver, 
+      isSeller,
       signOut, 
       hasPermission,
       refreshProfile
