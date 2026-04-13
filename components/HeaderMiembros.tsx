@@ -25,10 +25,11 @@ export default function HeaderMiembros() {
     }
 
     if (session?.access_token) {
-      // Usamos la variable de entorno para mayor flexibilidad
-      window.open(`${externalUrl}/?access_token=${session.access_token}`, '_blank');
+      // Inyectamos el token en la URL para que el servidor externo pueda validar la identidad
+      const redirectUrl = `${externalUrl}/?access_token=${session.access_token}`;
+      window.open(redirectUrl, '_blank');
     } else {
-      alert("No se pudo obtener el token de sesión. Por favor, recarga la página.");
+      alert("⚠️ Error de Autenticación: No se ha detectado una sesión activa. Prueba a cerrar sesión y volver a entrar para refrescar tus permisos.");
     }
   };
 
