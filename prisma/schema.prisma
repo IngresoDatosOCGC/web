@@ -76,6 +76,7 @@ model User {
   isExternal    Boolean      @default(false)
   isMaster      Boolean      @default(false)
   isArchiver    Boolean      @default(false)
+  isSeller      Boolean      @default(false)
   estructuras   Estructura[]
   matriculas    Matricula[]
 }

@@ -40,6 +40,7 @@ export async function GET() {
       roles: db.estructuras.filter(e => e.activo).map(e => e.seccion.seccion),
       isArchiver: !!db.isArchiver,
       isMaster: !!db.isMaster,
+      isSeller: !!db.isSeller,
       isActive: db.isActive,
       isExternal: db.isExternal,
       birthDate: db.birthDate,
@@ -66,7 +67,7 @@ export async function POST(req: Request) {
   if (!admin?.isMaster) return new NextResponse("Unauthorized", { status: 401 });
 
   const body = await req.json();
-  const { userId, action, isArchiver, isMaster, estructuraId, activo, atril } = body;
+  const { userId, action, isArchiver, isMaster, isSeller, estructuraId, activo, atril } = body;
 
   try {
       const isLocalOnly = typeof userId === 'string' && userId.startsWith('ext_');
@@ -165,6 +166,19 @@ export async function POST(req: Request) {
         await logActivity("Cambio permiso Master", admin.supabaseUserId || '', { 
           target: targetName, 
           isMaster: newValue 
+        });
+      }
+
+      // Acción para cambiar permiso de Vendedor (EN LA DB)
+      if (action === "toggle-seller") {
+        const newValue = isSeller !== undefined ? isSeller : !dbUser.isSeller;
+        await prisma.user.update({
+          where: { id: dbId },
+          data: { isSeller: newValue }
+        });
+        await logActivity("Cambio permiso Vendedor", admin.supabaseUserId || '', { 
+          target: targetName, 
+          isSeller: newValue 
         });
       }
 

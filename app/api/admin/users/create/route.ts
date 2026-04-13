@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     const data = await req.json();
     const {
       firstName, surname, email, username, password, dni, phone, matricula,
-      isMaster, isArchiver, isExternal,
+      isMaster, isArchiver, isSeller, isExternal,
       artisticProfiles // Array de { agrupacion, seccion, papel }
     } = data;
 
@@ -61,6 +61,7 @@ export async function POST(req: Request) {
         isExternal: !!isExternal,
         isMaster: !!isMaster,
         isArchiver: !!isArchiver,
+        isSeller: !!isSeller,
         isActive: true
       },
       create: {
@@ -73,6 +74,7 @@ export async function POST(req: Request) {
         isExternal: !!isExternal,
         isMaster: !!isMaster,
         isArchiver: !!isArchiver,
+        isSeller: !!isSeller,
         isActive: true
       }
     });

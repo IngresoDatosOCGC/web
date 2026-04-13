@@ -66,6 +66,7 @@ export default function PersonalPanel({
     password: '',
     isMaster: false,
     isArchiver: false,
+    isSeller: false,
     isExternal: false,
     artisticProfiles: [{ agrupacion: '', seccion: '', papel: 'Músico' }]
   });
@@ -140,6 +141,20 @@ export default function PersonalPanel({
       });
       if (res.ok) {
         showToast(`Permisos Master ${!current ? 'activados' : 'desactivados'}`);
+        onRefreshMembers();
+      }
+    } catch { showToast("Error al actualizar", "error"); }
+  };
+
+  const toggleSellerStatus = async (userId: string, current: boolean) => {
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        body: JSON.stringify({ userId, action: "toggle-seller", status: !current }),
+        headers: { "Content-Type": "application/json" }
+      });
+      if (res.ok) {
+        showToast(`Permisos Vendedor ${!current ? 'activados' : 'desactivados'}`);
         onRefreshMembers();
       }
     } catch { showToast("Error al actualizar", "error"); }
@@ -247,9 +262,10 @@ export default function PersonalPanel({
       const matchesRole = filterPersonalRole === 'all' || 
         (filterPersonalRole === 'master' && m.isMaster) ||
         (filterPersonalRole === 'archiver' && m.isArchiver) ||
+        (filterPersonalRole === 'seller' && m.isSeller) ||
         (filterPersonalRole === 'banned' && m.isBanned) ||
         (filterPersonalRole === 'external' && m.isExternal) ||
-        (filterPersonalRole === 'normal' && !m.isMaster && !m.isArchiver && !m.isBanned && !m.isExternal);
+        (filterPersonalRole === 'normal' && !m.isMaster && !m.isArchiver && !m.isSeller && !m.isBanned && !m.isExternal);
       
       const matchesInstrument = filterPersonalInstrument === 'all' || (m.roles && m.roles.includes(filterPersonalInstrument));
       
@@ -274,6 +290,7 @@ export default function PersonalPanel({
             <option value="all">Filtro permisos</option>
             <option value="normal">Músicos (Sin admin)</option>
             <option value="archiver">Archiveros</option>
+            <option value="seller">Vendedores</option>
             <option value="master">Masters</option>
             <option value="external">Externos</option>
             <option value="banned">Bloqueados</option>
@@ -290,9 +307,10 @@ export default function PersonalPanel({
             <thead>
               <tr>
                 <th>Usuario</th>
-                <th className="th-center" style={{ width: '50px' }}>Mst</th>
-                <th className="th-center" style={{ width: '50px' }}>Arc</th>
-                <th className="th-center" style={{ width: '50px' }}>Edo</th>
+                <th className="th-center" style={{ width: '40px' }}>Mst</th>
+                <th className="th-center" style={{ width: '40px' }}>Arc</th>
+                <th className="th-center" style={{ width: '40px' }}>Ven</th>
+                <th className="th-center" style={{ width: '40px' }}>Edo</th>
                 <th className="th-center" style={{ width: '50px' }}>Acc</th>
               </tr>
             </thead>
@@ -309,6 +327,9 @@ export default function PersonalPanel({
                   </td>
                   <td className="td-center">
                     <button onClick={() => toggleArchiverStatus(m.id, m.isArchiver)} className={`btn-status-toggle ${m.isArchiver ? 'on' : 'off'}`}>{m.isArchiver ? "✓" : "🚫"}</button>
+                  </td>
+                  <td className="td-center">
+                    <button onClick={() => toggleSellerStatus(m.id, m.isSeller)} className={`btn-status-toggle ${m.isSeller ? 'on' : 'off'}`}>{m.isSeller ? "✓" : "🚫"}</button>
                   </td>
                   <td className="td-center">
                     <button onClick={() => toggleBanStatus(m.id, m.isBanned)} className={`btn-status-toggle ${m.isBanned ? 'banned' : 'on'}`}>{m.isBanned ? "🚫" : "✓"}</button>
@@ -489,6 +510,10 @@ export default function PersonalPanel({
                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', color: '#475569' }}>
                     <input type="checkbox" checked={manualUser.isArchiver} onChange={e => setManualUser({...manualUser, isArchiver: e.target.checked})} style={{ width: '18px', height: '18px' }} />
                     Archivero
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', color: '#475569' }}>
+                    <input type="checkbox" checked={manualUser.isSeller} onChange={e => setManualUser({...manualUser, isSeller: e.target.checked})} style={{ width: '18px', height: '18px' }} />
+                    Vendedor
                   </label>
                 </div>
               </div>

@@ -36,6 +36,9 @@ export async function syncUserMetadata(dbId: number) {
     if (user.isArchiver || user.isMaster) {
       permissions.push('scores:edit', 'scores:upload', 'scores:view_all');
     }
+    if (user.isSeller || user.isMaster) {
+      permissions.push('service_b:access');
+    }
 
     const roles = Array.from(new Set(user.estructuras.map(e => e.seccion.seccion)));
 
@@ -44,6 +47,7 @@ export async function syncUserMetadata(dbId: number) {
       app_metadata: {
         isMaster: !!user.isMaster,
         isArchiver: !!user.isArchiver,
+        isSeller: !!user.isSeller,
         roles: roles,
         permissions: permissions
       }

@@ -8,12 +8,29 @@ import { LogOut, Menu, X } from 'lucide-react';
 import '@/css/miembros.css';
 
 export default function HeaderMiembros() {
-  const { user, isMaster, isArchiver, signOut } = useSupabaseAuth();
+  const { user, session, isMaster, isArchiver, signOut } = useSupabaseAuth();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   
   const isAdmin = isMaster || isArchiver;
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0];
+
+  const handleExternalRedirect = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const externalUrl = process.env.NEXT_PUBLIC_EXTERNAL_SERVER_URL;
+    
+    if (!externalUrl) {
+      alert("Error: La URL del servidor externo no está configurada.");
+      return;
+    }
+
+    if (session?.access_token) {
+      // Usamos la variable de entorno para mayor flexibilidad
+      window.open(`${externalUrl}/?access_token=${session.access_token}`, '_blank');
+    } else {
+      alert("No se pudo obtener el token de sesión. Por favor, recarga la página.");
+    }
+  };
 
   const navItems = [
     { href: '/miembros/tablon', label: 'Tablón' },
@@ -46,14 +63,27 @@ export default function HeaderMiembros() {
           ))}
 
           {isAdmin && (
-            <li>
-              <Link
-                href="/miembros/gestion"
-                className={`miembros-link highlight-admin ${pathname.startsWith('/miembros/gestion') ? 'active' : ''}`}
-              >
-                Gestión
-              </Link>
-            </li>
+            <>
+              <li>
+                <Link
+                  href="/miembros/gestion"
+                  className={`miembros-link highlight-admin ${pathname.startsWith('/miembros/gestion') ? 'active' : ''}`}
+                >
+                  Gestión
+                </Link>
+              </li>
+              <li>
+                <a
+                  href="#"
+                  onClick={handleExternalRedirect}
+                  className="miembros-link"
+                  title="Abrir panel en servidor externo"
+                  style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  Subpanel 🔗
+                </a>
+              </li>
+            </>
           )}
 
           {/* User area */}
@@ -93,9 +123,14 @@ export default function HeaderMiembros() {
               </Link>
             ))}
             {isAdmin && (
-              <Link href="/miembros/gestion" className="mobile-drawer-link" style={{ color: 'var(--clr-gold)' }} onClick={() => setMobileOpen(false)}>
-                Panel de Gestión
-              </Link>
+              <>
+                <Link href="/miembros/gestion" className="mobile-drawer-link" style={{ color: 'var(--clr-gold)' }} onClick={() => setMobileOpen(false)}>
+                  Panel de Gestión
+                </Link>
+                <a href="#" onClick={(e) => { handleExternalRedirect(e); setMobileOpen(false); }} className="mobile-drawer-link" style={{ color: '#bae6fd' }}>
+                  Subpanel Externo 🔗
+                </a>
+              </>
             )}
             
             <div style={{ marginTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
