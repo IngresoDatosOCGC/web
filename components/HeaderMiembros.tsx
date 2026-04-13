@@ -63,31 +63,28 @@ export default function HeaderMiembros() {
           ))}
 
           {isAdmin && (
-            <>
-              <li>
-                <Link
-                  href="/miembros/gestion"
-                  className={`miembros-link highlight-admin ${pathname.startsWith('/miembros/gestion') ? 'active' : ''}`}
-                >
-                  Gestión
-                </Link>
-              </li>
-            )}
-            
-            {(isAdmin || isSeller) && (
-              <li>
-                <a
-                  href="#"
-                  onClick={handleExternalRedirect}
-                  className="miembros-link"
-                  title="Abrir panel en servidor externo"
-                  style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
-                >
-                  Subpanel 🔗
-                </a>
-              </li>
-            )}
-            </>
+            <li>
+              <Link
+                href="/miembros/gestion"
+                className={`miembros-link highlight-admin ${pathname.startsWith('/miembros/gestion') ? 'active' : ''}`}
+              >
+                Gestión
+              </Link>
+            </li>
+          )}
+          
+          {(isAdmin || isSeller) && (
+            <li>
+              <a
+                href="#"
+                onClick={handleExternalRedirect}
+                className="miembros-link"
+                title="Abrir panel en servidor externo"
+                style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                Subpanel 🔗
+              </a>
+            </li>
           )}
 
           {/* User area */}
