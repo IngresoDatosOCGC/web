@@ -41,7 +41,8 @@ export async function POST(req: Request) {
         password,
         email_confirm: true,
         user_metadata: { 
-          full_name: `${firstName} ${surname || ""}`.trim()
+          full_name: `${firstName} ${surname || ""}`.trim(),
+          username: username || null
         }
       });
 
@@ -57,6 +58,7 @@ export async function POST(req: Request) {
         name: firstName,
         surname: surname,
         email: email || null,
+        username: username || null,
         phone: phone || null,
         isExternal: !!isExternal,
         isMaster: !!isMaster,
@@ -70,6 +72,7 @@ export async function POST(req: Request) {
         surname: surname || "",
         dni: String(dni),
         email: email || null,
+        username: username || null,
         phone: phone || null,
         isExternal: !!isExternal,
         isMaster: !!isMaster,

@@ -7,7 +7,7 @@ import Link from 'next/link';
 
 export default function SignInPage() {
   const supabase = useMemo(() => createClient(), []);
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,8 +19,23 @@ export default function SignInPage() {
     setError(null);
 
     try {
+      // 1. Resolver identificador a Email (por si pusieron el username)
+      let finalEmail = identifier;
+      
+      const res = await fetch('/api/auth/resolve-identifier', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        finalEmail = data.email;
+      }
+
+      // 2. Intentar login en Supabase
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
+        email: finalEmail,
         password,
       });
 
@@ -29,7 +44,9 @@ export default function SignInPage() {
       router.push('/miembros/tablon');
       router.refresh();
     } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesión');
+      console.error("Login error:", err);
+      // Ocultamos si el error es de Supabase para no dar pistas de qué falló exactamente (seguridad)
+      setError('Credenciales incorrectas. Revisa tu email/usuario y contraseña.');
     } finally {
       setLoading(false);
     }
@@ -61,13 +78,13 @@ export default function SignInPage() {
 
         <form onSubmit={handleSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label htmlFor="email" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--clr-navy)' }}>Correo Electrónico</label>
+            <label htmlFor="identifier" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--clr-navy)' }}>Email o Nombre de Usuario</label>
             <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="tu@email.com"
+              id="identifier"
+              type="text"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="Ej: tu@email.com o mi_usuario"
               required
               style={{
                 padding: '0.75rem',
@@ -83,7 +100,12 @@ export default function SignInPage() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label htmlFor="password" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--clr-navy)' }}>Contraseña</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label htmlFor="password" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--clr-navy)' }}>Contraseña</label>
+              <Link href="/forgot-password" style={{ fontSize: '0.8rem', color: 'var(--clr-gold)', textDecoration: 'none', fontWeight: 600 }}>
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
             <input
               id="password"
               type="password"
@@ -139,9 +161,6 @@ export default function SignInPage() {
           </button>
         </form>
 
-        <div style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--clr-navy-md)' }}>
-            ¿No tienes cuenta? <span style={{ color: 'var(--clr-gold)', fontWeight: 600 }}>Contacta con tu delegado</span>
-        </div>
       </div>
     </div>
   );

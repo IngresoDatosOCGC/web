@@ -60,7 +60,8 @@ export async function POST(req: Request) {
         email: email,
         isExternal: false,
         isMaster: targetRole === 'master' ? !!targetValue : dbUser.isMaster,
-        isArchiver: targetRole === 'archiver' ? !!targetValue : dbUser.isArchiver
+        isArchiver: targetRole === 'archiver' ? !!targetValue : dbUser.isArchiver,
+        isSeller: targetRole === 'seller' ? !!targetValue : dbUser.isSeller
       }
     });
 

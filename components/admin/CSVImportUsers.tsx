@@ -40,6 +40,7 @@ export default function CSVImportUsers({ onImportSuccess }: { onImportSuccess: (
           const matricula = findVal(['matricula', 'matricula_coche']);
           const esMaster = String(findVal(['es_master'])).toLowerCase() === 'true';
           const esArchivero = String(findVal(['es_archivero'])).toLowerCase() === 'true';
+          const esVendedor = String(findVal(['es_vendedor', 'es_seller'])).toLowerCase() === 'true';
           const esExternal = String(findVal(['es_external'])).toLowerCase() === 'true';
 
           try {
@@ -54,6 +55,7 @@ export default function CSVImportUsers({ onImportSuccess }: { onImportSuccess: (
                 roles: seccion ? [seccion] : [],
                 isMaster: esMaster,
                 isArchiver: esArchivero,
+                isSeller: esVendedor,
                 isExternal: esExternal,
                 agrupacion,
                 seccion,
@@ -101,7 +103,7 @@ export default function CSVImportUsers({ onImportSuccess }: { onImportSuccess: (
           <li><strong>Identificación:</strong> <code>nombre, apellidos, dni</code> (Obligatorios)</li>
           <li><strong>Acceso:</strong> <code>email</code> (Necesario para que el usuario pueda entrar).</li>
           <li><strong>Perfil Artístico:</strong> <code>agrupacion, seccion, papel</code> (ej: Orquesta / Violín / Músico).</li>
-          <li><strong>Otros:</strong> <code>matricula_coche, es_master, es_archivero, es_external</code>.</li>
+          <li><strong>Otros:</strong> <code>matricula_coche, es_master, es_archivero, es_vendedor, es_external</code>.</li>
         </ul>
         <div style={{ marginTop: '0.8rem', padding: '0.5rem', background: '#f8f9fa', borderRadius: '4px', borderLeft: '3px solid #e74c3c' }}>
           <strong>Ejemplo:</strong> Juan,Perez,12345678X,juan@ocgc.com,Orquesta,Viola,Músico

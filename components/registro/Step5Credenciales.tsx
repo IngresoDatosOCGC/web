@@ -55,8 +55,9 @@ export default function Step5Credenciales({
       )}
 
       <div className="form-group">
-        <label htmlFor="username">Nombre de Usuario (Nickname)</label>
+        <label htmlFor="username">Nombre de Usuario (Alias para perfil / Login alternativo)</label>
         <input id="username" type="text" name="username" value={formData.username} onChange={onChange} required autoComplete="username" />
+        <p style={{ fontSize: '0.75rem', color: 'var(--clr-navy-md)', marginTop: '0.25rem' }}>Podrás entrar a la plataforma usando tanto tu email como este nombre de usuario.</p>
       </div>
 
       <div className="form-group-row">

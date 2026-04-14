@@ -17,7 +17,7 @@ export async function POST(req: Request) {
 
   try {
     const data = await req.json();
-    const { email, firstName, lastName, dni, roles, isMaster, isArchiver, isExternal, agrupacion, seccion, papel, matricula } = data;
+    const { email, username, firstName, lastName, dni, roles, isMaster, isArchiver, isSeller, isExternal, agrupacion, seccion, papel, matricula } = data;
 
     if (!firstName || !lastName || !dni) {
       return NextResponse.json({ error: "Nombre, Apellidos y DNI son obligatorios" }, { status: 400 });
@@ -40,7 +40,8 @@ export async function POST(req: Request) {
             email,
             email_confirm: true,
             user_metadata: {
-              full_name: `${firstName} ${lastName}`.trim()
+              full_name: `${firstName} ${lastName}`.trim(),
+              username: username || null
             },
         });
         if (createError) throw createError;
@@ -56,9 +57,11 @@ export async function POST(req: Request) {
         name: firstName,
         surname: lastName,
         email: email || null,
+        username: username || null,
         isExternal: !!isExternal,
         isMaster: !!isMaster,
         isArchiver: !!isArchiver,
+        isSeller: !!isSeller,
         isActive: true
       },
       create: {
@@ -67,9 +70,11 @@ export async function POST(req: Request) {
         surname: lastName,
         dni: String(dni),
         email: email || null,
+        username: username || null,
         isExternal: !!isExternal,
         isMaster: !!isMaster,
         isArchiver: !!isArchiver,
+        isSeller: !!isSeller,
         isActive: true
       }
     });

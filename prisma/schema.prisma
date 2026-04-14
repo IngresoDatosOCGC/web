@@ -61,6 +61,7 @@ model User {
   surname       String
   dni           String       @unique
   email         String?      @unique
+  username      String?      @unique
   phone         String?
   birthDate      String?
   hasCertificate Boolean      @default(false)

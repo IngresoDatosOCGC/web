@@ -470,7 +470,7 @@ export default function PersonalPanel({
                   <input type="text" placeholder="Ej: 1234 ABC" value={manualUser.matricula} onChange={e => setManualUser({...manualUser, matricula: e.target.value})} className="premium-input" />
                 </div>
                 <div className="admin-form-group-premium">
-                  <label style={{ opacity: manualUser.isExternal ? 0.5 : 1 }}>Nombre de Usuario *</label>
+                  <label style={{ opacity: manualUser.isExternal ? 0.5 : 1 }}>Nombre de Usuario (Login alternativo) *</label>
                   <input 
                     type="text" 
                     placeholder={manualUser.isExternal ? "No generado" : "usuario_ocgc"} 
@@ -480,6 +480,7 @@ export default function PersonalPanel({
                     disabled={manualUser.isExternal}
                     style={{ backgroundColor: manualUser.isExternal ? '#f1f5f9' : 'transparent', cursor: manualUser.isExternal ? 'not-allowed' : 'text' }}
                   />
+                  {!manualUser.isExternal && <p style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '4px' }}>Permite entrar sin usar el email.</p>}
                 </div>
                 <div className="admin-form-group-premium">
                   <label style={{ opacity: manualUser.isExternal ? 0.5 : 1 }}>Contraseña *</label>
