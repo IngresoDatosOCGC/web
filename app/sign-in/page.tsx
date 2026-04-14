@@ -28,7 +28,7 @@ export default function SignInPage() {
         body: JSON.stringify({ identifier })
       });
       
-      if (res.ok) {
+      if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
         const data = await res.json();
         finalEmail = data.email;
       }

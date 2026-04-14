@@ -71,11 +71,32 @@ export default function CalendarPanel() {
   const parseCSV = (text: string): any[] => {
     const lines = text.trim().split('\n');
     if (lines.length < 2) return [];
-    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
+    
+    // Mejorar la división de cabeceras para ser más robusta
+    const headers = lines[0].split(',').map(h => h.replace(/["\r]/g, '').trim().toLowerCase());
+    
     return lines.slice(1).map(line => {
-      const vals = line.match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g) || [];
+      // Regex que captura campos vacíos entre comas correctamente
+      const vals: string[] = [];
+      let current = '';
+      let inQuotes = false;
+      
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') inQuotes = !inQuotes;
+        else if (char === ',' && !inQuotes) {
+          vals.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      vals.push(current.trim()); // Último campo
+
       const obj: Record<string, string> = {};
-      headers.forEach((h, i) => { obj[h] = (vals[i] || '').replace(/^"|"$/g, '').trim(); });
+      headers.forEach((h, i) => { 
+        obj[h] = (vals[i] || '').replace(/^"|"$/g, '').replace(/\r/g, '').trim(); 
+      });
       return obj;
     });
   };
@@ -115,13 +136,14 @@ export default function CalendarPanel() {
     if (file.name.endsWith('.ics')) {
       rows = parseICS(text);
     } else {
-      rows = parseCSV(text).map(r => {
+      const csvRows = parseCSV(text);
+      rows = csvRows.map(r => {
         const catName = r.programa || r.program || r.categoría || r.category || "";
-        const matchedCat = categories.find(c => c.name.toLowerCase() === catName.toLowerCase());
+        const matchedCat = categories.find(c => c.name.trim().toLowerCase() === catName.trim().toLowerCase());
         
         // Procesar fecha DD/MM/AAAA y hora HH:MM
         const rawDate = r.fecha || r.date || "";
-        const rawTime = r.hora || r.time || "00:00";
+        const rawTime = (r.hora || r.time || "00:00").replace(/\r/g, '');
         let dateValue = rawDate;
 
         if (rawDate.includes('/')) {
@@ -134,6 +156,7 @@ export default function CalendarPanel() {
 
         return {
           title: r.title || r.título || r.nombre || 'Sin título',
+          // Usamos la fecha local sin Z para que JS no la mueva de zona horaria al mostrarla
           date: dateValue ? `${dateValue}T${rawTime}:00` : undefined,
           location: r.lugar || r.location || r.ubicación || undefined,
           description: r.descripción || r.description || undefined,
@@ -244,8 +267,8 @@ export default function CalendarPanel() {
                     <h4 className="event-title-text">{ev.title}</h4>
                   </div>
                   <div className="event-details-line">
-                    <span className="ev-detail">🕒 {new Date(ev.date).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })}</span>
-                    <span className="ev-detail">📅 {new Date(ev.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}</span>
+                    <span className="ev-detail">🕒 {new Date(ev.date).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="ev-detail">📅 {new Date(ev.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                     {ev.location && <span className="ev-detail">📍 {ev.location}</span>}
                     {ev.category && <span className="ev-detail" style={{ color: '#478AC9' }}>📂 {ev.category.name}</span>}
                   </div>

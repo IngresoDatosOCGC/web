@@ -61,36 +61,43 @@ export default function RequestsPanel({ joinRequests, onRefresh }: RequestsPanel
     });
   };
 
+  const [isExpanded, setIsExpanded] = useState(true);
   const filteredRequests = joinRequests.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .filter(r => filterRequestStatus === 'all' || r.status === filterRequestStatus);
 
   return (
     <section className="admin-list-card" style={{ padding: 'var(--sp-8)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 'var(--sp-8)' }}>
-        <div>
-          <h2 style={{ color: 'var(--clr-navy)', fontSize: '1.8rem', display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '1.4rem' }}>📩</span> Bandeja de Entrada
-          </h2>
-          <p style={{ color: 'var(--clr-text-muted)', fontSize: '0.95rem' }}>Gestión de nuevas solicitudes de músicos desde el portal público.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--sp-8)' }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', userSelect: 'none' }} onClick={() => setIsExpanded(!isExpanded)}>
+            <h2 style={{ color: 'var(--clr-navy)', fontSize: '1.8rem', display: 'flex', alignItems: 'center', gap: '0.8rem', margin: 0 }}>
+              <span style={{ fontSize: '1.4rem' }}>📩</span> Bandeja de Entrada
+            </h2>
+            <button style={{ background: 'none', border: 'none', fontSize: '1.2rem', color: 'var(--clr-primary)', transition: 'transform 0.3s', transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▼</button>
+          </div>
+          <p style={{ color: 'var(--clr-text-muted)', fontSize: '0.95rem', marginTop: '0.5rem' }}>Gestión de nuevas solicitudes de músicos desde el portal público.</p>
         </div>
         
-        <div className="filter-group-premium">
-          <label style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--clr-primary)', display: 'block', marginBottom: '4px' }}>Ver solicitudes:</label>
-          <select 
-            value={filterRequestStatus} 
-            onChange={(e) => setFilterRequestStatus(e.target.value)}
-            className="premium-select-filter"
-          >
-            <option value="Pendiente">Solo Pendientes</option>
-            <option value="Evaluando">En Evaluación</option>
-            <option value="Aceptada">Aceptadas</option>
-            <option value="Rechazada">Rechazadas</option>
-            <option value="all">Ver Todas</option>
-          </select>
-        </div>
+        {isExpanded && (
+          <div className="filter-group-premium">
+            <label style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--clr-primary)', display: 'block', marginBottom: '4px' }}>Ver solicitudes:</label>
+            <select 
+              value={filterRequestStatus} 
+              onChange={(e) => setFilterRequestStatus(e.target.value)}
+              className="premium-select-filter"
+            >
+              <option value="Pendiente">Solo Pendientes</option>
+              <option value="Evaluando">En Evaluación</option>
+              <option value="Aceptada">Aceptadas</option>
+              <option value="Rechazada">Rechazadas</option>
+              <option value="all">Ver Todas</option>
+            </select>
+          </div>
+        )}
       </div>
 
-      <div style={{ display: 'grid', gap: '1.5rem' }}>
+      {isExpanded && (
+        <div style={{ display: 'grid', gap: '1.5rem' }}>
         {filteredRequests.map(r => (
           <div key={r.id} className="request-card-premium">
             {/* Header: Name and Status */}
@@ -207,6 +214,7 @@ export default function RequestsPanel({ joinRequests, onRefresh }: RequestsPanel
           </div>
         )}
       </div>
+      )}
 
       <style jsx>{`
         .premium-select-filter {

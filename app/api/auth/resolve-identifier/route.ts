@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Resuelve un identificador (email o username) a un correo electrónico real.
  * Esto permite el inicio de sesión con el alias del usuario.

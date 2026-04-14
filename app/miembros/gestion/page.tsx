@@ -128,6 +128,21 @@ export default function AdminOCGCPartituras() {
     );
   }
 
+  const getTabTitle = (tab: TabType | null) => {
+    switch (tab) {
+      case 'dashboard': return 'Dashboard';
+      case 'scores': return 'Partituras y Documentos';
+      case 'personal': return 'Usuarios';
+      case 'requests': return 'Solicitudes';
+      case 'categories': return 'Programas / Conciertos';
+      case 'roles': return 'Etiquetas de Secciones';
+      case 'sections': return 'Estructura de Agrupaciones';
+      case 'calendar': return 'Agenda';
+      case 'logs': return 'Acciones del Sistema';
+      default: return 'Gestión OCGC';
+    }
+  };
+
   return (
     <div className="admin-orchestrator-page">
       <div className="admin-sidebar-wrapper">
@@ -139,6 +154,14 @@ export default function AdminOCGCPartituras() {
       </div>
 
       <main className="admin-main-content">
+        <header className="admin-section-header-premium">
+          <h1>{getTabTitle(activeTab)}</h1>
+          <div className="header-status-pill">
+            <span className="pulse-dot"></span>
+            {isMaster ? 'Administrador Master' : 'Archivero'}
+          </div>
+        </header>
+
         <div className="admin-view-container">
           {activeTab === 'dashboard' && isMaster && (
             <DashboardPanel members={members} scores={scores} />

@@ -159,7 +159,7 @@ header {
   left: 0;
   width: 100%;
   height: var(--header-h);
-  z-index: 1000;
+  z-index: 3000;
   display: flex;
   align-items: center;
   padding-inline: var(--sp-8);

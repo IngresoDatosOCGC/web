@@ -40,7 +40,7 @@ export default function HeaderMiembros() {
   ];
 
   return (
-    <header className="header-miembros-v2" style={{ position: 'sticky', top: 0, zIndex: 1000 }}>
+    <header className="header-miembros-v2" style={{ position: 'sticky', top: 0, zIndex: 3000 }}>
       {/* Logo */}
       <div className="logo">
         <Link href="/" aria-label="Ir al sitio público">

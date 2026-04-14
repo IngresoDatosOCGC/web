@@ -11,6 +11,8 @@ export default function CSVImportScores({ categories, onImportSuccess }: { categ
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [errorInfo, setErrorInfo] = useState<string | null>(null);
 
+  const [isGuideExpanded, setIsGuideExpanded] = useState(false);
+
   const handleCSVSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -86,24 +88,32 @@ export default function CSVImportScores({ categories, onImportSuccess }: { categ
 
   return (
     <div style={{ background: '#f0f7ff', padding: '2.5rem', borderRadius: '16px', border: '2px solid #b3d7ff', marginTop: '2.5rem', boxShadow: '0 4px 15px rgba(0,112,243,0.05)' }}>
-      <h3 style={{ margin: '0 0 1.5rem', color: '#0070f3', fontSize: '1.4rem', fontWeight: 800 }}>📂 Guía de Importación Masiva</h3>
-      
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem', background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e1f0ff' }}>
-        <div>
-          <h4 style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: '#333', fontWeight: 800 }}>Paso 1: Tu Carpeta de PDFs</h4>
-          <p style={{ fontSize: '0.85rem', color: '#666', lineHeight: '1.5' }}>Pon todos tus archivos `.pdf` en una carpeta. Los nombres deben ser simples (ej: `Sinfonia9_Viola.pdf`).</p>
-        </div>
-        <div>
-          <h4 style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: '#333', fontWeight: 800 }}>Paso 2: Tu archivo CSV</h4>
-          <p style={{ fontSize: '0.85rem', color: '#666', lineHeight: '1.5' }}>Crea un Excel con estas columnas y gúardalo como CSV. <strong>Para varios instrumentos, sepáralos por comas:</strong></p>
-          <code style={{ display: 'block', background: '#f8f9fa', padding: '0.5rem', borderRadius: '4px', fontSize: '0.75rem', marginTop: '0.5rem', border: '1px solid #eee' }}>
-            titulo, nombre_programa, archivo_pdf, instrumentos, es_documento<br/>
-            Sinfonía 9, Temporada 2024, S9_Viento.pdf, "Flauta, Oboe, Fagot", false
-          </code>
-        </div>
+      <div 
+        style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', marginBottom: isGuideExpanded ? '1.5rem' : '0' }} 
+        onClick={() => setIsGuideExpanded(!isGuideExpanded)}
+      >
+        <h3 style={{ margin: 0, color: '#0070f3', fontSize: '1.4rem', fontWeight: 800 }}>📂 Guía de Importación Masiva</h3>
+        <span style={{ color: '#0070f3', fontSize: '1.2rem', transition: 'transform 0.3s', transform: isGuideExpanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▼</span>
       </div>
+      
+      {isGuideExpanded && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem', background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e1f0ff' }}>
+          <div>
+            <h4 style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: '#333', fontWeight: 800 }}>Paso 1: Tu Carpeta de PDFs</h4>
+            <p style={{ fontSize: '0.85rem', color: '#666', lineHeight: '1.5' }}>Pon todos tus archivos `.pdf` en una carpeta. Los nombres deben ser simples (ej: `Sinfonia9_Viola.pdf`).</p>
+          </div>
+          <div>
+            <h4 style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: '#333', fontWeight: 800 }}>Paso 2: Tu archivo CSV</h4>
+            <p style={{ fontSize: '0.85rem', color: '#666', lineHeight: '1.5' }}>Crea un Excel con estas columnas y gúardalo como CSV. <strong>Para varios instrumentos, sepáralos por comas:</strong></p>
+            <code style={{ display: 'block', background: '#f8f9fa', padding: '0.5rem', borderRadius: '4px', fontSize: '0.75rem', marginTop: '0.5rem', border: '1px solid #eee' }}>
+              titulo, nombre_programa, archivo_pdf, instrumentos, es_documento<br/>
+              Sinfonía 9, Temporada 2024, S9_Viento.pdf, "Flauta, Oboe, Fagot", false
+            </code>
+          </div>
+        </div>
+      )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem', marginTop: isGuideExpanded ? '0' : '1.5rem' }}>
         <div style={{ background: 'rgba(255,255,255,0.5)', padding: '1.2rem', borderRadius: '10px', border: '1px dashed #0070f3' }}>
           <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.8rem', color: '#1a2a4b' }}>1️⃣ Seleccionar el CSV de Datos</label>
           <input type="file" accept=".csv" onChange={handleCSVSelect} disabled={loading} style={{ fontSize: '0.85rem', width: '100%' }} />

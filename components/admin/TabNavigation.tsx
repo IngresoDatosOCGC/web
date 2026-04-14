@@ -34,10 +34,10 @@ export default function TabNavigation({ activeTab, setActiveTab, isMaster }: Omi
         <button 
           onClick={() => setActiveTab('personal')} 
           className={activeTab === 'personal' ? 'active' : ''}
-          title="Gestión de Miembros"
+          title="Gestión de Usuarios"
         >
           <span className="sidebar-icon">👥</span>
-          {isShowExpanded && <span className="sidebar-text">Gestión de Miembros</span>}
+          {isShowExpanded && <span className="sidebar-text">Gestión de Usuarios</span>}
         </button>
       )}
       {isMaster && (
@@ -56,7 +56,7 @@ export default function TabNavigation({ activeTab, setActiveTab, isMaster }: Omi
         title="Partituras"
       >
         <span className="sidebar-icon">🎼</span>
-        {isShowExpanded && <span className="sidebar-text">Partituras y Docs</span>}
+        {isShowExpanded && <span className="sidebar-text">Partituras / Documentos</span>}
       </button>
       <button 
         onClick={() => setActiveTab('roles')} 
@@ -64,7 +64,7 @@ export default function TabNavigation({ activeTab, setActiveTab, isMaster }: Omi
         title="Diccionario"
       >
         <span className="sidebar-icon">🏷️</span>
-        {isShowExpanded && <span className="sidebar-text">Diccionario Técnico</span>}
+        {isShowExpanded && <span className="sidebar-text">Etiquetas de Secciones</span>}
       </button>
       {isMaster && (
         <button 
@@ -73,7 +73,7 @@ export default function TabNavigation({ activeTab, setActiveTab, isMaster }: Omi
           title="Estructuras"
         >
           <span className="sidebar-icon">🎺</span>
-          {isShowExpanded && <span className="sidebar-text">Secciones y Grupos</span>}
+          {isShowExpanded && <span className="sidebar-text">Estructura de Agrupaciones</span>}
         </button>
       )}
       <button 
@@ -90,7 +90,7 @@ export default function TabNavigation({ activeTab, setActiveTab, isMaster }: Omi
         title="Agenda"
       >
         <span className="sidebar-icon">📅</span>
-        {isShowExpanded && <span className="sidebar-text">Agenda y Ensayos</span>}
+        {isShowExpanded && <span className="sidebar-text">Agenda</span>}
       </button>
       {isMaster && (
         <button 
@@ -99,7 +99,7 @@ export default function TabNavigation({ activeTab, setActiveTab, isMaster }: Omi
           title="Auditoría"
         >
           <span className="sidebar-icon">📜</span>
-          {isShowExpanded && <span className="sidebar-text">Registros</span>}
+          {isShowExpanded && <span className="sidebar-text">Acciones del Sistema</span>}
         </button>
       )}
     </aside>
