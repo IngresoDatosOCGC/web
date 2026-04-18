@@ -234,17 +234,17 @@ export default function RequestsPanel({ joinRequests, onRefresh }: RequestsPanel
 
         .request-card-premium {
           background: var(--clr-surface);
-          border: 1px solid var(--clr-border);
+          border: 1.5px solid var(--clr-border);
           border-radius: 16px;
           overflow: hidden;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-          transition: transform 0.2s, box-shadow 0.2s;
+          box-shadow: 0 4px 12px rgba(13, 27, 42, 0.05);
+          transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
         }
 
         .request-card-premium:hover {
           transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(13,27,42,0.08);
-          border-color: var(--clr-primary-lt);
+          box-shadow: 0 12px 30px rgba(13, 27, 42, 0.1);
+          border-color: var(--clr-primary);
         }
 
         .request-card-header {
