@@ -199,6 +199,20 @@ export default function PersonalPanel({
     });
   };
 
+  const toggleSectionLeaderStatus = async (userId: string, current: boolean) => {
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        body: JSON.stringify({ userId, action: "toggle-section-leader", isSectionLeader: !current }),
+        headers: { "Content-Type": "application/json" }
+      });
+      if (res.ok) {
+        showToast(`Jefe de Sección ${!current ? 'activado' : 'desactivado'}`);
+        onRefreshMembers();
+      }
+    } catch { showToast("Error al actualizar", "error"); }
+  };
+
   const upgradeToPlatform = async () => {
     if (!upgradeData.email || !upgradeData.username || upgradeData.password.length < 8) {
       return alert("Por favor completa los campos. Contraseña min. 8 caracteres.");
@@ -783,6 +797,18 @@ export default function PersonalPanel({
                     <div>
                       <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: '#1e293b' }}>Archivero</p>
                       <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>Gestión doc.</p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button 
+                      onClick={() => toggleSectionLeaderStatus(editingMemberData.id, editingMemberData.isSectionLeader)}
+                      className={`btn-access-status ${editingMemberData.isSectionLeader ? 'active' : ''}`}
+                    >
+                      {editingMemberData.isSectionLeader ? '✓' : '🚫'}
+                    </button>
+                    <div>
+                      <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: '#1e293b' }}>Jefe de Sección</p>
+                      <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>Gestión plantilla</p>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

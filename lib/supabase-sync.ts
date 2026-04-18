@@ -48,6 +48,7 @@ export async function syncUserMetadata(dbId: number) {
         isMaster: !!user.isMaster,
         isArchiver: !!user.isArchiver,
         isSeller: !!user.isSeller,
+        isSectionLeader: !!user.isSectionLeader,
         roles: roles,
         permissions: permissions
       }

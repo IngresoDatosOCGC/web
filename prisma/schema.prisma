@@ -78,6 +78,7 @@ model User {
   isMaster      Boolean      @default(false)
   isArchiver    Boolean      @default(false)
   isSeller      Boolean      @default(false)
+  isSectionLeader Boolean    @default(false)
   estructuras   Estructura[]
   matriculas    Matricula[]
 }

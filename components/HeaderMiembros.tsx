@@ -8,7 +8,7 @@ import { LogOut, Menu, X } from 'lucide-react';
 import '@/css/miembros.css';
 
 export default function HeaderMiembros() {
-  const { user, session, isMaster, isArchiver, isSeller, signOut } = useSupabaseAuth();
+  const { user, session, isMaster, isArchiver, isSeller, isSectionLeader, signOut } = useSupabaseAuth();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   
@@ -74,6 +74,18 @@ export default function HeaderMiembros() {
             </li>
           )}
           
+          {(isSectionLeader || isMaster) && (
+            <li>
+              <Link
+                href="/miembros/seccion"
+                className={`miembros-link highlight-admin ${pathname.startsWith('/miembros/seccion') ? 'active' : ''}`}
+                style={{ color: '#bae6fd' }}
+              >
+                Mi Sección
+              </Link>
+            </li>
+          )}
+
           {(isAdmin || isSeller) && (
             <li>
               <a
@@ -133,6 +145,12 @@ export default function HeaderMiembros() {
                   Subpanel Externo 🔗
                 </a>
               </>
+            )}
+            
+            {(isSectionLeader || isMaster) && (
+              <Link href="/miembros/seccion" className="mobile-drawer-link" style={{ color: '#bae6fd' }} onClick={() => setMobileOpen(false)}>
+                Mi Sección
+              </Link>
             )}
             
             <div style={{ marginTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>

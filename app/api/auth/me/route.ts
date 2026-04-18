@@ -64,6 +64,7 @@ export async function GET() {
       isMaster: !!dbUser.isMaster,
       isArchiver: !!dbUser.isArchiver,
       isSeller: !!dbUser.isSeller,
+      isSectionLeader: !!dbUser.isSectionLeader,
       roles: artisticRoles,
       permissions: permissions
     });

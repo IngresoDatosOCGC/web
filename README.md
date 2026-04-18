@@ -50,6 +50,7 @@ La estructura de este repositorio está organizada para maximizar la modularidad
 
 - **Dashboard**: Estadísticas visuales en tiempo real del balance de la orquesta (Recharts).
 - **Gestión de Usuarios**: Control de permisos, etiquetas de sección y estados de acceso.
+- **Jefatura de Sección**: Herramienta interactiva *Drag & Drop* para organizar atriles (ver [Guía de Jefes de Sección](./docs/GUIA_JEFES_SECCION.md)).
 - **Importadores CSV**: Carga masiva de usuarios y partituras con validación en tiempo real.
 - **Agenda y Calendario**: Publicación de citaciones con filtros por tipo de evento.
 - **Buzón de Solicitudes**: Evaluación dinámica de candidatos que aplican vía web.

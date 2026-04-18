@@ -13,7 +13,9 @@ export async function getSessionUser() {
       email: true,
       supabaseUserId: true,
       isMaster: true,
-      isArchiver: true
+      isArchiver: true,
+      isSeller: true,
+      isSectionLeader: true
     }
   });
 

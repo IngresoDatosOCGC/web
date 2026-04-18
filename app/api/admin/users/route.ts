@@ -41,6 +41,7 @@ export async function GET() {
       isArchiver: !!db.isArchiver,
       isMaster: !!db.isMaster,
       isSeller: !!db.isSeller,
+      isSectionLeader: !!db.isSectionLeader,
       isActive: db.isActive,
       isExternal: db.isExternal,
       birthDate: db.birthDate,
@@ -179,6 +180,20 @@ export async function POST(req: Request) {
         await logActivity("Cambio permiso Vendedor", admin.supabaseUserId || '', { 
           target: targetName, 
           isSeller: newValue 
+        });
+      }
+
+      // Acción para cambiar permiso Jefe de Sección (EN LA DB)
+      if (action === "toggle-section-leader") {
+        const { isSectionLeader } = body;
+        const newValue = isSectionLeader !== undefined ? isSectionLeader : !dbUser.isSectionLeader;
+        await prisma.user.update({
+          where: { id: dbId },
+          data: { isSectionLeader: newValue }
+        });
+        await logActivity("Cambio permiso Jefe Sección", admin.supabaseUserId || '', { 
+          target: targetName, 
+          isSectionLeader: newValue 
         });
       }
 

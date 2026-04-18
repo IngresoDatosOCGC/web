@@ -11,6 +11,7 @@ interface AuthProfile {
   isMaster: boolean;
   isArchiver: boolean;
   isSeller: boolean;
+  isSectionLeader: boolean;
   name: string;
   surname: string;
 }
@@ -23,6 +24,7 @@ interface AuthContextType {
   isMaster: boolean;   // Cacheado en app_metadata (Fast UI)
   isArchiver: boolean; // Cacheado en app_metadata (Fast UI)
   isSeller: boolean;   // Cacheado en app_metadata (Fast UI)
+  isSectionLeader: boolean; // Cacheado en app_metadata (Fast UI)
   signOut: () => Promise<void>;
   hasPermission: (permission: string) => boolean;
   refreshProfile: () => Promise<void>;
@@ -112,6 +114,7 @@ export const SupabaseAuthProvider = ({ children }: { children: React.ReactNode }
   const isMaster = !!(profile?.isMaster ?? user?.app_metadata?.isMaster);
   const isArchiver = !!(profile?.isArchiver ?? user?.app_metadata?.isArchiver);
   const isSeller = !!(profile?.isSeller ?? user?.app_metadata?.isSeller);
+  const isSectionLeader = !!(profile?.isSectionLeader ?? user?.app_metadata?.isSectionLeader);
 
   return (
     <AuthContext.Provider value={{ 
@@ -122,6 +125,7 @@ export const SupabaseAuthProvider = ({ children }: { children: React.ReactNode }
       isMaster, 
       isArchiver, 
       isSeller,
+      isSectionLeader,
       signOut, 
       hasPermission,
       refreshProfile
