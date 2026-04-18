@@ -6,78 +6,65 @@ Este repositorio contiene el ecosistema digital completo de la **Orquesta Comuni
 
 ## 1. Stack y Arquitectura Tecnológica
 
-- **Framework**: [Next.js](https://nextjs.org/) (Versión >=14, estricto App Router).
-- **Control de Temas**: Soporte integral de Modo Oscuro (Dark Mode) y Modo Claro gestionados nativamente con inyección de estado para prevenir destellos (`FOUC`). Paleta visual modulada mediante Custom Properties de CSS (`var(--clr-*)`).
-- **Autenticación y Sesiones**: [Clerk](https://clerk.com/). Control de perfiles web usando Webhooks para sincronización transparente.
-- **Base de Datos**: PostgreSQL via [Neon Tech](https://neon.tech/).
-- **ORM**: [Prisma](https://www.prisma.io/) (fijado a `v6.2.1` por compatibilidad en Edge runtimes).
-- **Storage Digital (Cloud)**: [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) para la distribución de partituras en PDF de extrema alta disponibilidad y baja latencia.
+- **Framework**: [Next.js](https://nextjs.org/) (Versión 15, App Router).
+- **Autenticación y Sesiones**: [Supabase Auth](https://supabase.com/auth). Hemos migrado de Clerk a Supabase para un control total de la base de datos y los metadatos de usuario (`app_metadata`).
+- **Base de Datos**: PostgreSQL via [Supabase](https://supabase.com/).
+- **ORM**: [Prisma](https://www.prisma.io/) (v6.2.x). 
+  - *Nota*: Se mantiene la compatibilidad con entornos Edge.
+- **Styling**: Vanilla CSS con un sistema premium de variables (`/css/styles.css` y `/css/miembros.css`).
+- **Storage**: Integración con Supabase Storage / Vercel Blob para la distribución de partituras.
 
 ---
 
 ## 2. Estructura de Directorios
 
-La estructura de este repositorio se ha reorganizado y profesionalizado con el fin de mejorar la experiencia de desarrollo a largo plazo.
+La estructura de este repositorio está organizada para maximizar la modularidad y el rendimiento:
 
 ```text
 /
-├── app/                  # (App Router) Páginas públicas (inicio, conciertos) y rutas de API. Contiene el bloque protegido /miembros.
-├── components/           # Componentes puramente UI y componentes de administración (Dashboards, Logs, CSV Modals, etc.).
-├── css/                  # Archivos globales de estilo (Vanilla CSS). Incluye el sistema maestro de variables y modos de color.
-├── docs/                 # Documentación técnica extendida del proyecto.
-│   ├── CONTEXTO_TECNICO_OCGC.md 
-│   ├── GUIA_IMPORTACION_PARTITURAS.md 
-│   ├── README_ETIQUETAS.md 
-│   └── TEST_ESTRES_OCGC.md
-├── lib/                  # Código modular backend (Conectores Prisma, Prisma Clients).
-├── prisma/               # Definición maestro de esquemas `schema.prisma`.
-├── public/               # Assets estáticos servidos directamente (fuentes, logos, iconos PWA).
-├── scripts/              # Scripts NodeJS de utilidad, reseteo, arreglos de DB y migraciones fuera del ciclo web.
-└── middleware.ts         # Orquestación de Edge Middleware de Auth para rutas públicas vs privadas.
+├── app/                  # (App Router) Rutas públicas, privadas (/miembros) y APIs.
+├── components/           # Componentes UI reutilizables y módulos de administración.
+├── css/                  # Sistema de diseño (público y miembros).
+├── docs/                 # Documentación técnica detallada y guías operativas.
+├── lib/                  # Utils, conectores Prisma y contextos (Auth, UI).
+├── prisma/               # Esquema de base de datos e histórico de migraciones.
+├── public/               # Assets estáticos (logos, fuentes corporativas).
+└── middleware.ts         # Protección de rutas mediante Supabase Auth Middleware.
 ```
 
 ---
 
 ## 3. Topología de Datos (Prisma)
 
-- **User**: Perfil personal sincronizado automáticamente con los eventos Webhooks de Clerk.
-- **Score (Partituras)**: Archivos alojados en Vercel Blob vinculados bajo etiquetas dinámicas (`allowedRoles`) de seguridad.
-- **Category (Programas)**: Agrupaciones o Conciertos contenedores de las partituras.
-- **Seccion / Estructura**: Base de conocimiento que agrupa la naturaleza asociativa de un músico (ej. "Trompeta" -> "Banda Sinfónica").
-- **ActivityLog**: Registro de auditorías de alto nivel para todas las gestiones de administradores.
-- **Event**: Objeto en agenda para gestionar convocatorias musicales.
-- **InvitationCode**: Tokens efímeros (alta encriptación de 128-bit, 7 días de caducidad) que funcionan como filtro *previo* al alta de Clerk para admitir músicos orgánicamente.
+- **User**: Perfil del miembro con roles (`isMaster`, `isArchiver`, `isSeller`) y etiquetas de sección.
+- **Score (Partituras)**: Documentos musicales categorizados por programa y tags de instrumentos.
+- **Category (Programas)**: Contenedores lógicos de partituras (conciertos, carpetas).
+- **Event**: Calendario oficial de ensayos, reuniones y conciertos.
+- **JoinRequest**: Gestión de solicitudes de nuevos músicos que desean unirse a la OCGC.
+- **InvitationCode**: Tokens de registro único para invitados.
+- **ActivityLog**: Sistema de auditoría para rastrear acciones administrativas.
 
 ---
 
-## 4. Paneles y Funcionalidades Administrativas (`/miembros/gestion`)
+## 4. Funcionalidades Administrativas (`/miembros/gestion`)
 
-El centro neurálgico del organigrama directivo reside en el panel protegido de `Master`:
-
-- **Dashboard Panel**: Monitor en tiempo real alimentado con `recharts` para evaluar el balanceo de músicos y la densidad poblacional en cada tipo de agrupación.
-- **Importadores Masivos CSV/Excel**: Integración mediante `papaparse` que inyecta cientos de usuarios y partituras en paralelo consumiendo mínimos recursos en el Edge Server.
-- **Panel de Actividades y Novedades (`Tablón`)**: Herramienta enfocada al músico, filtrando notificaciones y material según su etiqueta ("Trompa Tutti", "Coro Soprano", etc.).
-- **Auditoría Transaccional**: Toda acción delegada de los mánager queda debidamente firmada en el módulo de logs (fecha, acción, emisor).
-
-El enrutamiento no es jerárquico tradicional; sigue un esquema de acceso por intersección de dependencias y de etiquetas, proporcionando a los directores el pase absoluto y a los componentes su partición de atril (tutti y seccional).
+- **Dashboard**: Estadísticas visuales en tiempo real del balance de la orquesta (Recharts).
+- **Gestión de Usuarios**: Control de permisos, etiquetas de sección y estados de acceso.
+- **Importadores CSV**: Carga masiva de usuarios y partituras con validación en tiempo real.
+- **Agenda y Calendario**: Publicación de citaciones con filtros por tipo de evento.
+- **Buzón de Solicitudes**: Evaluación dinámica de candidatos que aplican vía web.
 
 ---
 
-## 5. Operaciones Frecuentes Mantenimiento
+## 5. Operaciones de Desarrollo
 
-**Scripts disponibles:**
-Las herramientas manuales (ej: restauraciones) se ubican bajo la carpeta `scripts/`.
-Para ejecutar scripts locales como parches manuales usa simplemente Node sin comprometer tu Vercel:
-`node scripts/fix_instrumentos.js`
+**Configuración Local:**
+1. Instalar dependencias: `npm install`
+2. Configurar `.env` con las credenciales de Supabase y Database.
+3. Actualizar Prisma: `npx prisma generate`
 
-**Actualización Prisma (Edge Provider):**
-Por las particularidades de `Vercel Edge`, al usar Prisma es conveniente que `DATABASE_URL` apunte a la infraestructura Neon, absteniéndose de usar `prisma.config.ts`. Si se agrega un nuevo modelo a `schema.prisma`:
-1. `npx prisma db push`
-2. `npx prisma generate`
-
-**Cambio Visual e Identitario:**
-La inyección dinámica soporta nativamente `<html data-theme="dark">`. Los ajustes de contraste residen en `/css/styles.css`.
-Montserrat Alternates se ha establecido como la **fuente universal** para todo el proyecto para reforzar la identidad visual de la OCGC. Las directivas de carga residen en `/app/layout.tsx`.
+**Despliegue:**
+El proyecto está optimizado para **Vercel**, con soporte nativo para funciones serverless y protección de rutas mediante middleware.
 
 ---
 **Proyecto diseñado íntegramente por y para la Orquesta Comunitaria de Gran Canaria.**

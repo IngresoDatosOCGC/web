@@ -33,7 +33,8 @@ Haz clic en el botón azul **"🚀 Iniciar Carga Masiva"**.
 
 *   El sistema procesará las filas una a una.
 *   Buscará el nombre indicado en `archivo_pdf` entre los documentos que has seleccionado.
-*   Lo subirá a la nube (Vercel Blob) y creará el registro en la base de datos automáticamente.
+*   Lo subirá a la nube (Supabase Storage / Vercel Blob) y creará el registro en la base de datos automáticamente.
+*   **Trazabilidad:** Al terminar, la acción quedará registrada automáticamente en el **Panel de Actividad (Logs)** indicando quién realizó la carga masiva.
 *   Al terminar, verás un resumen con el número total de éxitos.
 
 ---
