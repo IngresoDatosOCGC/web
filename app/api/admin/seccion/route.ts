@@ -32,10 +32,16 @@ export async function GET() {
       // Collect all managed combinations
       let conditions: any[] = [];
       for (const e of leaderEstructuras) {
-        if (e.seccion.familia === "Viento Madera" || e.seccion.familia === "Viento Metal") {
+        if (e.seccion.familia === "Viento Madera") {
+          // Viento Madera manages their family AND Teclados
           conditions.push({
             agrupacion: { agrupacion: e.agrupacion.agrupacion },
-            seccion: { familia: e.seccion.familia }
+            seccion: { OR: [{ familia: "Viento Madera" }, { familia: "Teclados" }] }
+          });
+        } else if (e.seccion.familia === "Viento Metal") {
+          conditions.push({
+            agrupacion: { agrupacion: e.agrupacion.agrupacion },
+            seccion: { familia: "Viento Metal" }
           });
         } else {
           conditions.push({
@@ -147,7 +153,13 @@ export async function POST(req: Request) {
 
       let hasJurisdiction = false;
       for (const e of leaderEstructuras) {
-        if ((e.seccion.familia === "Viento Madera" || e.seccion.familia === "Viento Metal") && e.seccion.familia === estructura.seccion.familia) {
+        const leaderFam = e.seccion.familia;
+        const targetFam = estructura.seccion.familia;
+
+        if (leaderFam === "Viento Madera" && (targetFam === "Viento Madera" || targetFam === "Teclados")) {
+          hasJurisdiction = true;
+          break;
+        } else if (leaderFam === "Viento Metal" && targetFam === "Viento Metal") {
           hasJurisdiction = true;
           break;
         } else if (e.seccion.seccion === estructura.seccion.seccion) {
