@@ -19,8 +19,10 @@ export default function DashboardPanel({ members, scores }: { members: any[], sc
     <div className="dashboard-panel">
       <div className="stats-grid">
         <div className="stat-card-premium blue">
-          <h3>Músicos Totales</h3>
-          <p className="value">{stats.totalUsers}</p>
+          <h3>Músicos (Activos / Totales)</h3>
+          <p className="value">
+            {stats.activeUsers ?? 0} <span style={{ fontSize: '0.9rem', color: '#e2e8f0', fontWeight: 'normal' }}>/ {stats.totalUsers ?? 0}</span>
+          </p>
         </div>
         <div className="stat-card-premium gold">
           <h3>Partituras General</h3>
@@ -33,7 +35,7 @@ export default function DashboardPanel({ members, scores }: { members: any[], sc
         <div className="stat-card-premium red">
           <h3>Bajas / Inactivos</h3>
           <p className="value">
-            {members.filter(m => m.isBanned).length}
+            {stats.totalBanned}
           </p>
         </div>
       </div>
@@ -41,8 +43,11 @@ export default function DashboardPanel({ members, scores }: { members: any[], sc
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2.5rem' }}>
         {stats.agrupacionesStats?.length > 0 ? stats.agrupacionesStats.map((agrup: any, index: number) => (
           <div key={index} className="chart-container-card">
-            <h3 className="chart-title">
-              {agrup.name} <span>({agrup.count} miembros registrados)</span>
+            <h3 className="chart-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>{agrup.name}</span>
+              <span style={{ fontSize: '0.85rem', fontWeight: 500, background: '#f1f5f9', padding: '0.3rem 0.8rem', borderRadius: '12px', color: '#475569' }}>
+                <strong style={{ color: '#10b981' }}>{agrup.activeCount ?? 0}</strong> activos / {agrup.count ?? 0} en plantilla
+              </span>
             </h3>
             {agrup.sections && agrup.sections.length > 0 ? (
               <div style={{ height: '350px', width: '100%' }}>
@@ -63,7 +68,8 @@ export default function DashboardPanel({ members, scores }: { members: any[], sc
                       contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}} 
                       cursor={{fill: '#f1f5f9'}}
                     />
-                    <Bar dataKey="count" fill="#478AC9" radius={[6, 6, 0, 0]} name="Músicos" barSize={40} />
+                    <Bar dataKey="activeCount" fill="#10b981" radius={[4, 4, 0, 0]} name="Activos" barSize={25} />
+                    <Bar dataKey="count" fill="#cbd5e1" radius={[4, 4, 0, 0]} name="Totales" barSize={25} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

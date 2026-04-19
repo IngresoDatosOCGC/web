@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionUser } from "@/lib/auth-utils";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   const admin = await getSessionUser();
 
@@ -12,6 +14,7 @@ export async function GET() {
 
   try {
     const totalUsers = await prisma.user.count();
+    const activeUsers = await prisma.user.count({ where: { isActive: true } });
     const totalScores = await prisma.score.count();
     const totalEvents = await prisma.event.count();
 
@@ -38,16 +41,32 @@ export async function GET() {
 
     const statsArray = agrupaciones
       .map(a => {
-        const sectionCounts: Record<string, number> = {};
+        const sectionCounts: Record<string, { total: number, activos: number }> = {};
+        let agrupCount = 0;
+        let agrupActivos = 0;
+
         a.estructuras.forEach(e => {
           const secName = e.seccion?.seccion || "Otro";
-          sectionCounts[secName] = (sectionCounts[secName] || 0) + 1;
+          if (!sectionCounts[secName]) sectionCounts[secName] = { total: 0, activos: 0 };
+          
+          sectionCounts[secName].total += 1;
+          agrupCount += 1;
+          
+          if (e.activo) {
+            sectionCounts[secName].activos += 1;
+            agrupActivos += 1;
+          }
         });
 
         return {
           name: a.agrupacion,
-          count: a.estructuras.length,
-          sections: Object.entries(sectionCounts).map(([name, count]) => ({ name, count }))
+          count: agrupCount,
+          activeCount: agrupActivos,
+          sections: Object.entries(sectionCounts).map(([name, data]) => ({ 
+            name, 
+            count: data.total,
+            activeCount: data.activos
+          }))
         };
       })
       .sort((a, b) => {
@@ -60,6 +79,7 @@ export async function GET() {
 
     return NextResponse.json({
       totalUsers,
+      activeUsers,
       totalScores,
       totalEvents,
       totalBanned,

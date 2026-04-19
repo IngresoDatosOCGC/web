@@ -30,18 +30,34 @@ export default function CSVImportUsers({ onImportSuccess }: { onImportSuccess: (
             return foundKey ? row[foundKey] : undefined;
           };
 
-          const nombre = findVal(['nombre']);
-          const apellidos = findVal(['apellidos']);
+          const nombre = findVal(['name', 'nombre']);
+          const apellidos = findVal(['surname', 'apellidos']);
           const dni = findVal(['dni']);
-          const email = findVal(['email']);
+          const email = findVal(['email', 'correo']);
+          const phone = findVal(['phone', 'telefono']);
+          const birthDate = findVal(['birth_date', 'fecha_nacimiento']);
           const papel = findVal(['papel']);
           const agrupacion = findVal(['agrupacion']);
           const seccion = findVal(['seccion']);
-          const matricula = findVal(['matricula', 'matricula_coche']);
-          const esMaster = String(findVal(['es_master'])).toLowerCase() === 'true';
-          const esArchivero = String(findVal(['es_archivero'])).toLowerCase() === 'true';
-          const esVendedor = String(findVal(['es_vendedor', 'es_seller'])).toLowerCase() === 'true';
-          const esExternal = String(findVal(['es_external'])).toLowerCase() === 'true';
+          const matricula = findVal(['matricula_number', 'matricula', 'matricula_coche']);
+          
+          const esMaster = String(findVal(['es_master', 'ismaster'])).toLowerCase() === 'true';
+          const esArchivero = String(findVal(['es_archivero', 'isarchiver'])).toLowerCase() === 'true';
+          const esVendedor = String(findVal(['es_vendedor', 'es_seller', 'isseller'])).toLowerCase() === 'true';
+          const esExternal = String(findVal(['es_external', 'isexternal'])).toLowerCase() === 'true';
+          
+          // Estructura extra
+          const activoRaw = findVal(['activo', 'is_active', 'isactive']);
+          const activo = activoRaw ? String(activoRaw).toLowerCase() === 'true' : true;
+          const atrilRaw = findVal(['atril']);
+          const atril = atrilRaw ? parseInt(String(atrilRaw)) : null;
+
+          // Residencia / Empleo
+          const isla = findVal(['isla']);
+          const municipio = findVal(['municipio']);
+          const empadronamiento = findVal(['empadronamiento']);
+          const trabajo = findVal(['trabajo']);
+          const estudios = findVal(['estudios']);
 
           try {
             const res = await fetch('/api/admin/users/import', {
@@ -52,6 +68,8 @@ export default function CSVImportUsers({ onImportSuccess }: { onImportSuccess: (
                 firstName: nombre,
                 lastName: apellidos,
                 dni,
+                phone,
+                birthDate,
                 roles: seccion ? [seccion] : [],
                 isMaster: esMaster,
                 isArchiver: esArchivero,
@@ -60,7 +78,14 @@ export default function CSVImportUsers({ onImportSuccess }: { onImportSuccess: (
                 agrupacion,
                 seccion,
                 papel,
-                matricula
+                matricula,
+                activo,
+                atril: isNaN(atril as number) ? null : atril,
+                isla,
+                municipio,
+                empadronamiento,
+                trabajo,
+                estudios
               })
             });
             

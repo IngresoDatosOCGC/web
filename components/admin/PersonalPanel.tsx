@@ -42,6 +42,7 @@ export default function PersonalPanel({
 
   // Member List Filters
   const [searchMember, setSearchMember] = useState('');
+  const [filterPersonalStatus, setFilterPersonalStatus] = useState('all');
   const [filterPersonalRole, setFilterPersonalRole] = useState('all');
   const [filterPersonalInstrument, setFilterPersonalInstrument] = useState('all');
 
@@ -184,15 +185,15 @@ export default function PersonalPanel({
   };
 
   const toggleBanStatus = async (userId: string, current: boolean) => {
-    confirmAction(current ? "¿Quitar bloqueo a este usuario?" : "¿Bloquear acceso a este usuario?", async () => {
+    confirmAction(!current ? "¿Quitar bloqueo a este usuario?" : "¿Bloquear acceso a este usuario?", async () => {
       try {
         const res = await fetch("/api/admin/users", {
           method: "POST",
-          body: JSON.stringify({ userId, action: "toggle-ban", status: !current }),
+          body: JSON.stringify({ userId, action: "toggle-ban", isBanned: current }),
           headers: { "Content-Type": "application/json" }
         });
         if (res.ok) {
-          showToast(current ? "Usuario desbloqueado" : "Usuario bloqueado");
+          showToast(!current ? "Usuario desbloqueado" : "Usuario bloqueado");
           onRefreshMembers();
         }
       } catch { showToast("Error al actualizar", "error"); }
@@ -273,19 +274,25 @@ export default function PersonalPanel({
   const filteredMembers = useMemo(() => {
     return members.filter(m => {
       const matchesSearch = (m.name + " " + m.email).toLowerCase().includes(searchMember.toLowerCase());
+      const matchesStatus = filterPersonalStatus === 'all' || 
+        (filterPersonalStatus === 'active' && m.isActive) ||
+        (filterPersonalStatus === 'inactive' && !m.isActive);
+        
       const matchesRole = filterPersonalRole === 'all' || 
         (filterPersonalRole === 'master' && m.isMaster) ||
         (filterPersonalRole === 'archiver' && m.isArchiver) ||
         (filterPersonalRole === 'seller' && m.isSeller) ||
-        (filterPersonalRole === 'banned' && m.isBanned) ||
         (filterPersonalRole === 'external' && m.isExternal) ||
-        (filterPersonalRole === 'normal' && !m.isMaster && !m.isArchiver && !m.isSeller && !m.isBanned && !m.isExternal);
+        (filterPersonalRole === 'normal' && !m.isMaster && !m.isArchiver && !m.isSeller && m.isActive && !m.isExternal);
       
-      const matchesInstrument = filterPersonalInstrument === 'all' || (m.roles && m.roles.includes(filterPersonalInstrument));
+      // Look also at ALL estructuras of the member explicitly for instrument filter to find hidden active ones
+      const hasInstrument = m.estructuras && m.estructuras.some((e: any) => e.seccion === filterPersonalInstrument);
+      const matchesInstrument = filterPersonalInstrument === 'all' || 
+        (m.roles && m.roles.includes(filterPersonalInstrument)) || hasInstrument;
       
-      return matchesSearch && matchesRole && matchesInstrument;
+      return matchesSearch && matchesStatus && matchesRole && matchesInstrument;
     });
-  }, [members, searchMember, filterPersonalRole, filterPersonalInstrument]);
+  }, [members, searchMember, filterPersonalStatus, filterPersonalRole, filterPersonalInstrument]);
 
   return (
     <div className="personal-panel-grid">
@@ -300,21 +307,34 @@ export default function PersonalPanel({
         </div>
 
         <div className="member-filters-bar">
+          <select value={filterPersonalStatus} onChange={(e) => setFilterPersonalStatus(e.target.value)}>
+            <option value="all">Estado: Todos</option>
+            <option value="active">Activos</option>
+            <option value="inactive">Inactivos / Bajas</option>
+          </select>
           <select value={filterPersonalRole} onChange={(e) => setFilterPersonalRole(e.target.value)}>
-            <option value="all">Filtro permisos</option>
+            <option value="all">Rol: Todos</option>
             <option value="normal">Músicos (Sin admin)</option>
             <option value="archiver">Archiveros</option>
             <option value="seller">Vendedores</option>
             <option value="master">Masters</option>
             <option value="external">Externos</option>
-            <option value="banned">Bloqueados</option>
           </select>
           <select value={filterPersonalInstrument} onChange={(e) => setFilterPersonalInstrument(e.target.value)}>
-            <option value="all">Filtro instrumento</option>
+            <option value="all">Todas Secciones</option>
             {predefinedTags.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
           <input type="text" placeholder="Buscar músico..." value={searchMember} onChange={(e) => setSearchMember(e.target.value)} />
         </div>
+
+        <style tabIndex={0} dangerouslySetInnerHTML={{ __html: `
+          .tr-master { background-color: #f5f3ff !important; border-left: 4px solid #8b5cf6 !important; }
+          .tr-leader { background-color: #fffbeb !important; border-left: 4px solid #f59e0b !important; }
+          .tr-archiver { background-color: #eff6ff !important; border-left: 4px solid #3b82f6 !important; }
+          .tr-seller { background-color: #f0fdf4 !important; border-left: 4px solid #22c55e !important; }
+          .personal-table tr { transition: all 0.2s; border-left: 4px solid transparent; }
+          .personal-table tr:hover { filter: brightness(0.98); }
+        `}} />
 
         <div className="table-scroll">
           <table className="personal-table">
@@ -322,37 +342,50 @@ export default function PersonalPanel({
               <tr>
                 <th>Usuario</th>
                 <th className="th-center" style={{ width: '40px' }}>Mst</th>
+                <th className="th-center" style={{ width: '40px' }}>Jef</th>
                 <th className="th-center" style={{ width: '40px' }}>Arc</th>
                 <th className="th-center" style={{ width: '40px' }}>Ven</th>
-                <th className="th-center" style={{ width: '40px' }}>Edo</th>
+                <th className="th-center" style={{ width: '40px' }}>A/V</th>
                 <th className="th-center" style={{ width: '50px' }}>Acc</th>
               </tr>
             </thead>
             <tbody>
-              {filteredMembers.map(m => (
-                <tr key={m.id} className={`${m.isBanned ? 'tr-banned' : ''} ${m.isExternal ? 'tr-external' : ''}`}>
-                  <td>
-                    <div style={{ fontWeight: 600, color: 'var(--clr-navy)' }}>{m.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)', marginTop: '2px' }}>{m.email || '(Sin email)'}</div>
-                    {m.isExternal && <span className="badge-external" style={{ marginTop: '4px', display: 'inline-block' }}>Externo</span>}
-                  </td>
-                  <td className="td-center">
-                    <button onClick={() => toggleMasterStatus(m.id, m.isMaster)} className={`btn-status-toggle ${m.isMaster ? 'on' : 'off'}`}>{m.isMaster ? "✓" : "🚫"}</button>
-                  </td>
-                  <td className="td-center">
-                    <button onClick={() => toggleArchiverStatus(m.id, m.isArchiver)} className={`btn-status-toggle ${m.isArchiver ? 'on' : 'off'}`}>{m.isArchiver ? "✓" : "🚫"}</button>
-                  </td>
-                  <td className="td-center">
-                    <button onClick={() => toggleSellerStatus(m.id, m.isSeller)} className={`btn-status-toggle ${m.isSeller ? 'on' : 'off'}`}>{m.isSeller ? "✓" : "🚫"}</button>
-                  </td>
-                  <td className="td-center">
-                    <button onClick={() => toggleBanStatus(m.id, m.isBanned)} className={`btn-status-toggle ${m.isBanned ? 'banned' : 'on'}`}>{m.isBanned ? "🚫" : "✓"}</button>
-                  </td>
-                  <td className="td-center">
-                    <button onClick={() => setEditingMemberData(m)} className="btn-edit-sm">✎</button>
-                  </td>
-                </tr>
-              ))}
+              {filteredMembers.map(m => {
+                let shadingClass = '';
+                if (m.isMaster) shadingClass = 'tr-master';
+                else if (m.isSectionLeader) shadingClass = 'tr-leader';
+                else if (m.isArchiver) shadingClass = 'tr-archiver';
+                else if (m.isSeller) shadingClass = 'tr-seller';
+
+                return (
+                  <tr key={m.id} className={`${!m.isActive ? 'tr-banned' : ''} ${m.isExternal ? 'tr-external' : ''} ${shadingClass}`}>
+                    <td>
+                      <div style={{ fontWeight: 600, color: 'var(--clr-navy)' }}>{m.name}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)', marginTop: '2px' }}>{m.email || '(Sin email)'}</div>
+                      {m.isExternal && <span className="badge-external" style={{ marginTop: '4px', display: 'inline-block' }}>Externo</span>}
+                      {!m.isActive && <span className="badge-external" style={{ marginTop: '4px', display: 'inline-block', background: '#fee2e2', color: '#991b1b', marginLeft: '6px' }}>Baja (Global)</span>}
+                    </td>
+                    <td className="td-center">
+                      <button onClick={() => toggleMasterStatus(m.id, m.isMaster)} className={`btn-status-toggle ${m.isMaster ? 'on' : 'off'}`}>{m.isMaster ? "✓" : "🚫"}</button>
+                    </td>
+                    <td className="td-center">
+                      <button onClick={() => toggleSectionLeaderStatus(m.id, m.isSectionLeader)} className={`btn-status-toggle ${m.isSectionLeader ? 'on' : 'off'}`}>{m.isSectionLeader ? "✓" : "🚫"}</button>
+                    </td>
+                    <td className="td-center">
+                      <button onClick={() => toggleArchiverStatus(m.id, m.isArchiver)} className={`btn-status-toggle ${m.isArchiver ? 'on' : 'off'}`}>{m.isArchiver ? "✓" : "🚫"}</button>
+                    </td>
+                    <td className="td-center">
+                      <button onClick={() => toggleSellerStatus(m.id, m.isSeller)} className={`btn-status-toggle ${m.isSeller ? 'on' : 'off'}`}>{m.isSeller ? "✓" : "🚫"}</button>
+                    </td>
+                    <td className="td-center">
+                      <button onClick={() => toggleBanStatus(m.id, m.isActive)} className={`btn-status-toggle ${!m.isActive ? 'banned' : 'on'}`}>{!m.isActive ? "🚫" : "✓"}</button>
+                    </td>
+                    <td className="td-center">
+                      <button onClick={() => setEditingMemberData(m)} className="btn-edit-sm">✎</button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

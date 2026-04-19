@@ -37,18 +37,32 @@ export default function SeccionTable({
   conflictingIds
 }: SeccionTableProps) {
   
+  const [dropTargetId, setDropTargetId] = useState<number | null>(null);
+
   const handleDragStart = (e: React.DragEvent, id: number) => {
     setDraggedItemId(id);
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent, id: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    
+    // Solo marcamos como target si es un músico distinto y está activo
+    const targetMember = localFilteredList.find(m => m.id === id);
+    if (draggedItemId !== id && targetMember?.activo && dropTargetId !== id) {
+      setDropTargetId(id);
+    }
   };
+  
+  const handleDragLeave = () => {
+    setDropTargetId(null);
+  }
 
   const handleDrop = (e: React.DragEvent, targetId: number) => {
     e.preventDefault();
+    setDropTargetId(null); // Clear highlight
+
     if (!draggedItemId || draggedItemId === targetId) return;
 
     const sourceIndex = localFilteredList.findIndex(m => m.id === draggedItemId);
@@ -83,7 +97,7 @@ export default function SeccionTable({
             <th style={{ width: '15%', padding: '1rem', textAlign: 'center', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Estado</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody onDragLeave={handleDragLeave}>
           {localFilteredList.map((m, index) => {
             let visualAtril = m.atril;
             if (isReorderMode && m.activo) {
@@ -92,19 +106,26 @@ export default function SeccionTable({
             }
 
             const hasConflict = conflictingIds && conflictingIds.has(m.id);
+            const isDropTarget = m.id === dropTargetId;
 
             return (
               <tr 
                 key={m.id} 
                 draggable={isReorderMode && m.activo}
                 onDragStart={(e) => handleDragStart(e, m.id)}
-                onDragOver={handleDragOver}
+                onDragOver={(e) => handleDragOver(e, m.id)}
                 onDrop={(e) => handleDrop(e, m.id)}
                 style={{ 
-                  borderBottom: '1px solid #f1f5f9',
+                  borderTop: isDropTarget ? '3px solid #10b981' : 'none',
+                  borderBottom: isDropTarget ? 'none' : '1px solid #f1f5f9',
                   cursor: isReorderMode && m.activo ? 'move' : 'default',
-                  backgroundColor: m.id === draggedItemId ? '#f8fafc' : (hasConflict && !isReorderMode ? '#fff1f2' : 'transparent'),
-                  opacity: (!m.activo && isReorderMode) ? 0.4 : 1
+                  backgroundColor: isDropTarget ? '#ecfdf5' : (m.id === draggedItemId ? '#f8fafc' : (hasConflict && !isReorderMode ? '#fff1f2' : 'transparent')),
+                  boxShadow: isDropTarget ? '0 -4px 10px rgba(16, 185, 129, 0.15)' : 'none',
+                  opacity: (!m.activo && isReorderMode) ? 0.4 : 1,
+                  transform: isDropTarget ? 'scale(1.002)' : 'none',
+                  transition: 'all 0.1s ease',
+                  position: isDropTarget ? 'relative' : 'static',
+                  zIndex: isDropTarget ? 10 : 1
                 }}
               >
                 <td style={{ padding: '1rem', textAlign: 'center', color: m.activo ? '#cbd5e1' : 'transparent' }}>

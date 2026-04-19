@@ -19,34 +19,34 @@ export async function GET() {
 
     if (!isMaster) {
       // Logic for Section Leader
-      // Fetch their `Estructura` in `Orquesta`
+      // Fetch their `Estructura` to see what they lead
       const leaderEstructuras = await prisma.estructura.findMany({
-        where: { userId: sessionUser.id, agrupacion: { agrupacion: "Orquesta" } },
-        include: { seccion: true }
+        where: { userId: sessionUser.id },
+        include: { seccion: true, agrupacion: true }
       });
 
       if (leaderEstructuras.length === 0) {
-        return NextResponse.json({ members: [], error: "No es miembro de la Orquesta." });
+        return NextResponse.json({ members: [], error: "No tiene perfil artístico." });
       }
 
-      // If they belong to multiple, we take the primary one or just check if any is Viento Madera / Metal
-      let managedSecciones: string[] = [];
-      let managedFamilias: string[] = [];
-
+      // Collect all managed combinations
+      let conditions: any[] = [];
       for (const e of leaderEstructuras) {
         if (e.seccion.familia === "Viento Madera" || e.seccion.familia === "Viento Metal") {
-          managedFamilias.push(e.seccion.familia);
+          conditions.push({
+            agrupacion: { agrupacion: e.agrupacion.agrupacion },
+            seccion: { familia: e.seccion.familia }
+          });
         } else {
-          managedSecciones.push(e.seccion.seccion);
+          conditions.push({
+            agrupacion: { agrupacion: e.agrupacion.agrupacion },
+            seccion: { seccion: e.seccion.seccion }
+          });
         }
       }
 
       whereClause = {
-        agrupacion: { agrupacion: "Orquesta" },
-        OR: [
-          { seccion: { familia: { in: managedFamilias } } },
-          { seccion: { seccion: { in: managedSecciones } } }
-        ]
+        OR: conditions
       };
     } else {
       // Master can manage everything. 

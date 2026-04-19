@@ -15,6 +15,7 @@ export default function SeccionPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Filtros
+  const [filterAgrupacion, setFilterAgrupacion] = useState('all');
   const [filterFamilia, setFilterFamilia] = useState('all');
   const [filterSeccion, setFilterSeccion] = useState('all');
 
@@ -64,16 +65,28 @@ export default function SeccionPage() {
   };
 
   // Derive filter options
-  const familias = useMemo(() => Array.from(new Set(members.map(m => m.familia))), [members]);
-  const secciones = useMemo(() => Array.from(new Set(members.filter(m => filterFamilia === 'all' || m.familia === filterFamilia).map(m => m.seccion))), [members, filterFamilia]);
+  const AGRUPACIONES_ORDENABLES = ["Orquesta", "Coro", "Ensemble Flautas", "Ensemble Metales", "Ensemble Chelos", "Big Band"];
+  const agrupaciones = useMemo(() => {
+    const arr = Array.from(new Set(members.map(m => m.agrupacion)));
+    return arr.filter(a => AGRUPACIONES_ORDENABLES.includes(a as string));
+  }, [members]);
+
+  const secciones = useMemo(() => {
+    let list = members;
+    if (filterAgrupacion !== 'all') list = list.filter(m => m.agrupacion === filterAgrupacion);
+    if (filterFamilia !== 'all') list = list.filter(m => m.familia === filterFamilia);
+    return Array.from(new Set(list.map(m => m.seccion)));
+  }, [members, filterAgrupacion, filterFamilia]);
 
   const filteredMembers = useMemo(() => {
     return members.filter(m => {
-      if (filterFamilia !== 'all' && m.familia !== filterFamilia) return false;
+      // Filtrar para que solo muestre las ordenables en esta página
+      if (!AGRUPACIONES_ORDENABLES.includes(m.agrupacion)) return false;
+      if (filterAgrupacion !== 'all' && m.agrupacion !== filterAgrupacion) return false;
       if (filterSeccion !== 'all' && m.seccion !== filterSeccion) return false;
       return true;
     });
-  }, [members, filterFamilia, filterSeccion]);
+  }, [members, filterAgrupacion, filterSeccion]);
 
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [localFilteredList, setLocalFilteredList] = useState<any[]>([]);
@@ -176,12 +189,12 @@ export default function SeccionPage() {
               onClick={() => setIsReorderMode(true)} 
               className="btn-vincular"
               style={{ 
-                backgroundColor: (filterSeccion === 'all' && secciones.length > 1) ? '#94a3b8' : '#6366f1', 
-                cursor: (filterSeccion === 'all' && secciones.length > 1) ? 'not-allowed' : 'pointer',
-                opacity: (filterSeccion === 'all' && secciones.length > 1) ? 0.6 : 1
+                backgroundColor: ((filterSeccion === 'all' && secciones.length > 1) || (filterAgrupacion === 'all' && agrupaciones.length > 1)) ? '#94a3b8' : '#6366f1', 
+                cursor: ((filterSeccion === 'all' && secciones.length > 1) || (filterAgrupacion === 'all' && agrupaciones.length > 1)) ? 'not-allowed' : 'pointer',
+                opacity: ((filterSeccion === 'all' && secciones.length > 1) || (filterAgrupacion === 'all' && agrupaciones.length > 1)) ? 0.6 : 1
               }}
-              disabled={filterSeccion === 'all' && secciones.length > 1 || isLoading}
-              title={(filterSeccion === 'all' && secciones.length > 1) ? "Selecciona una sección específica en los filtros para poder reordenar los atriles" : "Modo Reordenar"}
+              disabled={((filterSeccion === 'all' && secciones.length > 1) || (filterAgrupacion === 'all' && agrupaciones.length > 1)) || isLoading}
+              title={((filterSeccion === 'all' && secciones.length > 1) || (filterAgrupacion === 'all' && agrupaciones.length > 1)) ? "Selecciona una agrupación y una sección específica para poder reordenar los atriles" : "Modo Reordenar"}
             >
               ⇕ Modo Reordenar
             </button>
@@ -218,10 +231,10 @@ export default function SeccionPage() {
         )}
         
         <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', opacity: isReorderMode ? 0.5 : 1, pointerEvents: isReorderMode ? 'none' : 'auto' }}>
-          {familias.length > 1 && (
-            <select className="premium-input-sm" value={filterFamilia} onChange={e => { setFilterFamilia(e.target.value); setFilterSeccion('all'); }}>
-              <option value="all">Todas las Familias</option>
-              {familias.map(f => <option key={f} value={f}>{f}</option>)}
+          {agrupaciones.length > 1 && (
+            <select className="premium-input-sm" value={filterAgrupacion} onChange={e => { setFilterAgrupacion(e.target.value); setFilterFamilia('all'); setFilterSeccion('all'); }}>
+              <option value="all">Todas las Agrupaciones</option>
+              {agrupaciones.map(a => <option key={a as string} value={a as string}>{a as string}</option>)}
             </select>
           )}
           {secciones.length > 1 && (
