@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Papa from 'papaparse';
 import { useNotifications } from '../ui/NotificationContext';
 
@@ -8,20 +8,39 @@ export default function CSVImportUsers({ onImportSuccess }: { onImportSuccess: (
   const { showToast } = useNotifications();
   const [loading, setLoading] = useState(false);
   const [errorInfo, setErrorInfo] = useState<string | null>(null);
+  const [progress, setProgress] = useState({ current: 0, total: 0, success: 0, skipped: 0, errors: 0 });
+  const shouldStop = useRef(false);
+
+  const [detailedErrors, setDetailedErrors] = useState<string[]>([]);
 
   const processCSV = (file: File) => {
     setLoading(true);
     setErrorInfo(null);
+    setDetailedErrors([]);
+    shouldStop.current = false;
+    setProgress({ current: 0, total: 0, success: 0, skipped: 0, errors: 0 });
     
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: async (results) => {
         const rows = results.data as any[];
+        const total = rows.length;
+        setProgress(p => ({ ...p, total }));
+
         let successCount = 0;
-        let errors = [];
+        let skippedCount = 0;
+        let errorList: string[] = [];
         
-        for (const row of rows) {
+        for (let i = 0; i < rows.length; i++) {
+          if (shouldStop.current) {
+            showToast("Importación detenida por el usuario", "warning");
+            break;
+          }
+
+          const row = rows[i];
+          setProgress(p => ({ ...p, current: i + 1 }));
+
           // Normalización de claves para soportar tildes (agrupación, sección, matrícula)
           const findVal = (keys: string[]) => {
             const foundKey = Object.keys(row).find(k => 
@@ -33,6 +52,8 @@ export default function CSVImportUsers({ onImportSuccess }: { onImportSuccess: (
           const nombre = findVal(['name', 'nombre']);
           const apellidos = findVal(['surname', 'apellidos']);
           const dni = findVal(['dni']);
+          const identifier = `${nombre || ''} ${apellidos || ''}`.trim() || dni || `Fila ${i + 1}`;
+
           const email = findVal(['email', 'correo']);
           const phone = findVal(['phone', 'telefono']);
           const birthDate = findVal(['birth_date', 'fecha_nacimiento']);
@@ -46,13 +67,11 @@ export default function CSVImportUsers({ onImportSuccess }: { onImportSuccess: (
           const esVendedor = String(findVal(['es_vendedor', 'es_seller', 'isseller'])).toLowerCase() === 'true';
           const esExternal = String(findVal(['es_external', 'isexternal'])).toLowerCase() === 'true';
           
-          // Estructura extra
           const activoRaw = findVal(['activo', 'is_active', 'isactive']);
           const activo = activoRaw ? String(activoRaw).toLowerCase() === 'true' : true;
           const atrilRaw = findVal(['atril']);
           const atril = atrilRaw ? parseInt(String(atrilRaw)) : null;
 
-          // Residencia / Empleo
           const isla = findVal(['isla']);
           const municipio = findVal(['municipio']);
           const empadronamiento = findVal(['empadronamiento']);
@@ -64,53 +83,47 @@ export default function CSVImportUsers({ onImportSuccess }: { onImportSuccess: (
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                email,
-                firstName: nombre,
-                lastName: apellidos,
-                dni,
-                phone,
-                birthDate,
+                email, firstName: nombre, lastName: apellidos, dni, phone, birthDate,
                 roles: seccion ? [seccion] : [],
-                isMaster: esMaster,
-                isArchiver: esArchivero,
-                isSeller: esVendedor,
-                isExternal: esExternal,
-                agrupacion,
-                seccion,
-                papel,
-                matricula,
-                activo,
+                isMaster: esMaster, isArchiver: esArchivero, isSeller: esVendedor, isExternal: esExternal,
+                agrupacion, seccion, papel, matricula, activo,
                 atril: isNaN(atril as number) ? null : atril,
-                isla,
-                municipio,
-                empadronamiento,
-                trabajo,
-                estudios
+                isla, municipio, empadronamiento, trabajo, estudios
               })
             });
             
+            const resData = await res.json();
+
             if (res.ok) {
-              successCount++;
+              if (resData.skipped) {
+                skippedCount++;
+                setProgress(p => ({ ...p, skipped: skippedCount }));
+              } else {
+                successCount++;
+                setProgress(p => ({ ...p, success: successCount }));
+              }
             } else {
-              const errData = await res.json();
-              errors.push(`${row.nombre || 'Fila'}: ${errData.error || 'Error desconocido'}`);
+              errorList.push(`Error en [${identifier}]: ${resData.error || 'Error desconocido'}`);
+              setProgress(p => ({ ...p, errors: errorList.length }));
             }
           } catch(e) {
-            errors.push(`${row.nombre || 'Fila'}: Fallo de conexión`);
+            errorList.push(`Fallo de conexión en [${identifier}]: No se pudo contactar con el servidor`);
+            setProgress(p => ({ ...p, errors: errorList.length }));
           }
         }
         
-        if (errors.length > 0) {
-          setErrorInfo(`Importados ${successCount}. Errores: ${errors.slice(0, 5).join(' | ')}${errors.length > 5 ? '...' : ''}`);
-        } else {
-          showToast(`Importación completada. Usuarios procesados: ${successCount}`);
+        if (errorList.length > 0) {
+          setDetailedErrors(errorList);
+          setErrorInfo(`Proceso finalizado con ${errorList.length} errores.`);
+        } else if (!shouldStop.current) {
+          showToast(`✓ Importación completada. Procesados: ${successCount + skippedCount} (${skippedCount} ya existían)`);
         }
         
         setLoading(false);
         onImportSuccess();
       },
       error: (err) => {
-        setErrorInfo("Error al leer CSV: " + err.message);
+        setErrorInfo("Error crítico al leer CSV: " + err.message);
         setLoading(false);
       }
     });
@@ -123,43 +136,105 @@ export default function CSVImportUsers({ onImportSuccess }: { onImportSuccess: (
       </h3>
       
       <div style={{ background: '#fff', padding: '1rem', borderRadius: '8px', border: '1px solid #ffcdd2', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
-        <p style={{ margin: '0 0 0.8rem', fontWeight: 'bold', color: '#d32f2f' }}>📌 Estructura del archivo necesaria:</p>
+        <p style={{ margin: '0 0 0.8rem', fontWeight: 'bold', color: '#d32f2f' }}>📌 Lógica de importación:</p>
         <ul style={{ margin: '0', paddingLeft: '1.2rem', color: '#555', lineHeight: '1.5' }}>
-          <li><strong>Identificación:</strong> <code>nombre, apellidos, dni</code> (Obligatorios)</li>
-          <li><strong>Acceso:</strong> <code>email</code> (Necesario para que el usuario pueda entrar).</li>
-          <li><strong>Perfil Artístico:</strong> <code>agrupacion, seccion, papel</code> (ej: Orquesta / Violín / Músico).</li>
-          <li><strong>Otros:</strong> <code>matricula_coche, es_master, es_archivero, es_vendedor, es_external</code>.</li>
+          <li>Si el usuario y su perfil artístico <strong>ya existen</strong>, se omite automáticamente.</li>
+          <li>Si el usuario no existe, se crea en Supabase y en la base de datos local.</li>
         </ul>
-        <div style={{ marginTop: '0.8rem', padding: '0.5rem', background: '#f8f9fa', borderRadius: '4px', borderLeft: '3px solid #e74c3c' }}>
-          <strong>Ejemplo:</strong> Juan,Perez,12345678X,juan@ocgc.com,Orquesta,Viola,Músico
-        </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <label style={{ 
-          background: '#e74c3c', 
-          color: 'white', 
-          padding: '0.6rem 1.2rem', 
-          borderRadius: '6px', 
-          cursor: loading ? 'not-allowed' : 'pointer',
-          fontWeight: '500',
-          fontSize: '0.9rem',
-          opacity: loading ? 0.7 : 1
-        }}>
-          {loading ? 'Procesando...' : '📁 Seleccionar Archivo CSV'}
-          <input 
-            type="file" 
-            accept=".csv"
-            disabled={loading}
-            onChange={(e) => {
-              if (e.target.files?.[0]) processCSV(e.target.files[0]);
-            }}
-            style={{ display: 'none' }}
-          />
-        </label>
-        {loading && <span style={{ color: '#e74c3c', fontWeight: 'bold', fontSize: '0.9rem' }}>⚙️ Importando datos y sincronizando Supabase...</span>}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {!loading ? (
+            <label style={{ 
+              background: '#e74c3c', 
+              color: 'white', 
+              padding: '0.6rem 1.2rem', 
+              borderRadius: '6px', 
+              cursor: 'pointer',
+              fontWeight: '500',
+              fontSize: '0.9rem',
+            }}>
+              📁 Seleccionar Archivo CSV
+              <input 
+                type="file" 
+                accept=".csv"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) processCSV(e.target.files[0]);
+                }}
+                style={{ display: 'none' }}
+              />
+            </label>
+          ) : (
+            <button 
+              onClick={() => { shouldStop.current = true; }}
+              style={{
+                background: '#475569',
+                color: 'white',
+                border: 'none',
+                padding: '0.6rem 1.2rem',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              🛑 Detener Importación
+            </button>
+          )}
+
+          {loading && (
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '0.85rem', color: '#e74c3c', fontWeight: 'bold', marginBottom: '0.3rem' }}>
+                Procesando fila {progress.current} de {progress.total}...
+              </div>
+              <div style={{ width: '100%', height: '8px', background: '#fee2e2', borderRadius: '10px', overflow: 'hidden' }}>
+                <div style={{ width: `${(progress.current/progress.total)*100}%`, height: '100%', background: '#e74c3c', transition: 'width 0.3s' }} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {(loading || progress.current > 0) && (
+          <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem', color: '#64748b', background: '#fff', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+            <span>✅ Nuevos: <strong style={{ color: '#10b981' }}>{progress.success}</strong></span>
+            <span>⏭️ Omitidos: <strong style={{ color: '#3b82f6' }}>{progress.skipped}</strong></span>
+            <span>❌ Errores: <strong style={{ color: '#ef4444' }}>{progress.errors}</strong></span>
+          </div>
+        )}
       </div>
-      {errorInfo && <p style={{ color: '#e74c3c', fontSize: '0.85rem', marginTop: '1rem', background: '#fff', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ffcdd2' }}>{errorInfo}</p>}
+
+      {detailedErrors.length > 0 && (
+        <div style={{ marginTop: '1.5rem' }}>
+          <p style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', fontWeight: 'bold', color: '#e74c3c' }}>❌ Informe detallado de errores:</p>
+          <div style={{ 
+            maxHeight: '200px', 
+            overflowY: 'auto', 
+            background: '#fff', 
+            border: '1px solid #ffcdd2', 
+            borderRadius: '8px', 
+            padding: '1rem',
+            fontSize: '0.8rem',
+            fontFamily: 'monospace',
+            color: '#c0392b',
+            lineHeight: '1.6'
+          }}>
+            {detailedErrors.map((err, idx) => (
+              <div key={idx} style={{ paddingBottom: '0.4rem', borderBottom: idx < detailedErrors.length - 1 ? '1px solid #fff1f0' : 'none', marginBottom: '0.4rem' }}>
+                • {err}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {errorInfo && !detailedErrors.length && (
+        <div style={{ color: '#e74c3c', fontSize: '0.85rem', marginTop: '1rem', background: '#fff', padding: '0.8rem', borderRadius: '6px', border: '1px solid #ffcdd2' }}>
+          <strong>Aviso:</strong> {errorInfo}
+        </div>
+      )}
     </div>
   );
 }
+
+
+

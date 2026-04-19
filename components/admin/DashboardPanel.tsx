@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 export default function DashboardPanel({ members, scores }: { members: any[], scores: any[] }) {
   const [stats, setStats] = useState<any>(null);
@@ -15,8 +14,14 @@ export default function DashboardPanel({ members, scores }: { members: any[], sc
 
   if (!stats) return <p>Cargando estadísticas...</p>;
 
+  // Only show musical agrupaciones in the breakdown
+  const SHOW_AGRUPACIONES = ["Orquesta", "Coro", "Ensemble Flautas", "Ensemble Metales", "Ensemble Chelos", "Big Band"];
+  const musicalStats = stats.agrupacionesStats?.filter((a: any) => SHOW_AGRUPACIONES.includes(a.name)) ?? [];
+  const otherStats = stats.agrupacionesStats?.filter((a: any) => !SHOW_AGRUPACIONES.includes(a.name)) ?? [];
+
   return (
     <div className="dashboard-panel">
+      {/* Top KPI Cards */}
       <div className="stats-grid">
         <div className="stat-card-premium blue">
           <h3>Músicos (Activos / Totales)</h3>
@@ -34,55 +39,70 @@ export default function DashboardPanel({ members, scores }: { members: any[], sc
         </div>
         <div className="stat-card-premium red">
           <h3>Bajas / Inactivos</h3>
-          <p className="value">
-            {stats.totalBanned}
-          </p>
+          <p className="value">{stats.totalBanned}</p>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2.5rem' }}>
-        {stats.agrupacionesStats?.length > 0 ? stats.agrupacionesStats.map((agrup: any, index: number) => (
-          <div key={index} className="chart-container-card">
-            <h3 className="chart-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>{agrup.name}</span>
-              <span style={{ fontSize: '0.85rem', fontWeight: 500, background: '#f1f5f9', padding: '0.3rem 0.8rem', borderRadius: '12px', color: '#475569' }}>
-                <strong style={{ color: '#10b981' }}>{agrup.activeCount ?? 0}</strong> activos / {agrup.count ?? 0} en plantilla
+      {/* Musical Agrupaciones Breakdown */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem', marginTop: '2rem' }}>
+        {musicalStats.map((agrup: any) => (
+          <div key={agrup.name} style={{
+            background: '#fff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '14px',
+            padding: '1.25rem 1.5rem',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+          }}>
+            {/* Agrupación header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1.5px solid #f1f5f9' }}>
+              <span style={{ fontWeight: 800, fontSize: '1rem', color: '#1a2a4b' }}>{agrup.name}</span>
+              <span style={{ fontSize: '0.8rem', background: '#f0fdf4', color: '#15803d', fontWeight: 700, padding: '0.25rem 0.75rem', borderRadius: '20px', border: '1px solid #bbf7d0' }}>
+                {agrup.activeCount ?? 0} / {agrup.count ?? 0}
               </span>
-            </h3>
+            </div>
+
+            {/* Section rows */}
             {agrup.sections && agrup.sections.length > 0 ? (
-              <div style={{ height: '350px', width: '100%' }}>
-                <ResponsiveContainer>
-                  <BarChart data={agrup.sections} margin={{ top: 20, right: 30, left: 20, bottom: 50 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis 
-                      dataKey="name" 
-                      angle={-45} 
-                      textAnchor="end" 
-                      height={70} 
-                      interval={0} 
-                      tick={{fontSize: 11, fill: '#64748b', fontWeight: 500}} 
-                      axisLine={{stroke: '#e2e8f0'}}
-                    />
-                    <YAxis tick={{fontSize: 11, fill: '#64748b'}} axisLine={{stroke: '#e2e8f0'}} />
-                    <Tooltip 
-                      contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}} 
-                      cursor={{fill: '#f1f5f9'}}
-                    />
-                    <Bar dataKey="activeCount" fill="#10b981" radius={[4, 4, 0, 0]} name="Activos" barSize={25} />
-                    <Bar dataKey="count" fill="#cbd5e1" radius={[4, 4, 0, 0]} name="Totales" barSize={25} />
-                  </BarChart>
-                </ResponsiveContainer>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                {agrup.sections
+                  .sort((a: any, b: any) => a.name.localeCompare(b.name))
+                  .map((sec: any) => {
+                    const pct = sec.count > 0 ? Math.round((sec.activeCount / sec.count) * 100) : 0;
+                    return (
+                      <div key={sec.name} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.3rem 0' }}>
+                        <span style={{ flex: 1, fontSize: '0.82rem', color: '#475569', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sec.name}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                          {/* Mini progress bar */}
+                          <div style={{ width: '60px', height: '5px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden' }}>
+                            <div style={{ width: `${pct}%`, height: '100%', background: pct === 100 ? '#10b981' : pct > 50 ? '#3b82f6' : '#f59e0b', borderRadius: '99px', transition: 'width 0.4s' }} />
+                          </div>
+                          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#10b981', minWidth: '20px', textAlign: 'right' }}>{sec.activeCount}</span>
+                          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>/ {sec.count}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             ) : (
-                <div className="empty-state-dash" style={{ padding: '2rem' }}>
-                  No hay secciones registradas para esta agrupación.
-                </div>
+              <p style={{ color: '#94a3b8', fontSize: '0.8rem', textAlign: 'center', margin: '0.5rem 0' }}>Sin secciones registradas</p>
             )}
           </div>
-        )) : (
-          <div className="empty-state-dash">No hay agrupaciones registradas en el sistema.</div>
-        )}
+        ))}
       </div>
+
+      {/* Other agrupaciones summary row */}
+      {otherStats.length > 0 && (
+        <div style={{ marginTop: '1.5rem', background: '#f8fafc', borderRadius: '12px', padding: '1rem 1.5rem', border: '1px solid #e2e8f0' }}>
+          <p style={{ margin: '0 0 0.75rem', fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Otras Agrupaciones</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+            {otherStats.map((a: any) => (
+              <span key={a.name} style={{ fontSize: '0.82rem', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.3rem 0.8rem', color: '#64748b' }}>
+                <strong style={{ color: '#1a2a4b' }}>{a.name}</strong>: <span style={{ color: '#10b981', fontWeight: 700 }}>{a.activeCount ?? 0}</span> / {a.count ?? 0}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

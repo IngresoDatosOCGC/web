@@ -161,8 +161,19 @@ export async function POST(req: Request) {
 
     // 4. Crear Estructura (Perfil Artístico)
     if (agrupacion && seccion && papel) {
+      // Mapa de normalización: algunos CSV usan nombres históricos distintos a los de la BD
+      const AGRUPACION_ALIASES: Record<string, string> = {
+        "Coro OCGC": "Coro",
+        "Coro Donna Voce": "Coro",
+        "Orquesta Comunitaria Gran Canaria": "Orquesta",
+        "Orquesta OCGC": "Orquesta",
+        "Ensemble Violonchelos": "Ensemble Chelos",
+        "Ensemble Violonchelo": "Ensemble Chelos",
+      };
+      const canonicalAgrupacion = AGRUPACION_ALIASES[agrupacion] ?? agrupacion;
+
       const [dbAgrup, dbSeccion, dbPapel] = await Promise.all([
-        prisma.agrupacion.findUnique({ where: { agrupacion } }),
+        prisma.agrupacion.findUnique({ where: { agrupacion: canonicalAgrupacion } }),
         prisma.seccion.findUnique({ where: { seccion } }),
         prisma.papel.findUnique({ where: { papel } })
       ]);
