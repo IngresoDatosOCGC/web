@@ -22,49 +22,49 @@ export async function GET(req: Request) {
   }
 
   const { searchParams } = new URL(req.url);
-  const targetUserId = searchParams.get("id");
+  const id = searchParams.get("id");
 
   try {
-    if (targetUserId) {
-      // CARGA BAJO DEMANDA: Datos completos para un usuario específico (Modal de Edición)
-      const isLocalOnly = typeof targetUserId === 'string' && targetUserId.startsWith('ext_');
-      const dbUser = await (isLocalOnly 
-        ? prisma.user.findUnique({ where: { id: parseInt(targetUserId.replace('ext_', '')) }, include: { estructuras: { include: { agrupacion: true, seccion: true, papel: true } } } })
-        : prisma.user.findUnique({ where: { supabaseUserId: targetUserId }, include: { estructuras: { include: { agrupacion: true, seccion: true, papel: true } } } })
-      );
+    // CARGA DETALLADA: Si hay un ID, devolvemos el perfil completo
+    if (id) {
+       const isLocalOnly = id.startsWith('ext_');
+       const user = await prisma.user.findFirst({
+         where: isLocalOnly ? { id: parseInt(id.replace('ext_', '')) } : { supabaseUserId: id },
+         include: {
+           estructuras: {
+             include: {
+               agrupacion: true,
+               seccion: true,
+               papel: true
+             }
+           },
+           residencia: true,
+           empleo: true,
+           matriculas: true
+         }
+       });
 
-      if (!dbUser) return new NextResponse("User not found", { status: 404 });
+       if (!user) return new NextResponse("Not Found", { status: 404 });
 
-      return NextResponse.json({
-        id: dbUser.supabaseUserId || `ext_${dbUser.id}`,
-        dbId: dbUser.id,
-        firstName: dbUser.name || "",
-        surname: dbUser.surname || "",
-        name: `${dbUser.name || ""} ${dbUser.surname || ""}`.trim() || "Sin nombre",
-        email: dbUser.email || "—",
-        dni: dbUser.dni || "",
-        phone: dbUser.phone || "",
-        roles: dbUser.estructuras.filter(e => e.activo).map(e => e.seccion.seccion),
-        isArchiver: !!dbUser.isArchiver,
-        isMaster: !!dbUser.isMaster,
-        isSeller: !!dbUser.isSeller,
-        isSectionLeader: !!dbUser.isSectionLeader,
-        isActive: dbUser.isActive,
-        isExternal: dbUser.isExternal,
-        birthDate: dbUser.birthDate,
-        hasCertificate: !!dbUser.hasCertificate,
-        estructuras: dbUser.estructuras.map(e => ({
-          id: e.id,
-          agrupacionId: e.agrupacion.id,
-          seccionId: e.seccion.id,
-          papelId: e.papel.id,
-          agrupacion: e.agrupacion.agrupacion,
-          seccion: e.seccion.seccion,
-          papel: e.papel.papel,
-          activo: e.activo,
-          atril: e.atril
-        }))
-      });
+       // Formatear para el frontend
+       return NextResponse.json({
+         ...user,
+         id: user.supabaseUserId || `ext_${user.id}`,
+         dbId: user.id,
+         firstName: user.name,
+         surname: user.surname,
+         artisticProfiles: user.estructuras.map(e => ({
+           id: e.id,
+           agrupacionId: e.agrupacion.id,
+           seccionId: e.seccion.id,
+           papelId: e.papel.id,
+           agrupacion: e.agrupacion.agrupacion,
+           seccion: e.seccion.seccion,
+           papel: e.papel.papel,
+           activo: e.activo,
+           atril: e.atril
+         }))
+       });
     }
 
     // CARGA INICIAL: Lista resumida para la tabla general
@@ -79,11 +79,15 @@ export async function GET(req: Request) {
         isMaster: true,
         isArchiver: true,
         isSectionLeader: true,
+        isSeller: true,
         isExternal: true,
-        // Solo necesitamos saber qué roles tienen para mostrarlos en la tabla
         estructuras: {
-          where: { activo: true },
-          select: { seccion: { select: { seccion: true } } }
+          select: {
+            id: true,
+            activo: true,
+            agrupacion: { select: { agrupacion: true } },
+            seccion: { select: { seccion: true } }
+          }
         }
       },
       orderBy: { name: 'asc' }
@@ -98,8 +102,15 @@ export async function GET(req: Request) {
       isMaster: db.isMaster,
       isArchiver: db.isArchiver,
       isSectionLeader: db.isSectionLeader,
+      isSeller: db.isSeller,
       isExternal: db.isExternal,
-      roles: db.estructuras.map(e => e.seccion.seccion)
+      roles: db.estructuras?.filter(e => e.activo).map(e => e.seccion.seccion) || [],
+      estructuras: db.estructuras?.map(e => ({
+        id: e.id,
+        agrupacion: e.agrupacion?.agrupacion || "Desconocida",
+        seccion: e.seccion?.seccion || "Sin sección",
+        activo: e.activo
+      })) || []
     }));
 
     return NextResponse.json(summarizedMembers);
@@ -148,7 +159,47 @@ export async function POST(req: Request) {
 
       // Acción para actualizar datos base del usuario
       if (action === "update-user") {
-        const { firstName, surname, birthDate, hasCertificate, dni, phone } = body;
+        const { firstName, surname, birthDate, hasCertificate, dni, phone, email } = body;
+        let finalSupabaseUserId = dbUser.supabaseUserId;
+        let finalEmail = email !== undefined ? email : dbUser.email;
+        let finalIsExternal = dbUser.isExternal;
+
+        // 1. Manejo de Email y Conversión de Externo -> Plataforma
+        if (email && email !== dbUser.email) {
+          if (dbUser.supabaseUserId) {
+            const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+              dbUser.supabaseUserId,
+              { email: email }
+            );
+            if (updateError) return new NextResponse(`Error Supabase: ${updateError.message}`, { status: 400 });
+          } else if (dbUser.isExternal) {
+            const userDni = (dni || dbUser.dni).toUpperCase().trim();
+            const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+              email: email,
+              password: userDni,
+              email_confirm: true,
+              user_metadata: {
+                full_name: `${firstName || dbUser.name} ${surname || dbUser.surname}`.trim(),
+                username: userDni
+              }
+            });
+            if (createError) return new NextResponse(`Error conversón Supabase: ${createError.message}`, { status: 400 });
+            
+            finalSupabaseUserId = newUser.user.id;
+            finalIsExternal = false;
+          }
+        }
+
+        // 2. Si cambian nombre o DNI y ya es usuario de plataforma, sincronizar metadatos en Supabase
+        if (dbUser.supabaseUserId && (firstName || surname || dni)) {
+           const newFullName = `${firstName || dbUser.name} ${surname || dbUser.surname}`.trim();
+           const newUsername = (dni || dbUser.dni).toUpperCase().trim();
+           await supabaseAdmin.auth.admin.updateUserById(dbUser.supabaseUserId, {
+             user_metadata: { full_name: newFullName, username: newUsername }
+           });
+        }
+
+        // 3. Actualización final en DB local
         await prisma.user.update({
           where: { id: dbId },
           data: {
@@ -156,10 +207,14 @@ export async function POST(req: Request) {
             surname: surname !== undefined ? (surname || "") : undefined,
             dni: dni !== undefined ? dni : undefined,
             phone: phone !== undefined ? phone : undefined,
+            email: finalEmail,
+            isExternal: finalIsExternal,
+            supabaseUserId: finalSupabaseUserId,
             birthDate: birthDate !== undefined ? (birthDate || null) : undefined,
             hasCertificate: hasCertificate !== undefined ? hasCertificate : undefined
           }
         });
+        
         await logActivity("Perfil base actualizado", admin.supabaseUserId || '', { target: targetName });
       }
 
@@ -218,7 +273,6 @@ export async function POST(req: Request) {
         const remainingEstructuras = await prisma.estructura.findMany({ where: { userId: dbId } });
         const hasActive = remainingEstructuras.some(e => e.activo);
         
-        // Si el estado derivado de las estructuras es distinto al que tiene actualmente, lo actualizamos
         if (dbUser.isActive !== hasActive) {
           await prisma.user.update({
             where: { id: dbId },
@@ -227,46 +281,40 @@ export async function POST(req: Request) {
         }
       }
 
-     // Acción para cambiar permiso de Archivero (EN LA DB)
-     if (action === "toggle-archiver") {
-        const newValue = isArchiver !== undefined ? isArchiver : !dbUser.isArchiver;
-        await prisma.user.update({
-          where: { id: dbId },
-          data: { isArchiver: newValue }
-        });
-        await logActivity("Cambio permiso Archivero", admin.supabaseUserId || '', { 
-          target: targetName, 
-          isArchiver: newValue 
-        });
-     }
-
-      // Acción para cambiar permiso de Master (EN LA DB)
-      if (action === "toggle-master") {
-        const newValue = isMaster !== undefined ? isMaster : !dbUser.isMaster;
-        await prisma.user.update({
-          where: { id: dbId },
-          data: { isMaster: newValue }
-        });
-        await logActivity("Cambio permiso Master", admin.supabaseUserId || '', { 
-          target: targetName, 
-          isMaster: newValue 
-        });
+      // Acción para cambiar permiso de Archivero
+      if (action === "toggle-archiver") {
+         const newValue = isArchiver !== undefined ? isArchiver : !dbUser.isArchiver;
+         await prisma.user.update({
+           where: { id: dbId },
+           data: { isArchiver: newValue }
+         });
+         await logActivity("Cambio permiso Archivero", admin.supabaseUserId || '', { target: targetName, isArchiver: newValue });
+         if (dbUser.supabaseUserId) await syncUserMetadata(dbUser.id);
       }
 
-      // Acción para cambiar permiso de Vendedor (EN LA DB)
+      // Acción para cambiar permiso de Vendedor
       if (action === "toggle-seller") {
         const newValue = isSeller !== undefined ? isSeller : !dbUser.isSeller;
         await prisma.user.update({
           where: { id: dbId },
           data: { isSeller: newValue }
         });
-        await logActivity("Cambio permiso Vendedor", admin.supabaseUserId || '', { 
-          target: targetName, 
-          isSeller: newValue 
-        });
+        await logActivity("Cambio permiso Vendedor", admin.supabaseUserId || '', { target: targetName, isSeller: newValue });
+        if (dbUser.supabaseUserId) await syncUserMetadata(dbUser.id);
       }
 
-      // Acción para cambiar permiso Jefe de Sección (EN LA DB)
+      // Acción para cambiar permiso de Master
+      if (action === "toggle-master") {
+        const newValue = isMaster !== undefined ? isMaster : !dbUser.isMaster;
+        await prisma.user.update({
+          where: { id: dbId },
+          data: { isMaster: newValue }
+        });
+        await logActivity("Cambio permiso Master", admin.supabaseUserId || '', { target: targetName, isMaster: newValue });
+        if (dbUser.supabaseUserId) await syncUserMetadata(dbUser.id);
+      }
+
+      // Acción para cambiar permiso de Jefe de Sección
       if (action === "toggle-section-leader") {
         const { isSectionLeader } = body;
         const newValue = isSectionLeader !== undefined ? isSectionLeader : !dbUser.isSectionLeader;
@@ -274,10 +322,8 @@ export async function POST(req: Request) {
           where: { id: dbId },
           data: { isSectionLeader: newValue }
         });
-        await logActivity("Cambio permiso Jefe Sección", admin.supabaseUserId || '', { 
-          target: targetName, 
-          isSectionLeader: newValue 
-        });
+        await logActivity("Cambio permiso Jefe Sección", admin.supabaseUserId || '', { target: targetName, isSectionLeader: newValue });
+        if (dbUser.supabaseUserId) await syncUserMetadata(dbUser.id);
       }
 
       // Acción para actualizar datos personales básicos
@@ -292,10 +338,6 @@ export async function POST(req: Request) {
         });
         await logActivity("Perfil Personal Actualizado", admin.supabaseUserId || '', { target: targetName });
       }
-
-      // 🔄 SINCRONIZACIÓN DE CACHÉ (app_metadata)
-      // Actualizamos la caché de Supabase Auth para que la UI refleje el cambio rápidamente
-      await syncUserMetadata(dbId);
 
       return NextResponse.json({ success: true });
   } catch (err) {

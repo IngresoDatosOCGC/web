@@ -135,13 +135,105 @@ export default function CSVImportUsers({ onImportSuccess }: { onImportSuccess: (
         <span style={{ fontSize: '1.4rem' }}>👥</span> Importar Miembros por CSV
       </h3>
       
-      <div style={{ background: '#fff', padding: '1rem', borderRadius: '8px', border: '1px solid #ffcdd2', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
-        <p style={{ margin: '0 0 0.8rem', fontWeight: 'bold', color: '#d32f2f' }}>📌 Lógica de importación:</p>
-        <ul style={{ margin: '0', paddingLeft: '1.2rem', color: '#555', lineHeight: '1.5' }}>
-          <li>Si el usuario y su perfil artístico <strong>ya existen</strong>, se omite automáticamente.</li>
-          <li>Si el usuario no existe, se crea en Supabase y en la base de datos local.</li>
-        </ul>
+      <div style={{ background: '#fff', padding: '1.2rem', borderRadius: '10px', border: '1px solid #ffcdd2', marginBottom: '1.5rem', fontSize: '0.82rem' }}>
+        <details>
+          <summary style={{ fontWeight: 700, color: '#c0392b', cursor: 'pointer', fontSize: '0.85rem', marginBottom: '0.2rem' }}>
+            📋 Guía de columnas del CSV (haz clic para expandir)
+          </summary>
+          <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+
+            <div>
+              <p style={{ margin: '0 0 0.4rem', fontWeight: 700, color: '#333' }}>✅ Obligatorias</p>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+                <thead><tr style={{ background: '#f8fafc' }}>
+                  <th style={{ padding: '0.4rem 0.6rem', textAlign: 'left', border: '1px solid #eee' }}>Encabezado</th>
+                  <th style={{ padding: '0.4rem 0.6rem', textAlign: 'left', border: '1px solid #eee' }}>Descripción</th>
+                </tr></thead>
+                <tbody>
+                  {[
+                    ['nombre / name', 'Nombre de pila del músico'],
+                    ['apellidos / surname', 'Apellidos completos'],
+                    ['dni', 'DNI o NIE — actúa como identificador único']
+                  ].map(([col, desc]) => (
+                    <tr key={col}><td style={{ padding: '0.3rem 0.6rem', border: '1px solid #eee', fontFamily: 'monospace', color: '#c0392b' }}>{col}</td><td style={{ padding: '0.3rem 0.6rem', border: '1px solid #eee', color: '#555' }}>{desc}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div>
+              <p style={{ margin: '0 0 0.4rem', fontWeight: 700, color: '#333' }}>📌 Acceso a plataforma</p>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+                <thead><tr style={{ background: '#f8fafc' }}>
+                  <th style={{ padding: '0.4rem 0.6rem', textAlign: 'left', border: '1px solid #eee' }}>Encabezado</th>
+                  <th style={{ padding: '0.4rem 0.6rem', textAlign: 'left', border: '1px solid #eee' }}>Descripción</th>
+                </tr></thead>
+                <tbody>
+                  {[
+                    ['email / correo', 'Correo electrónico. Sin email → usuario Externo (sin acceso)'],
+                    ['telefono / phone', 'Teléfono de contacto'],
+                    ['fecha_nacimiento / birth_date', 'Fecha en formato YYYY-MM-DD (ej: 1990-05-20)']
+                  ].map(([col, desc]) => (
+                    <tr key={col}><td style={{ padding: '0.3rem 0.6rem', border: '1px solid #eee', fontFamily: 'monospace', color: '#1a6b3c' }}>{col}</td><td style={{ padding: '0.3rem 0.6rem', border: '1px solid #eee', color: '#555' }}>{desc}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div>
+              <p style={{ margin: '0 0 0.4rem', fontWeight: 700, color: '#333' }}>🎵 Perfil artístico</p>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+                <thead><tr style={{ background: '#f8fafc' }}>
+                  <th style={{ padding: '0.4rem 0.6rem', textAlign: 'left', border: '1px solid #eee' }}>Encabezado</th>
+                  <th style={{ padding: '0.4rem 0.6rem', textAlign: 'left', border: '1px solid #eee' }}>Descripción</th>
+                </tr></thead>
+                <tbody>
+                  {[
+                    ['agrupacion', 'Nombre exacto de la agrupación (ej: Orquesta, Coro)'],
+                    ['seccion', 'Sección o instrumento (ej: Violín primero, Soprano)'],
+                    ['papel', 'Papel musical (ej: Músico, Director, Solista)'],
+                    ['atril', 'Número de atril (entero, opcional)'],
+                    ['activo', 'true / false — si el perfil está activo (defecto: true)']
+                  ].map(([col, desc]) => (
+                    <tr key={col}><td style={{ padding: '0.3rem 0.6rem', border: '1px solid #eee', fontFamily: 'monospace', color: '#1a4bb5' }}>{col}</td><td style={{ padding: '0.3rem 0.6rem', border: '1px solid #eee', color: '#555' }}>{desc}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div>
+              <p style={{ margin: '0 0 0.4rem', fontWeight: 700, color: '#333' }}>🛡️ Permisos (defecto: false)</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                {['es_master', 'es_archivero', 'es_vendedor', 'es_external'].map(col => (
+                  <span key={col} style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '0.2rem 0.5rem', fontFamily: 'monospace', fontSize: '0.75rem', color: '#475569' }}>{col}</span>
+                ))}
+              </div>
+              <p style={{ margin: '0.4rem 0 0', color: '#888', fontSize: '0.75rem' }}>Poner <code>true</code> solo si el músico debe tener ese rol desde el inicio.</p>
+            </div>
+
+            <div>
+              <p style={{ margin: '0 0 0.4rem', fontWeight: 700, color: '#333' }}>🏠 Residencia (opcional)</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                {['isla', 'municipio', 'empadronamiento'].map(col => (
+                  <span key={col} style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '0.2rem 0.5rem', fontFamily: 'monospace', fontSize: '0.75rem', color: '#475569' }}>{col}</span>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '0.6rem 0.8rem' }}>
+              <p style={{ margin: 0, color: '#92400e', fontSize: '0.78rem' }}>
+                <strong>💡 Clave de idempotencia:</strong> El sistema usa el <strong>DNI</strong> como clave única. Si ya existe, actualiza los datos y añade estructuras nuevas sin duplicar. Si agrupación+sección+papel ya están asignadas, la fila se omite.
+              </p>
+            </div>
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '0.6rem 0.8rem' }}>
+              <p style={{ margin: 0, color: '#166534', fontSize: '0.78rem' }}>
+                <strong>🔐 Contraseña inicial:</strong> Para usuarios con email, la contraseña inicial es su <strong>DNI en mayúsculas</strong>. Su nombre de usuario (para login) también es el DNI en mayúsculas si no se especifica otro.
+              </p>
+            </div>
+          </div>
+        </details>
       </div>
+
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>

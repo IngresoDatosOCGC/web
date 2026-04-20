@@ -37,8 +37,8 @@ const HELPS = {
     desc: "Define los instrumentos y etiquetas para filtrar partituras.",
     steps: [
       "Etiqueta vs Sección: Un músico puede estar en la sección 'Violín II' pero ver partituras bajo la etiqueta 'Violín'.",
-      "Clasificación: Asigna familias (Cuerda, Viento...) para organizar los filtros del Dashboard y las carpetas de archivo.",
-      "Sincronización: Cualquier cambio aquí se propaga a los metadatos de Clerk de los músicos afectados al instante."
+      "Clasificación: Asigna familias (Cuerda, Viento...) para organizar los filtros del Dashboard.",
+      "Sincronización: Los cambios se propagan automáticamente a los metadatos de autenticación del músico (Supabase app_metadata) al instante."
     ]
   },
   sections: {
@@ -61,21 +61,22 @@ const HELPS = {
   },
   personal: {
     title: "👥 Gestión de Permisos y Perfiles",
-    desc: "Control total sincronizado con Clerk.",
+    desc: "Control total de los miembros de la OCGC.",
     steps: [
-      "Lógica de Acceso: Si un usuario no tiene perfiles artísticos activos en la base de datos, el sistema lo 'Banea' automáticamente en Clerk.",
-      "Gestión de Perfiles: Puedes añadir múltiples combinaciones (ej: Orquesta / Violín I / Músico y Coro / Tenor / Jefe de Sección).",
-      "Sincronización Automática: Al guardar un cambio en un perfil, el sistema reconstruye los metadatos de Clerk sin que tengas que intervenir.",
-      "Alta Masiva por CSV: El archivo debe tener encabezados: 'nombre', 'apellidos', 'dni' (obligatorios) y 'email', 'agrupacion', 'seccion', 'papel' (opcionales para acceso).",
-      "Acceso a Plataforma: Para músicos sin cuenta (externos), usa 'Activar Acceso' para crearles su cuenta de Clerk y vincular sus datos históricos."
+      "Carga Optimizada: La tabla muestra un resumen ligero de todos los miembros. Al pulsar el icono de edición (✎) se obtienen los datos completos de ese usuario.",
+      "Perfiles Artísticos: Un músico puede tener varios perfiles (ej: Orquesta/Violín y Coro/Tenor). Gestiónalos desde el modal de edición.",
+      "Alta Masiva por CSV: Los encabezados obligatorios son 'nombre', 'apellidos' y 'dni'. Añade también 'email', 'agrupacion', 'seccion' y 'papel' para crear el perfil artístico. Si no hay email, el usuario se crea como Externo (sin acceso).",
+      "Login Dual: Los músicos pueden iniciar sesión con su correo electrónico o con su nombre de usuario (por defecto: DNI en mayúsculas).",
+      "Contraseña Inicial: Para usuarios importados o creados manualmente, la contraseña inicial es el DNI en mayúsculas. Deben cambiarla desde ¿Olvidaste tu contraseña? al primer acceso.",
+      "Activar Acceso: Para músicos Externos ya existentes, usa el botón de 'Activar en Plataforma' para crearles una cuenta de acceso sin duplicar sus datos históricos."
     ]
   },
   logs: {
     title: "📝 Auditoría y Seguridad",
     desc: "Trazabilidad de cada cambio en el sistema.",
     steps: [
-      "Sincronización de Clerk: Revisa los logs para confirmar que los cambios de permisos se han propagado correctamente a la nube.",
-      "Historial de Archivo: Seguimiento de quién ha subido, editado o borrado material musical sensible.",
+      "Sincronización: Revisa los logs para confirmar que los cambios de permisos se han propagado correctamente a los metadatos de autenticación.",
+      "Historial de Archivo: Seguimiento de quién ha subido, editado o borrado material musical.",
       "Reportes: Los logs se pueden filtrar por fecha para auditorías internas de gestión administrativa."
     ]
   },

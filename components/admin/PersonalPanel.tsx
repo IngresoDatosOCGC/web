@@ -156,7 +156,7 @@ export default function PersonalPanel({
     try {
       const res = await fetch("/api/admin/users", {
         method: "POST",
-        body: JSON.stringify({ userId, action: "toggle-master", status: !current }),
+        body: JSON.stringify({ userId, action: "toggle-master", isMaster: !current }),
         headers: { "Content-Type": "application/json" }
       });
       if (res.ok) {
@@ -170,7 +170,7 @@ export default function PersonalPanel({
     try {
       const res = await fetch("/api/admin/users", {
         method: "POST",
-        body: JSON.stringify({ userId, action: "toggle-seller", status: !current }),
+        body: JSON.stringify({ userId, action: "toggle-seller", isSeller: !current }),
         headers: { "Content-Type": "application/json" }
       });
       if (res.ok) {
@@ -193,7 +193,7 @@ export default function PersonalPanel({
     try {
       const res = await fetch("/api/admin/users", {
         method: "POST",
-        body: JSON.stringify({ userId, action: "toggle-archiver", status: !current }),
+        body: JSON.stringify({ userId, action: "toggle-archiver", isArchiver: !current }),
         headers: { "Content-Type": "application/json" }
       });
       if (res.ok) {
@@ -1062,25 +1062,36 @@ export default function PersonalPanel({
                        onChange={(e) => setEditingMemberData({...editingMemberData, surname: e.target.value})}
                      />
                    </div>
-                   <div className="admin-form-group-premium">
-                     <label style={{ fontSize: '0.75rem', color: '#64748b' }}>DNI / NIE</label>
-                     <input 
-                       type="text" 
-                       value={editingMemberData.dni || ""} 
-                       className="premium-input" 
-                       onChange={(e) => setEditingMemberData({...editingMemberData, dni: e.target.value})}
-                     />
-                   </div>
-                   <div className="admin-form-group-premium">
-                     <label style={{ fontSize: '0.75rem', color: '#64748b' }}>TELÉFONO</label>
-                     <input 
-                       type="text" 
-                       value={editingMemberData.phone || ""} 
-                       className="premium-input" 
-                       onChange={(e) => setEditingMemberData({...editingMemberData, phone: e.target.value})}
-                     />
-                   </div>
-                </div>
+                    <div className="admin-form-group-premium">
+                      <label style={{ fontSize: '0.75rem', color: '#64748b' }}>DNI / NIE</label>
+                      <input 
+                        type="text" 
+                        value={editingMemberData.dni || ""} 
+                        className="premium-input" 
+                        onChange={(e) => setEditingMemberData({...editingMemberData, dni: e.target.value})}
+                      />
+                    </div>
+                    <div className="admin-form-group-premium">
+                      <label style={{ fontSize: '0.75rem', color: '#64748b' }}>TELÉFONO</label>
+                      <input 
+                        type="text" 
+                        value={editingMemberData.phone || ""} 
+                        className="premium-input" 
+                        onChange={(e) => setEditingMemberData({...editingMemberData, phone: e.target.value})}
+                      />
+                    </div>
+                    <div className="admin-form-group-premium" style={{ gridColumn: 'span 2' }}>
+                      <label style={{ fontSize: '0.75rem', color: '#64748b' }}>CORREO ELECTRÓNICO (Si era externo, se creará usuario con DNI como pass/user)</label>
+                      <input 
+                        type="email" 
+                        value={editingMemberData.email || ""} 
+                        className="premium-input" 
+                        style={{ borderLeft: editingMemberData.isExternal ? '4px solid #f59e0b' : 'none' }}
+                        onChange={(e) => setEditingMemberData({...editingMemberData, email: e.target.value})}
+                        placeholder={editingMemberData.isExternal ? "Añade un email para dar acceso a la plataforma..." : "Email principal"}
+                      />
+                    </div>
+                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
                    <div className="admin-form-group-premium">
                      <label style={{ fontSize: '0.75rem', color: '#64748b' }}>FECHA DE NACIMIENTO</label>
@@ -1133,6 +1144,7 @@ export default function PersonalPanel({
                        surname: editingMemberData.surname,
                        dni: editingMemberData.dni,
                        phone: editingMemberData.phone,
+                       email: editingMemberData.email,
                        birthDate: editingMemberData.birthDate, 
                        hasCertificate: editingMemberData.hasCertificate 
                      })
