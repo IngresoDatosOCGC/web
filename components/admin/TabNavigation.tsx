@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-export type TabType = 'dashboard' | 'scores' | 'categories' | 'roles' | 'sections' | 'personal' | 'calendar' | 'logs' | 'requests';
+export type TabType = 'dashboard' | 'scores' | 'categories' | 'sections' | 'personal' | 'calendar' | 'logs' | 'requests';
 
 interface TabNavigationProps {
   activeTab: TabType | null;
@@ -58,14 +58,7 @@ export default function TabNavigation({ activeTab, setActiveTab, isMaster }: Omi
         <span className="sidebar-icon">🎼</span>
         {isShowExpanded && <span className="sidebar-text">Partituras / Documentos</span>}
       </button>
-      <button 
-        onClick={() => setActiveTab('roles')} 
-        className={activeTab === 'roles' ? 'active' : ''}
-        title="Diccionario"
-      >
-        <span className="sidebar-icon">🏷️</span>
-        {isShowExpanded && <span className="sidebar-text">Etiquetas de Secciones</span>}
-      </button>
+
       {isMaster && (
         <button 
           onClick={() => setActiveTab('sections')} 
@@ -73,7 +66,7 @@ export default function TabNavigation({ activeTab, setActiveTab, isMaster }: Omi
           title="Estructuras"
         >
           <span className="sidebar-icon">🎺</span>
-          {isShowExpanded && <span className="sidebar-text">Estructura de Agrupaciones</span>}
+          {isShowExpanded && <span className="sidebar-text">Estructuras y Catálogos</span>}
         </button>
       )}
       <button 

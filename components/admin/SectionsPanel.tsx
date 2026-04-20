@@ -19,6 +19,7 @@ export default function SectionsPanel({ agrupaciones, papeles, secciones, onRefr
   const [newAgrupacionName, setNewAgrupacionName] = useState('');
   const [newPapelName, setNewPapelName] = useState('');
   const [newSectionName, setNewSectionName] = useState('');
+  const [newSectionFamily, setNewSectionFamily] = useState('Otros');
   
   const [isCreatingAgrupacion, setIsCreatingAgrupacion] = useState(false);
   const [isCreatingPapel, setIsCreatingPapel] = useState(false);
@@ -65,7 +66,7 @@ export default function SectionsPanel({ agrupaciones, papeles, secciones, onRefr
       const res = await fetch("/api/secciones", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ seccion: newSectionName })
+        body: JSON.stringify({ seccion: newSectionName, familia: newSectionFamily })
       });
       if (res.ok) { setNewSectionName(''); onRefresh(); showToast("Sección creada"); }
     } catch { showToast("Error al crear", "error"); }
@@ -141,20 +142,20 @@ export default function SectionsPanel({ agrupaciones, papeles, secciones, onRefr
         {/* AGRUPACIONES */}
         <section className="admin-form-card">
           <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>🎭 Agrupaciones</h2>
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-            <input type="text" placeholder="Nueva..." value={newAgrupacionName} onChange={(e) => setNewAgrupacionName(e.target.value)} style={{ flex: 1 }} />
-            <button onClick={createAgrupacion} className="btn-main-admin" disabled={isCreatingAgrupacion} style={{ width: 'auto' }}>{isCreatingAgrupacion ? "..." : "+"}</button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginBottom: '1.5rem' }}>
+            <input type="text" placeholder="Nombre (ej: Orquesta)..." value={newAgrupacionName} onChange={(e) => setNewAgrupacionName(e.target.value)} style={{ padding: '0.8rem', border: '1px solid #ddd', borderRadius: '8px' }} />
+            <button onClick={createAgrupacion} className="btn-main-admin" disabled={isCreatingAgrupacion} style={{ margin: 0 }}>{isCreatingAgrupacion ? "Creando..." : "Añadir Agrupación"}</button>
           </div>
           <div className="catalog-scroll-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
             {agrupaciones.map((a: any) => (
               <div key={a.id} className="catalog-item-row" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.6rem', borderBottom: '1px solid #eee' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                  <span style={{ fontWeight: 500 }}>{a.agrupacion}</span>
-                  {a.isVisibleInPublic ? <span className="cat-badge-public">Público</span> : <span className="cat-badge-private">Privado</span>}
+                   <span style={{ fontWeight: 500 }}>{a.agrupacion}</span>
+                   {a.isVisibleInPublic ? <span className="cat-badge-public">Público</span> : <span className="cat-badge-private">Privado</span>}
                 </div>
                 <div style={{ display: 'flex', gap: '0.4rem' }}>
-                  <button onClick={() => setEditingAgrupacion(a)} className="btn-icon-edit">✎</button>
-                  <button onClick={() => deleteAgrupacion(a.id)} className="btn-delete-small">×</button>
+                   <button onClick={() => setEditingAgrupacion(a)} className="btn-icon-edit">✎</button>
+                   <button onClick={() => deleteAgrupacion(a.id)} className="btn-delete-small">×</button>
                 </div>
               </div>
             ))}
@@ -164,9 +165,9 @@ export default function SectionsPanel({ agrupaciones, papeles, secciones, onRefr
         {/* PAPELES */}
         <section className="admin-form-card">
           <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>👤 Papeles</h2>
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-            <input type="text" placeholder="Nuevo..." value={newPapelName} onChange={(e) => setNewPapelName(e.target.value)} style={{ flex: 1 }} />
-            <button onClick={createPapel} className="btn-main-admin" disabled={isCreatingPapel} style={{ width: 'auto' }}>{isCreatingPapel ? "..." : "+"}</button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginBottom: '1.5rem' }}>
+            <input type="text" placeholder="Nombre (ej: Músico)..." value={newPapelName} onChange={(e) => setNewPapelName(e.target.value)} style={{ padding: '0.8rem', border: '1px solid #ddd', borderRadius: '8px' }} />
+            <button onClick={createPapel} className="btn-main-admin" disabled={isCreatingPapel} style={{ margin: 0 }}>{isCreatingPapel ? "Creando..." : "Añadir Papel"}</button>
           </div>
           <div className="catalog-scroll-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
             {papeles.map((p: any) => (
@@ -188,9 +189,29 @@ export default function SectionsPanel({ agrupaciones, papeles, secciones, onRefr
         {/* SECCIONES */}
         <section className="admin-form-card">
           <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>🎻 Secciones</h2>
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-            <input type="text" placeholder="Nueva..." value={newSectionName} onChange={(e) => setNewSectionName(e.target.value)} style={{ flex: 1 }} />
-            <button onClick={createSection} className="btn-main-admin" disabled={isCreatingSection} style={{ width: 'auto' }}>{isCreatingSection ? "..." : "+"}</button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginBottom: '1.5rem' }}>
+            <input 
+              type="text" 
+              placeholder="Nombre de la sección (ej: Violín)..." 
+              value={newSectionName} 
+              onChange={(e) => setNewSectionName(e.target.value)} 
+              style={{ padding: '0.8rem', border: '1px solid #ddd', borderRadius: '8px' }}
+            />
+            <select 
+              value={newSectionFamily} 
+              onChange={(e) => setNewSectionFamily(e.target.value)} 
+              style={{ padding: '0.8rem', border: '1px solid #ddd', borderRadius: '8px', background: '#f8fafc' }}
+            >
+              {DEFAULT_FAMILIAS.map(f => <option key={f} value={f}>{f}</option>)}
+            </select>
+            <button 
+              onClick={createSection} 
+              className="btn-main-admin" 
+              disabled={isCreatingSection} 
+              style={{ margin: 0 }}
+            >
+              {isCreatingSection ? "Creando..." : "Añadir Sección"}
+            </button>
           </div>
           <div className="catalog-scroll-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
             {secciones.sort((a,b) => a.seccion.localeCompare(b.seccion)).map((s: any) => (

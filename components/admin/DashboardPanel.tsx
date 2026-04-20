@@ -57,7 +57,7 @@ export default function DashboardPanel({ members, scores }: { members: any[], sc
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1.5px solid #f1f5f9' }}>
               <span style={{ fontWeight: 800, fontSize: '1rem', color: '#1a2a4b' }}>{agrup.name}</span>
               <span style={{ fontSize: '0.8rem', background: '#f0fdf4', color: '#15803d', fontWeight: 700, padding: '0.25rem 0.75rem', borderRadius: '20px', border: '1px solid #bbf7d0' }}>
-                {agrup.activeCount ?? 0} / {agrup.count ?? 0}
+                {agrup.activeCount ?? 0}
               </span>
             </div>
 
@@ -72,12 +72,8 @@ export default function DashboardPanel({ members, scores }: { members: any[], sc
                       <div key={sec.name} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.3rem 0' }}>
                         <span style={{ flex: 1, fontSize: '0.82rem', color: '#475569', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sec.name}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
-                          {/* Mini progress bar */}
-                          <div style={{ width: '60px', height: '5px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden' }}>
-                            <div style={{ width: `${pct}%`, height: '100%', background: pct === 100 ? '#10b981' : pct > 50 ? '#3b82f6' : '#f59e0b', borderRadius: '99px', transition: 'width 0.4s' }} />
-                          </div>
+                          
                           <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#10b981', minWidth: '20px', textAlign: 'right' }}>{sec.activeCount}</span>
-                          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>/ {sec.count}</span>
                         </div>
                       </div>
                     );

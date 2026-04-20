@@ -158,6 +158,20 @@ export async function POST(req: Request) {
         await logActivity("Estructura Eliminada", admin.supabaseUserId || '', { target: targetName });
       }
 
+      // Sincronización automática del estado 'isActive' del usuario basándose en sus estructuras
+      if (["update-estructura", "add-estructura", "delete-estructura"].includes(action)) {
+        const remainingEstructuras = await prisma.estructura.findMany({ where: { userId: dbId } });
+        const hasActive = remainingEstructuras.some(e => e.activo);
+        
+        // Si el estado derivado de las estructuras es distinto al que tiene actualmente, lo actualizamos
+        if (dbUser.isActive !== hasActive) {
+          await prisma.user.update({
+            where: { id: dbId },
+            data: { isActive: hasActive }
+          });
+        }
+      }
+
      // Acción para cambiar permiso de Archivero (EN LA DB)
      if (action === "toggle-archiver") {
         const newValue = isArchiver !== undefined ? isArchiver : !dbUser.isArchiver;

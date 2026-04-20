@@ -30,8 +30,8 @@ export default function MiniCalendar({ events, year, month, onMonthChange }: Pro
     const map: Record<number, any[]> = {};
     events.forEach(ev => {
       const d = new Date(ev.date);
-      if (d.getUTCFullYear() === year && d.getUTCMonth() === month) {
-        const day = d.getUTCDate();
+      if (d.getFullYear() === year && d.getMonth() === month) {
+        const day = d.getDate();
         if (!map[day]) map[day] = [];
         map[day].push(ev);
       }
@@ -87,7 +87,7 @@ export default function MiniCalendar({ events, year, month, onMonthChange }: Pro
                       <span className="tooltip-dot" style={{ background: TYPE_COLORS[ev.type]?.dot }} />
                       <div className="tooltip-info">
                         <strong>{ev.title}</strong>
-                        <span>{new Date(ev.date).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })} • {ev.location || 'Sede'}</span>
+                        <span>{new Date(ev.date).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} • {ev.location || 'Sede'}</span>
                       </div>
                     </div>
                   ))}

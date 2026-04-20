@@ -7,7 +7,6 @@ import TabNavigation, { TabType } from '@/components/admin/TabNavigation';
 import DashboardPanel from '@/components/admin/DashboardPanel';
 import ScoresPanel from '@/components/admin/ScoresPanel';
 import CategoriesPanel from '@/components/admin/CategoriesPanel';
-import RolesPanel from '@/components/admin/RolesPanel';
 import SectionsPanel from '@/components/admin/SectionsPanel';
 import PersonalPanel from '@/components/admin/PersonalPanel';
 import RequestsPanel from '@/components/admin/RequestsPanel';
@@ -135,8 +134,7 @@ export default function AdminOCGCPartituras() {
       case 'personal': return 'Usuarios';
       case 'requests': return 'Solicitudes';
       case 'categories': return 'Programas / Conciertos';
-      case 'roles': return 'Etiquetas de Secciones';
-      case 'sections': return 'Estructura de Agrupaciones';
+      case 'sections': return 'Estructuras y Catálogos';
       case 'calendar': return 'Agenda';
       case 'logs': return 'Acciones del Sistema';
       default: return 'Gestión OCGC';
@@ -187,12 +185,7 @@ export default function AdminOCGCPartituras() {
             />
           )}
 
-          {activeTab === 'roles' && isMaster && (
-            <RolesPanel 
-              tagsDict={tagsDict} 
-              onRefresh={() => loadData(true)} 
-            />
-          )}
+
 
           {activeTab === 'sections' && isMaster && (
             <SectionsPanel 

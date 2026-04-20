@@ -714,7 +714,7 @@
 /* -- Layout Global Styles -- */
 body { background-color: #f7f7f7 !important; min-height: 100vh; padding-top: 0 !important; }
 .members-main-body { padding: 3rem 0 6rem; width: 100%; box-sizing: border-box; }
-.container-white-ocgc { width: 90%; max-width: 1240px; margin: 0 auto; background: white; padding: 4rem; border-radius: 20px; box-shadow: 0 4px 40px rgba(0,0,0,0.03); min-height: 60vh; }
+.container-white-ocgc { width: 95%; max-width: 1600px; margin: 0 auto; background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 4px 40px rgba(0,0,0,0.03); min-height: 60vh; }
         .admin-body-pure { width: 100%; }
         .admin-header-box { display: flex; flex-direction: column; margin-bottom: 2.5rem; }
         .admin-title-section { flex: 1; }
@@ -1610,6 +1610,7 @@ body { background-color: #f7f7f7 !important; min-height: 100vh; padding-top: 0 !
   padding: 0 !important;
   align-items: flex-start;
   min-height: 100vh;
+  width: 100%;
   position: relative;
 }
 
@@ -1617,8 +1618,10 @@ body { background-color: #f7f7f7 !important; min-height: 100vh; padding-top: 0 !
 .admin-sidebar-wrapper {
   width: 80px;
   flex-shrink: 0;
-  position: relative;
+  position: sticky;
+  top: calc(var(--header-h) + 20px);
   z-index: 1000;
+  height: fit-content;
 }
 
 /* La barra lateral vive dentro del wrapper */
@@ -1627,9 +1630,6 @@ body { background-color: #f7f7f7 !important; min-height: 100vh; padding-top: 0 !
   height: auto;
   min-height: fit-content;
   max-height: calc(100vh - 40px);
-  position: sticky;
-  top: calc(var(--header-h) + 20px);
-  left: 0;
   background: white;
   border: 1px solid #f1f5f9;
   border-radius: 20px;

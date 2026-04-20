@@ -294,6 +294,20 @@ export default function PersonalPanel({
     });
   }, [members, searchMember, filterPersonalStatus, filterPersonalRole, filterPersonalInstrument]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchMember, filterPersonalStatus, filterPersonalRole, filterPersonalInstrument]);
+
+  const paginatedMembers = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredMembers.slice(start, start + itemsPerPage);
+  }, [filteredMembers, currentPage]);
+  
+  const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
+
   return (
     <div className="personal-panel-grid">
       {/* Left Column: List and Management */}
@@ -340,7 +354,8 @@ export default function PersonalPanel({
           <table className="personal-table">
             <thead>
               <tr>
-                <th>Usuario</th>
+                <th style={{ width: '25%' }}>Usuario</th>
+                <th style={{ width: '40%' }}>Estructuras</th>
                 <th className="th-center" style={{ width: '40px' }}>Mst</th>
                 <th className="th-center" style={{ width: '40px' }}>Jef</th>
                 <th className="th-center" style={{ width: '40px' }}>Arc</th>
@@ -350,7 +365,7 @@ export default function PersonalPanel({
               </tr>
             </thead>
             <tbody>
-              {filteredMembers.map(m => {
+              {paginatedMembers.map(m => {
                 let shadingClass = '';
                 if (m.isMaster) shadingClass = 'tr-master';
                 else if (m.isSectionLeader) shadingClass = 'tr-leader';
@@ -359,11 +374,47 @@ export default function PersonalPanel({
 
                 return (
                   <tr key={m.id} className={`${!m.isActive ? 'tr-banned' : ''} ${m.isExternal ? 'tr-external' : ''} ${shadingClass}`}>
-                    <td>
-                      <div style={{ fontWeight: 600, color: 'var(--clr-navy)' }}>{m.name}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)', marginTop: '2px' }}>{m.email || '(Sin email)'}</div>
-                      {m.isExternal && <span className="badge-external" style={{ marginTop: '4px', display: 'inline-block' }}>Externo</span>}
-                      {!m.isActive && <span className="badge-external" style={{ marginTop: '4px', display: 'inline-block', background: '#fee2e2', color: '#991b1b', marginLeft: '6px' }}>Baja (Global)</span>}
+                    <td style={{ maxWidth: '200px', overflow: 'hidden' }}>
+                      <div style={{ fontWeight: 600, color: 'var(--clr-navy)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.email || '(Sin email)'}</div>
+                      <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                        {m.isExternal && <span className="badge-external">Externo</span>}
+                        {!m.isActive && <span className="badge-external" style={{ background: '#fee2e2', color: '#991b1b' }}>Baja</span>}
+                      </div>
+                    </td>
+                    <td style={{ maxWidth: '300px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {m.estructuras && m.estructuras.map((est: any) => (
+                           <div key={est.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem' }}>
+                             <button 
+                               onClick={() => {
+                                 confirmAction(`¿${est.activo ? 'Desactivar' : 'Activar'} este perfil artístico?`, async () => {
+                                   const res = await fetch("/api/admin/users", { 
+                                     method: "POST", 
+                                     headers: { "Content-Type": "application/json" },
+                                     body: JSON.stringify({ userId: m.id, action: "update-estructura", estructuraId: est.id, activo: !est.activo }) 
+                                   });
+                                   if(res.ok) { onRefreshMembers(); }
+                                 });
+                               }}
+                               className={`btn-status-toggle ${est.activo ? 'on' : 'off'}`}
+                               style={{ width: '18px', height: '18px', fontSize: '0.6rem', padding: 0, minWidth: '18px' }}
+                             >
+                               {est.activo ? "✓" : "×"}
+                             </button>
+                             <span style={{ 
+                               color: est.activo ? '#333' : '#999', 
+                               textDecoration: est.activo ? 'none' : 'line-through', 
+                               whiteSpace: 'nowrap',
+                               overflow: 'hidden',
+                               textOverflow: 'ellipsis',
+                               flex: 1
+                             }}>
+                               {est.agrupacion} - {est.seccion}
+                             </span>
+                           </div>
+                        ))}
+                      </div>
                     </td>
                     <td className="td-center">
                       <button onClick={() => toggleMasterStatus(m.id, m.isMaster)} className={`btn-status-toggle ${m.isMaster ? 'on' : 'off'}`}>{m.isMaster ? "✓" : "🚫"}</button>
@@ -389,6 +440,43 @@ export default function PersonalPanel({
             </tbody>
           </table>
         </div>
+
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1.5rem' }}>
+            <button 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+              disabled={currentPage === 1}
+              className="btn-action-s"
+            >
+              Anterior
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: '#64748b' }}>
+              Página 
+              <input 
+                type="number" 
+                min={1} 
+                max={totalPages} 
+                value={currentPage} 
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (!isNaN(val) && val >= 1 && val <= totalPages) {
+                    setCurrentPage(val);
+                  }
+                }}
+                className="premium-input-sm"
+                style={{ width: '45px', textAlign: 'center', padding: '0.2rem', margin: 0 }}
+              />
+              de {totalPages}
+            </div>
+            <button 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+              disabled={currentPage === totalPages}
+              className="btn-action-s"
+            >
+              Siguiente
+            </button>
+          </div>
+        )}
       </section>
 
       {/* Right Column: Invitations */}

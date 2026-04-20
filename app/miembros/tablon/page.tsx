@@ -103,7 +103,7 @@ export default function TablonPage() {
                     <div className="ev-info-details">
                        <h5>{event.title}</h5>
                        <p>
-                         {evDate.toLocaleDateString('es-ES', { weekday: 'long', timeZone: 'UTC' })} • {evDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })}
+                         {evDate.toLocaleDateString('es-ES', { weekday: 'long' })} • {evDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                        </p>
                        <span className="ev-loc">{event.location || "Sede OCGC"}</span>
                     </div>
