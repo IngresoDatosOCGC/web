@@ -156,7 +156,7 @@ export async function POST(req: Request) {
             surname: surname !== undefined ? (surname || "") : undefined,
             dni: dni !== undefined ? dni : undefined,
             phone: phone !== undefined ? phone : undefined,
-            birthDate: birthDate !== undefined ? (birthDate ? new Date(birthDate) : null) : undefined,
+            birthDate: birthDate !== undefined ? (birthDate || null) : undefined,
             hasCertificate: hasCertificate !== undefined ? hasCertificate : undefined
           }
         });
