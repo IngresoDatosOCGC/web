@@ -157,7 +157,27 @@ export default function AdminOCGCPartituras() {
 
       <main className="admin-main-content">
         <header className="admin-section-header-premium">
-          <h1>{getTabTitle(activeTab)}</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <h1>{getTabTitle(activeTab)}</h1>
+            <button 
+              onClick={() => setIsHelpOpen(true)}
+              style={{ 
+                background: '#eef2ff', 
+                color: '#4338ca', 
+                border: 'none', 
+                padding: '0.4rem 0.8rem', 
+                borderRadius: '20px', 
+                fontSize: '0.75rem', 
+                fontWeight: 700, 
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              ❓ Guía
+            </button>
+          </div>
           <div className="header-status-pill">
             <span className="pulse-dot"></span>
             {isMaster ? 'Administrador Master' : 'Archivero'}

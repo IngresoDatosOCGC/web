@@ -8,8 +8,8 @@ const HELPS = {
     desc: "Métricas en tiempo real de la orquesta y el archivo.",
     steps: [
       "Visualiza el total de músicos registrados y obras disponibles.",
-      "Observa la distribución por familias (Cuerda, Viento, etc.) en el gráfico circular.",
-      "Control de Participación: Monitoriza cuántos músicos están 'Activos' frente a colaboradores de refuerzo.",
+      "Observa la distribución por familias (Cuerda, Viento, etc.) en los gráficos.",
+      "Control de Participación: Monitoriza cuántos músicos están 'Activos' (tienen al menos una agrupación vinculada) frente a los inactivos.",
       "Archivística: Consulta los programas con más material cargado para prever la carga de trabajo."
     ]
   },
@@ -18,75 +18,65 @@ const HELPS = {
     desc: "Central para subir y organizar todo el material musical.",
     steps: [
       "Agrupación y Etiqueta: Para que un músico vea una partitura, el archivo debe coincidir con su Agrupación (ej: Orquesta) Y su Etiqueta (ej: Oboe).",
-      "Documentos Generales: Usa 'Marcar como Documento' para reglamentos o partituras que TODOS los músicos deban ver, independientemente de su instrumento.",
-      "Fuente de Datos: El sistema cruza automáticamente los metadatos del PDF con la tabla Estructura de la base de datos para garantizar la seguridad.",
-      "Importación Masiva: Carga un CSV con los metadatos y luego selecciona los PDFs. El sistema los emparejará por el nombre del archivo."
+      "Documentos Generales: Usa 'Documento' para reglamentos o partituras que TODOS los músicos del proyecto deban ver.",
+      "Categorización: Asigna las partituras a un Programas / Conciertos para que aparezcan agrupadas en el área privada.",
+      "Importación Masiva: Carga un CSV con metadatos y luego sube los PDFs. El sistema los vinculará automáticamente por el nombre del archivo."
     ]
   },
   categories: {
     title: "📅 Programas y Conciertos",
     desc: "Agrupadores lógicos de partituras y eventos.",
     steps: [
-      "Crea un programa para agrupar partituras y sincronizarlas con el Calendario.",
-      "Cronología: Las fechas asignadas aquí determinan el orden en que los músicos ven los programas en su área privada.",
-      "Edición Segura: Al editar un programa, las partituras asociadas se actualizan en cascada para mantener la integridad."
-    ]
-  },
-  roles: {
-    title: "🎷 Diccionario de Etiquetas",
-    desc: "Define los instrumentos y etiquetas para filtrar partituras.",
-    steps: [
-      "Etiqueta vs Sección: Un músico puede estar en la sección 'Violín II' pero ver partituras bajo la etiqueta 'Violín'.",
-      "Clasificación: Asigna familias (Cuerda, Viento...) para organizar los filtros del Dashboard.",
-      "Sincronización: Los cambios se propagan automáticamente a los metadatos de autenticación del músico (Supabase app_metadata) al instante."
+      "Crea programas para agrupar partituras de un mismo concierto.",
+      "Cronología: Las fechas determinan el orden en que los músicos ven los programas en su tablón.",
+      "Vínculo con Agenda: Al crear un programa, puedes asociarle eventos del calendario para que el músico tenga todo en un solo lugar."
     ]
   },
   sections: {
-    title: "🏛️ Fuente de Verdad (Estructura)",
+    title: "🏛️ Estructuras y Catálogos",
     desc: "Configura la base jerárquica de la plataforma.",
     steps: [
-      "Secciones, Agrupaciones y Papeles: Estas tablas definen qué combinaciones son válidas para los músicos.",
-      "Control de Acceso: El sistema usa estas entradas para generar automáticamente las etiquetas de acceso en tiempo real.",
-      "Visibilidad Pública: Puedes marcar qué secciones o papeles aparecen en la web pública (ej: Ocultar perfiles de gestión interna)."
-    ]
-  },
-  calendar: {
-    title: "🗓️ Calendario de Actividades",
-    desc: "Controlador de los próximos hitos de la OCGC.",
-    steps: [
-      "Importación Dual: Sube calendarios desde archivos .CSV o exportaciones .ICS (Google Calendar, Outlook).",
-      "Mapeo de Programas: Al importar, el sistema busca coincidencias en los nombres para vincular los ensayos a sus programas de partituras.",
-      "Notificación Visual: Los eventos se diferencian por colores: Ensayos (Azul), Conciertos (Rojo/Urgente) y Reuniones (Verde)."
+      "Secciones y Agrupaciones: Aquí defines qué instrumentos/secciones existen en cada agrupación (ej: 'Soprano' en 'Coro').",
+      "Papeles: Define roles como 'Músico', 'Director' o 'Solista'.",
+      "Diccionario de Etiquetas (Roles): Gestiona las etiquetas que se usan para filtrar las partituras. Recuerda que un músico ve lo que coincida con su etiqueta asignada."
     ]
   },
   personal: {
-    title: "👥 Gestión de Permisos y Perfiles",
-    desc: "Control total de los miembros de la OCGC.",
+    title: "👥 Gestión de Miembros",
+    desc: "Control total de los miembros y sus permisos.",
     steps: [
-      "Carga Optimizada: La tabla muestra un resumen ligero de todos los miembros. Al pulsar el icono de edición (✎) se obtienen los datos completos de ese usuario.",
-      "Perfiles Artísticos: Un músico puede tener varios perfiles (ej: Orquesta/Violín y Coro/Tenor). Gestiónalos desde el modal de edición.",
-      "Alta Masiva por CSV: Los encabezados obligatorios son 'nombre', 'apellidos' y 'dni'. Añade también 'email', 'agrupacion', 'seccion' y 'papel' para crear el perfil artístico. Si no hay email, el usuario se crea como Externo (sin acceso).",
-      "Login Dual: Los músicos pueden iniciar sesión con su correo electrónico o con su nombre de usuario (por defecto: DNI en mayúsculas).",
-      "Contraseña Inicial: Para usuarios importados o creados manualmente, la contraseña inicial es el DNI en mayúsculas. Deben cambiarla desde ¿Olvidaste tu contraseña? al primer acceso.",
-      "Activar Acceso: Para músicos Externos ya existentes, usa el botón de 'Activar en Plataforma' para crearles una cuenta de acceso sin duplicar sus datos históricos."
+      "Gestión de Email y Acceso: Ahora puedes editar el email de cualquier usuario. Si el usuario era 'Externo', al añadirle un email se le creará automáticamente una cuenta en la plataforma.",
+      "Credenciales por Defecto: Para nuevos usuarios o conversiones, el Usuario y la Contraseña inicial son su DNI en mayúsculas.",
+      "Estructuras Artísticas: Un músico puede estar en varias agrupaciones a la vez. Edítalas desde el icono (✎) para activar/desactivar sus perfiles artísticos.",
+      "Permisos Especiales: Activa o desactiva los roles de 'Master', 'Archivero', 'Jefe de Sección' o 'Vendedor' directamente desde la tabla con los iconos de estado.",
+      "Importación CSV: Usa la herramienta de carga masiva para dar de alta a toda una sección rápidamente usando el DNI como identificador único."
     ]
   },
-  logs: {
-    title: "📝 Auditoría y Seguridad",
-    desc: "Trazabilidad de cada cambio en el sistema.",
+  calendar: {
+    title: "🗓️ Agenda OCGC",
+    desc: "Controlador de los próximos hitos de la OCGC.",
     steps: [
-      "Sincronización: Revisa los logs para confirmar que los cambios de permisos se han propagado correctamente a los metadatos de autenticación.",
-      "Historial de Archivo: Seguimiento de quién ha subido, editado o borrado material musical.",
-      "Reportes: Los logs se pueden filtrar por fecha para auditorías internas de gestión administrativa."
+      "Importación Inteligente: Sube calendarios desde .CSV o .ICS. El sistema detecta duplicados y actualiza eventos existentes.",
+      "Vínculo con Programas: Los eventos vinculados a un programa de partituras permiten al músico descargar el material directamente desde el calendario.",
+      "Colocación en el Tablón: Los eventos próximos aparecen destacados en la página principal del músico."
     ]
   },
   requests: {
-    title: "📩 Selección de Talento",
-    desc: "Gestión de músicos interesados en unirse a la OCGC.",
+    title: "📩 Solicitudes y Captación",
+    desc: "Gestión de músicos interesados en unirse.",
     steps: [
-      "Alta Inteligente: Al 'Aceptar' una solicitud, el sistema precarga todos los datos del músico en el formulario de Invitación.",
-      "Estados de Filtro: Clasifica a los aspirantes entre 'Pendientes', 'En Evaluación' o 'Aceptados' para un flujo de trabajo ordenado.",
-      "Seguridad: Las solicitudes borradas se eliminan físicamente; asegúrate de haber procesado los datos antes de borrar."
+      "Evaluación: Revisa los datos de los aspirantes y su experiencia previa.",
+      "Alta Directa: Al 'Aceptar' una solicitud, puedes invitarlos al sistema precargando su información para evitar errores de escritura.",
+      "Historial: Mantén un registro de quiénes han solicitado entrar para futuras vacantes."
+    ]
+  },
+  logs: {
+    title: "📝 Registro de Actividad",
+    desc: "Trazabilidad completa de acciones administrativas.",
+    steps: [
+      "Transparencia: Consulta quién ha realizado cambios en el archivo, en los permisos de usuario o en la configuración del sistema.",
+      "Resolución de Dudas: Usa el filtro por fechas para entender cuándo y por qué se modificó un dato específico.",
+      "Seguridad: Cada acceso y cambio crítico queda registrado con nombre y hora exacta."
     ]
   }
 };
@@ -96,36 +86,42 @@ export default function AdminGuideModal({ activeTab, onClose }: { activeTab: str
   if (!help) return null;
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '1rem' }} onClick={onClose}>
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000, padding: '1rem' }} onClick={onClose}>
       <div 
         style={{ 
           background: 'white', 
-          maxWidth: '500px', 
+          maxWidth: '550px', 
           width: '100%', 
-          borderRadius: '20px', 
+          borderRadius: '24px', 
           padding: '2.5rem', 
           boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', 
           position: 'relative',
-          fontFamily: "'Montserrat Alternates', sans-serif"
+          border: '1px solid #eef2f6',
+          fontFamily: "'Inter', sans-serif"
         }} 
         onClick={e => e.stopPropagation()}
       >
-        <button onClick={onClose} style={{ position: 'absolute', top: '1.2rem', right: '1.2rem', background: '#f8f9fa', border: 'none', width: '32px', height: '32px', borderRadius: '50%', fontSize: '1rem', cursor: 'pointer', color: '#666', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
-        
-        <header style={{ marginBottom: '2rem', borderBottom: '2px solid #478AC920', paddingBottom: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '2rem' }}>{help.title.split(' ')[0]}</span>
-            <h2 style={{ margin: 0, color: '#1a2a4b', fontSize: '1.3rem', fontWeight: 800 }}>{help.title.substring(help.title.indexOf(' ') + 1)}</h2>
-          </div>
-          <p style={{ color: '#478AC9', margin: 0, fontSize: '0.85rem', fontWeight: 600, letterSpacing: '0.05rem' }}>GUÍA DE GESTIÓN OCGC</p>
-        </header>
+        <button onClick={onClose} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: '#f8fafc', border: 'none', width: '36px', height: '36px', borderRadius: '50%', fontSize: '1.1rem', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>✕</button>
 
-        <section style={{ paddingBottom: '1rem' }}>
-          <ul style={{ padding: 0, listStyle: 'none', margin: 0, display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+        <section>
+          <ul style={{ padding: 0, listStyle: 'none', margin: 0, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {help.steps.map((step, idx) => (
-              <li key={idx} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                <span style={{ minWidth: '24px', height: '24px', background: '#478AC9', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 'bold', marginTop: '2px' }}>{idx + 1}</span>
-                <span style={{ color: '#444', lineHeight: '1.5', fontSize: '0.9rem' }}>{step}</span>
+              <li key={idx} style={{ display: 'flex', gap: '1.2rem', alignItems: 'flex-start' }}>
+                <span style={{ 
+                  minWidth: '28px', 
+                  height: '28px', 
+                  background: 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)', 
+                  color: 'white', 
+                  borderRadius: '50%', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  fontSize: '0.8rem', 
+                  fontWeight: 800, 
+                  marginTop: '2px',
+                  boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)'
+                }}>{idx + 1}</span>
+                <span style={{ color: '#334155', lineHeight: '1.6', fontSize: '0.95rem' }}>{step}</span>
               </li>
             ))}
           </ul>
