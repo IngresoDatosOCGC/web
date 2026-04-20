@@ -21,7 +21,20 @@ export async function GET() {
 
   try {
     const dbUsers = await prisma.user.findMany({
-      include: {
+      select: {
+        id: true,
+        supabaseUserId: true,
+        name: true,
+        surname: true,
+        email: true,
+        isMaster: true,
+        isArchiver: true,
+        isSeller: true,
+        isSectionLeader: true,
+        isActive: true,
+        isExternal: true,
+        birthDate: true,
+        hasCertificate: true,
         estructuras: {
           include: {
             agrupacion: true,
@@ -29,7 +42,8 @@ export async function GET() {
             papel: true
           }
         }
-      }
+      },
+      orderBy: { name: 'asc' }
     });
 
     const allMembers = dbUsers.map(db => ({

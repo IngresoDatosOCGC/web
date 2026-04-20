@@ -10,6 +10,9 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(req: Request) {
+  // ⏱️ Delay artificial para mitigar ataques de fuerza bruta/enumeración (VUL-02)
+  await new Promise(resolve => setTimeout(resolve, 1000));
+
   try {
     const data = await req.json();
     const {
@@ -152,10 +155,8 @@ export async function POST(req: Request) {
     console.error("Error Registrando Miembro:", error);
     let errorMessage = error.message || "Error desconocido en el registro";
     if (error.code === 'P2002') {
-      const target = error.meta?.target || "";
-      if (target.includes("dni")) errorMessage = "El DNI ya está registrado.";
-      else if (target.includes("email")) errorMessage = "El correo ya está registrado.";
-      else errorMessage = "Ya existe un registro con esos datos.";
+      // Evitar enumeración (VUL-02): NO revelar exactamente qué campo falló
+      errorMessage = "No se ha podido completar el registro. Es posible que algunos de los datos introducidos (DNI o Correo) ya existan en nuestro sistema.";
     }
     return new NextResponse(JSON.stringify({ error: errorMessage }), { status: 400 });
   }

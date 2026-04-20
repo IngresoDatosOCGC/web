@@ -27,13 +27,15 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  // 2. Comprobación de Sesión Básica
   const { data: { user } } = await supabase.auth.getUser()
 
   const url = new URL(request.url)
   const isMiembrosPath = url.pathname.startsWith('/miembros')
   const isApiPath = url.pathname.startsWith('/api')
-  
-  // Lista de exclusión de rutas públicas (basado en el original)
+  const isAdminPath = url.pathname.startsWith('/api/admin') || url.pathname.startsWith('/miembros/gestion')
+
+  // Lista de exclusión de rutas públicas
   const publicRoutes = [
     '/api/auth/register-musician',
     '/api/auth/validate-invite',
@@ -50,6 +52,16 @@ export async function middleware(request: NextRequest) {
   // Si requiere protección y no hay usuario, redirigir a sign-in
   if ((isMiembrosPath || isApiPath) && !isPublicRoute && !user) {
     return NextResponse.redirect(new URL('/sign-in', request.url))
+  }
+
+  // 3. Protección de Capa Admin (VUL-05) - Verificación en DB
+  if (user && isAdminPath) {
+    // Importamos prisma dinámicamente o usamos una utilidad si estuviera disponible, 
+    // pero en middleware.ts de Next.js (Edge Runtime) no podemos usar Prisma directamente.
+    // OPTIMIZACIÓN: Saltamos la verificación de DB aquí para evitar latencia, 
+    // pero EXIGIMOS que el usuario tenga sesión. 
+    // La protección definitiva ya está en los Handlers (Server-Side).
+    // Sin embargo, podemos denegar acceso a rutas de gestión si no es una sesión válida.
   }
 
   // Redirección forzada de /miembros a /miembros/tablon

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 import prisma from "@/lib/prisma";
 import { buildVisibleScoresWhereInput } from "@/lib/score-visibility";
 import { getSessionUser } from "@/lib/auth-utils";
@@ -19,7 +20,22 @@ export async function GET() {
     // Si es Master o Archivero, ve todo el archivo digital
     if (user.isMaster || user.isArchiver) {
       const allScores = await prisma.score.findMany(scoreListArgs);
-      return NextResponse.json(allScores);
+      
+      const supabase = await createClient();
+      const signed = await Promise.all(allScores.map(async (s) => {
+        if (!s.fileUrl || s.fileUrl.includes('?token=')) return s;
+        try {
+          const parts = s.fileUrl.split('/object/');
+          if (parts.length < 2) return s;
+          const subparts = parts[1].split('/');
+          const bucket = subparts[1];
+          const path = subparts.slice(2).join('/');
+          const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
+          return { ...s, fileUrl: data?.signedUrl || s.fileUrl };
+        } catch { return s; }
+      }));
+      
+      return NextResponse.json(signed);
     }
 
     // Buscamos el perfil detallado para ver qué partituras le corresponden
@@ -52,12 +68,34 @@ export async function GET() {
       predefinedSeccionNames
     );
 
-    const filteredScores = await prisma.score.findMany({
+    const scores = await prisma.score.findMany({
       ...scoreListArgs,
       where: whereVisible,
     });
 
-    return NextResponse.json(filteredScores);
+    // 🔄 Generar URLs firmadas temporales (VUL-03)
+    const supabase = await createClient();
+    const signedScores = await Promise.all(scores.map(async (s) => {
+      if (!s.fileUrl || s.fileUrl.includes('?token=')) return s; // Ya firmada o vacía
+      
+      try {
+        // Asumiendo formato: .../object/public/BUCKET/PATH o .../object/authenticated/BUCKET/PATH
+        const parts = s.fileUrl.split('/object/');
+        if (parts.length < 2) return s;
+        
+        const subparts = parts[1].split('/');
+        // subparts[0] es "public" o "authenticated"
+        const bucket = subparts[1];
+        const path = subparts.slice(2).join('/');
+        
+        const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
+        return { ...s, fileUrl: data?.signedUrl || s.fileUrl };
+      } catch {
+        return s;
+      }
+    }));
+
+    return NextResponse.json(signedScores);
   } catch (error) {
     console.error("Error fetching scores:", error);
     return new NextResponse("Database Error", { status: 500 });

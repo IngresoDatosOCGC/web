@@ -110,15 +110,38 @@ export async function POST(req: Request) {
 
   try {
     if (body.action === "batch-update-atril") {
-      // Execute batch updates
       const { updates } = body;
       if (!Array.isArray(updates)) return new NextResponse("Invalid format", { status: 400 });
+      if (updates.length > 50) return new NextResponse("Batch too large (max 50)", { status: 400 });
 
-      // Assuming jurisdiction is okay since they are fetching and sending their list, 
-      // but ideally we should verify. Given time constraints, we check if they are Master or SecLeader.
-      // A more strictly secure implementation would check jurisdiction for every item in `updates`.
-
+      // Verificación de jurisdicción para CADA elemento del lote
       for (const update of updates) {
+        if (!isMaster) {
+          const targetEst = await prisma.estructura.findUnique({
+            where: { id: update.estructuraId },
+            include: { seccion: true, agrupacion: true }
+          });
+          if (!targetEst) continue;
+
+          // Mismo filtro de jurisdicción que el update individual
+          const leaderEstructuras = await prisma.estructura.findMany({
+            where: { userId: sessionUser.id },
+            include: { seccion: true }
+          });
+
+          let hasPermission = false;
+          for (const l of leaderEstructuras) {
+            if (l.seccion.familia === "Viento Madera" && (targetEst.seccion.familia === "Viento Madera" || targetEst.seccion.familia === "Teclados")) {
+              hasPermission = true; break;
+            } else if (l.seccion.familia === "Viento Metal" && targetEst.seccion.familia === "Viento Metal") {
+              hasPermission = true; break;
+            } else if (l.seccion.seccion === targetEst.seccion.seccion) {
+              hasPermission = true; break;
+            }
+          }
+          if (!hasPermission) continue; // Si no tiene permiso sobre este ID, lo saltamos silenciosamente por seguridad
+        }
+
         await prisma.estructura.update({
           where: { id: update.estructuraId },
           data: { atril: update.atril }
