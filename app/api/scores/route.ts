@@ -9,8 +9,12 @@ const scoreListArgs = {
   orderBy: { createdAt: "desc" as const },
 };
 
-export async function GET() {
+export async function GET(req: Request) {
   const user = await getSessionUser();
+
+  const { searchParams } = new URL(req.url);
+  const limitStr = searchParams.get('limit');
+  const take = limitStr ? parseInt(limitStr) : undefined;
 
   if (!user) {
     return new NextResponse("Unauthorized", { status: 401 });
@@ -19,7 +23,7 @@ export async function GET() {
   try {
     // Si es Master o Archivero, ve todo el archivo digital
     if (user.isMaster || user.isArchiver) {
-      const allScores = await prisma.score.findMany(scoreListArgs);
+      const allScores = await prisma.score.findMany({ ...scoreListArgs, take });
       
       const supabase = await createClient();
       const signed = await Promise.all(allScores.map(async (s) => {
@@ -71,6 +75,7 @@ export async function GET() {
     const scores = await prisma.score.findMany({
       ...scoreListArgs,
       where: whereVisible,
+      take
     });
 
     // 🔄 Generar URLs firmadas temporales (VUL-03)

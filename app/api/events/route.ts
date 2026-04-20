@@ -9,11 +9,25 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const categoryId = searchParams.get('categoryId');
+  const limit = searchParams.get('limit');
+  const take = limit ? parseInt(limit) : undefined;
+  const isUpcoming = searchParams.get('upcoming') === 'true';
+
+  let dateFilter = undefined;
+  if (isUpcoming) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    dateFilter = { gte: today };
+  }
 
   try {
     const events = await prisma.event.findMany({
-      where: categoryId ? { categoryId: parseInt(categoryId) } : undefined,
+      where: {
+        ...(categoryId ? { categoryId: parseInt(categoryId) } : {}),
+        ...(dateFilter ? { date: dateFilter } : {})
+      },
       orderBy: { date: 'asc' },
+      take: take,
       include: { category: { select: { id: true, name: true } } }
     });
     return NextResponse.json(events);

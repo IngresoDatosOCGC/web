@@ -1,7 +1,7 @@
 "use client";
 
 import { useSupabaseAuth } from "@/lib/supabase-auth-context";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import TabNavigation, { TabType } from '@/components/admin/TabNavigation';
 import DashboardPanel from '@/components/admin/DashboardPanel';
@@ -39,66 +39,39 @@ export default function AdminOCGCPartituras() {
   const [invitations, setInvitations] = useState<any[]>([]);
   const [joinRequests, setJoinRequests] = useState<any[]>([]);
 
-  const loadData = async (silent = false) => {
+  const loadedKeys = useRef<Set<string>>(new Set());
+
+  const fetchEndpointsSafely = async (endpoints: Record<string, string>, force = false) => {
+    const keysToFetch = force ? Object.keys(endpoints) : Object.keys(endpoints).filter(k => !loadedKeys.current.has(k));
+    if (keysToFetch.length === 0) return;
+    
+    keysToFetch.forEach(k => loadedKeys.current.add(k));
+    
     try {
-      if (!silent) console.log("Cargando catálogos...");
+      const resps = await Promise.all(keysToFetch.map(k => fetch(endpoints[k])));
+      const data = await Promise.all(resps.map(r => r.json()));
       
-      const [scoresRes, catRes, agrRes, secRes, papRes, tagsRes] = await Promise.all([
-        fetch("/api/scores"),
-        fetch("/api/categories"),
-        fetch("/api/agrupaciones"),
-        fetch("/api/secciones"),
-        fetch("/api/papeles"),
-        fetch("/api/roles")
-      ]);
-
-      const [scoresData, catData, agrData, secData, papData, tagsData] = await Promise.all([
-        scoresRes.json(),
-        catRes.json(),
-        agrRes.json(),
-        secRes.json(),
-        papRes.json(),
-        tagsRes.json()
-      ]);
-
-      setScores(Array.isArray(scoresData) ? scoresData : []);
-      setCategories(Array.isArray(catData) ? catData : []);
-      setAgrupaciones(Array.isArray(agrData) ? agrData : []);
-      setSecciones(Array.isArray(secData) ? secData : []);
-      setPapeles(Array.isArray(papData) ? papData : []);
+      keysToFetch.forEach((k, i) => {
+        const d = data[i];
+        if (k === 'scores') setScores(Array.isArray(d) ? d : []);
+        if (k === 'categories') setCategories(Array.isArray(d) ? d : []);
+        if (k === 'agrupaciones') setAgrupaciones(Array.isArray(d) ? d : []);
+        if (k === 'secciones') setSecciones(Array.isArray(d) ? d : []);
+        if (k === 'papeles') setPapeles(Array.isArray(d) ? d : []);
+        if (k === 'roles') {
+          const flatTags = d ? Object.values(d).flat().map((t: any) => t.name) : [];
+          setPredefinedTags(flatTags);
+          setTagsDict(d || {});
+        }
+        if (k === 'users') setMembers(Array.isArray(d) ? d : []);
+        if (k === 'invitations') setInvitations(Array.isArray(d) ? d : []);
+        if (k === 'requests') setJoinRequests(Array.isArray(d) ? d : []);
+      });
       
-      const flatTags = tagsData ? Object.values(tagsData).flat().map((t: any) => t.name) : [];
-      setPredefinedTags(flatTags);
-      setTagsDict(tagsData || {});
-
-      if (silent) showToast("✓ Catálogos actualizados");
+      if (force) showToast("✓ Datos actualizados");
     } catch (error) {
+      keysToFetch.forEach(k => loadedKeys.current.delete(k));
       showToast("Error al cargar datos", "error");
-    }
-  };
-
-  const loadMembersData = async (silent = false) => {
-    if (!isMaster) return;
-    try {
-      const [usersRes, invRes, joinRes] = await Promise.all([
-        fetch("/api/admin/users"),
-        fetch("/api/admin/invitations"),
-        fetch("/api/admin/join-requests")
-      ]);
-
-      const [usersData, invData, joinData] = await Promise.all([
-        usersRes.json(),
-        invRes.json(),
-        joinRes.json()
-      ]);
-
-      setMembers(Array.isArray(usersData) ? usersData : []);
-      setInvitations(Array.isArray(invData) ? invData : []);
-      setJoinRequests(Array.isArray(joinData) ? joinData : []);
-
-      if (silent) showToast("✓ Lista de miembros actualizada");
-    } catch (error) {
-      showToast("Error al cargar miembros", "error");
     }
   };
 
@@ -109,14 +82,45 @@ export default function AdminOCGCPartituras() {
       } else if (!isMaster && !isArchiver) {
         router.push("/miembros/tablon");
       } else {
-        if (activeTab === null) {
-          setActiveTab(isMaster ? "dashboard" : "scores");
+        const tab = activeTab || (isMaster ? "dashboard" : "scores");
+        if (activeTab === null) setActiveTab(tab);
+        
+        const endpoints: Record<string, string> = {};
+        
+        // Eager load metadata if Master (used in almost all panels)
+        if (isMaster) {
+          endpoints['agrupaciones'] = '/api/agrupaciones';
+          endpoints['secciones'] = '/api/secciones';
+          endpoints['papeles'] = '/api/papeles';
+          endpoints['roles'] = '/api/roles';
         }
-        loadData();
-        if (isMaster) loadMembersData();
+
+        if (tab === 'dashboard' && isMaster) {
+          endpoints['scores'] = '/api/scores';
+          endpoints['users'] = '/api/admin/users';
+        } else if (tab === 'scores') {
+          endpoints['scores'] = '/api/scores';
+          endpoints['categories'] = '/api/categories';
+          // Agrupaciones and roles already in master base
+          if (!isMaster) {
+            endpoints['agrupaciones'] = '/api/agrupaciones';
+            endpoints['roles'] = '/api/roles';
+          }
+        } else if (tab === 'categories' && isMaster) {
+          endpoints['categories'] = '/api/categories';
+        } else if (tab === 'sections' && isMaster) {
+          // Already in master base
+        } else if (tab === 'personal' && isMaster) {
+          endpoints['users'] = '/api/admin/users';
+          endpoints['invitations'] = '/api/admin/invitations';
+        } else if (tab === 'requests' && isMaster) {
+          endpoints['requests'] = '/api/admin/join-requests';
+        }
+        
+        fetchEndpointsSafely(endpoints);
       }
     }
-  }, [isAuthLoading, user, isMaster, isArchiver]);
+  }, [isAuthLoading, user, isMaster, isArchiver, activeTab, router]);
 
   if (isAuthLoading || !user) {
     return (
@@ -174,14 +178,19 @@ export default function AdminOCGCPartituras() {
               predefinedTags={predefinedTags}
               isMaster={isMaster}
               isArchiver={isArchiver}
-              onRefresh={() => loadData(true)}
+              onRefresh={() => fetchEndpointsSafely({
+                scores: '/api/scores',
+                categories: '/api/categories',
+                agrupaciones: '/api/agrupaciones',
+                roles: '/api/roles'
+              }, true)}
             />
           )}
 
           {activeTab === 'categories' && isMaster && (
             <CategoriesPanel 
               categories={categories} 
-              onRefresh={() => loadData(true)} 
+              onRefresh={() => fetchEndpointsSafely({ categories: '/api/categories' }, true)} 
             />
           )}
 
@@ -192,7 +201,11 @@ export default function AdminOCGCPartituras() {
               agrupaciones={agrupaciones}
               papeles={papeles}
               secciones={secciones}
-              onRefresh={() => loadData(true)} 
+              onRefresh={() => fetchEndpointsSafely({
+                agrupaciones: '/api/agrupaciones',
+                secciones: '/api/secciones',
+                papeles: '/api/papeles'
+              }, true)} 
             />
           )}
 
@@ -204,15 +217,15 @@ export default function AdminOCGCPartituras() {
               secciones={secciones}
               papeles={papeles}
               predefinedTags={predefinedTags}
-              onRefreshMembers={() => loadMembersData(true)}
-              onRefreshInvitations={() => loadMembersData(true)}
+              onRefreshMembers={() => fetchEndpointsSafely({ users: '/api/admin/users' }, true)}
+              onRefreshInvitations={() => fetchEndpointsSafely({ invitations: '/api/admin/invitations' }, true)}
             />
           )}
 
           {activeTab === 'requests' && isMaster && (
             <RequestsPanel 
               joinRequests={joinRequests} 
-              onRefresh={() => loadMembersData(true)} 
+              onRefresh={() => fetchEndpointsSafely({ requests: '/api/admin/join-requests' }, true)} 
             />
           )}
 

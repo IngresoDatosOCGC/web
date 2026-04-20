@@ -11,7 +11,9 @@ const supabaseAdmin = createSupabaseAdmin(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function GET() {
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: Request) {
   const admin = await getSessionUser();
   
   // Solo el Master puede gestionar músicos
@@ -19,7 +21,53 @@ export async function GET() {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
+  const { searchParams } = new URL(req.url);
+  const targetUserId = searchParams.get("id");
+
   try {
+    if (targetUserId) {
+      // CARGA BAJO DEMANDA: Datos completos para un usuario específico (Modal de Edición)
+      const isLocalOnly = typeof targetUserId === 'string' && targetUserId.startsWith('ext_');
+      const dbUser = await (isLocalOnly 
+        ? prisma.user.findUnique({ where: { id: parseInt(targetUserId.replace('ext_', '')) }, include: { estructuras: { include: { agrupacion: true, seccion: true, papel: true } } } })
+        : prisma.user.findUnique({ where: { supabaseUserId: targetUserId }, include: { estructuras: { include: { agrupacion: true, seccion: true, papel: true } } } })
+      );
+
+      if (!dbUser) return new NextResponse("User not found", { status: 404 });
+
+      return NextResponse.json({
+        id: dbUser.supabaseUserId || `ext_${dbUser.id}`,
+        dbId: dbUser.id,
+        firstName: dbUser.name || "",
+        surname: dbUser.surname || "",
+        name: `${dbUser.name || ""} ${dbUser.surname || ""}`.trim() || "Sin nombre",
+        email: dbUser.email || "—",
+        dni: dbUser.dni || "",
+        phone: dbUser.phone || "",
+        roles: dbUser.estructuras.filter(e => e.activo).map(e => e.seccion.seccion),
+        isArchiver: !!dbUser.isArchiver,
+        isMaster: !!dbUser.isMaster,
+        isSeller: !!dbUser.isSeller,
+        isSectionLeader: !!dbUser.isSectionLeader,
+        isActive: dbUser.isActive,
+        isExternal: dbUser.isExternal,
+        birthDate: dbUser.birthDate,
+        hasCertificate: !!dbUser.hasCertificate,
+        estructuras: dbUser.estructuras.map(e => ({
+          id: e.id,
+          agrupacionId: e.agrupacion.id,
+          seccionId: e.seccion.id,
+          papelId: e.papel.id,
+          agrupacion: e.agrupacion.agrupacion,
+          seccion: e.seccion.seccion,
+          papel: e.papel.papel,
+          activo: e.activo,
+          atril: e.atril
+        }))
+      });
+    }
+
+    // CARGA INICIAL: Lista resumida para la tabla general
     const dbUsers = await prisma.user.findMany({
       select: {
         id: true,
@@ -27,52 +75,36 @@ export async function GET() {
         name: true,
         surname: true,
         email: true,
+        isActive: true,
         isMaster: true,
         isArchiver: true,
-        isSeller: true,
         isSectionLeader: true,
-        isActive: true,
         isExternal: true,
-        birthDate: true,
-        hasCertificate: true,
+        // Solo necesitamos saber qué roles tienen para mostrarlos en la tabla
         estructuras: {
-          include: {
-            agrupacion: true,
-            seccion: true,
-            papel: true
-          }
+          where: { activo: true },
+          select: { seccion: { select: { seccion: true } } }
         }
       },
       orderBy: { name: 'asc' }
     });
 
-    const allMembers = dbUsers.map(db => ({
+    const summarizedMembers = dbUsers.map(db => ({
       id: db.supabaseUserId || `ext_${db.id}`,
       dbId: db.id,
-      name: `${db.name} ${db.surname}`.trim() || "Sin nombre",
+      name: `${db.name || ""} ${db.surname || ""}`.trim() || "Sin nombre",
       email: db.email || "—",
-      roles: db.estructuras.filter(e => e.activo).map(e => e.seccion.seccion),
-      isArchiver: !!db.isArchiver,
-      isMaster: !!db.isMaster,
-      isSeller: !!db.isSeller,
-      isSectionLeader: !!db.isSectionLeader,
       isActive: db.isActive,
+      isMaster: db.isMaster,
+      isArchiver: db.isArchiver,
+      isSectionLeader: db.isSectionLeader,
       isExternal: db.isExternal,
-      birthDate: db.birthDate,
-      hasCertificate: !!db.hasCertificate,
-      estructuras: db.estructuras.map(e => ({
-        id: e.id,
-        agrupacion: e.agrupacion.agrupacion,
-        seccion: e.seccion.seccion,
-        papel: e.papel.papel,
-        activo: e.activo,
-        atril: e.atril
-      }))
+      roles: db.estructuras.map(e => e.seccion.seccion)
     }));
 
-    return NextResponse.json(allMembers);
+    return NextResponse.json(summarizedMembers);
   } catch (error) {
-    console.error("Error fetching members from DB:", error);
+    console.error("Error fetching members:", error);
     return new NextResponse("Database Error", { status: 500 });
   }
 }
@@ -114,14 +146,37 @@ export async function POST(req: Request) {
          await logActivity(`Perfil ${isBanned ? 'Desactivado' : 'Activado'}`, admin.supabaseUserId || '', { target: targetName });
       }
 
+      // Acción para actualizar datos base del usuario
+      if (action === "update-user") {
+        const { firstName, surname, birthDate, hasCertificate, dni, phone } = body;
+        await prisma.user.update({
+          where: { id: dbId },
+          data: {
+            name: firstName !== undefined ? firstName : undefined,
+            surname: surname !== undefined ? (surname || "") : undefined,
+            dni: dni !== undefined ? dni : undefined,
+            phone: phone !== undefined ? phone : undefined,
+            birthDate: birthDate !== undefined ? (birthDate ? new Date(birthDate) : null) : undefined,
+            hasCertificate: hasCertificate !== undefined ? hasCertificate : undefined
+          }
+        });
+        await logActivity("Perfil base actualizado", admin.supabaseUserId || '', { target: targetName });
+      }
+
       // Acción para actualizar una estructura específica
       if (action === "update-estructura") {
         if (!estructuraId) return new NextResponse("Falta estructuraId", { status: 400 });
+        
+        const { agrupacionId: updateAgr, seccionId: updateSec, papelId: updatePap } = body;
+        
         await prisma.estructura.update({
           where: { id: estructuraId },
           data: {
             activo: activo !== undefined ? activo : undefined,
-            atril: atril !== undefined ? (atril === "" ? null : parseInt(atril)) : undefined
+            atril: atril !== undefined ? (atril === "" ? null : parseInt(atril)) : undefined,
+            agrupacionId: updateAgr !== undefined ? parseInt(updateAgr) : undefined,
+            seccionId: updateSec !== undefined ? parseInt(updateSec) : undefined,
+            papelId: updatePap !== undefined ? parseInt(updatePap) : undefined
           }
         });
         await logActivity("Estructura Actualizada", admin.supabaseUserId || '', { target: targetName });

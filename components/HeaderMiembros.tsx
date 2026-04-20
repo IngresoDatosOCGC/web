@@ -63,6 +63,20 @@ export default function HeaderMiembros() {
             </li>
           ))}
 
+          {(isAdmin || isSeller) && (
+            <li>
+              <a
+                href="#"
+                onClick={handleExternalRedirect}
+                className="miembros-link"
+                title="Abrir panel en servidor externo"
+                style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                Subpanel 🔗
+              </a>
+            </li>
+          )}
+          
           {isAdmin && (
             <li>
               <Link
@@ -83,20 +97,6 @@ export default function HeaderMiembros() {
               >
                 Mi Sección
               </Link>
-            </li>
-          )}
-
-          {(isAdmin || isSeller) && (
-            <li>
-              <a
-                href="#"
-                onClick={handleExternalRedirect}
-                className="miembros-link"
-                title="Abrir panel en servidor externo"
-                style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
-              >
-                Subpanel 🔗
-              </a>
             </li>
           )}
 

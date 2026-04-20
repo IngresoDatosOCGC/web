@@ -10,19 +10,16 @@ export default function TablonPage() {
 
   useEffect(() => {
     if (user) {
-      fetch("/api/scores")
+      fetch("/api/scores?limit=5")
         .then(res => res.json())
-        .then(data => setRecentScores(Array.isArray(data) ? data.slice(0, 5) : []))
+        .then(data => setRecentScores(Array.isArray(data) ? data : []))
         .catch(err => console.error("Error loading scores:", err));
 
-      fetch("/api/events")
+      fetch("/api/events?upcoming=true&limit=4")
         .then(res => res.json())
         .then(data => {
             if (!Array.isArray(data)) return;
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            const futureEvents = data.filter((ev:any) => new Date(ev.date) >= today);
-            setUpcomingEvents(futureEvents.slice(0, 4));
+            setUpcomingEvents(data);
         })
         .catch(err => console.error("Error loading events:", err));
     }

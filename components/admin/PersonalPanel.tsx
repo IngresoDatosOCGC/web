@@ -50,6 +50,7 @@ export default function PersonalPanel({
   const [isCSVImportOpen, setIsCSVImportOpen] = useState(false);
   const [isManualCreateOpen, setIsManualCreateOpen] = useState(false);
   const [editingMemberData, setEditingMemberData] = useState<any | null>(null);
+  const [isFullLoading, setIsFullLoading] = useState(false);
   const [upgradingMember, setUpgradingMember] = useState<any | null>(null);
   const [upgradeData, setUpgradeData] = useState({ email: '', username: '', password: '' });
   const [isUpgrading, setIsUpgrading] = useState(false);
@@ -122,6 +123,24 @@ export default function PersonalPanel({
         }
       } catch { showToast("Error al revocar", "error"); }
     });
+  };
+
+  const openEditModal = async (memberSummary: any) => {
+    setEditingMemberData(memberSummary); // Mostrar datos básicos inmediatamente
+    setIsFullLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users?id=${memberSummary.id}`);
+      if (res.ok) {
+        const fullData = await res.json();
+        setEditingMemberData(fullData);
+      } else {
+        showToast("No se pudieron cargar los detalles completos", "error");
+      }
+    } catch {
+      showToast("Error de conexión", "error");
+    } finally {
+      setIsFullLoading(false);
+    }
   };
 
   const toggleMasterStatus = async (userId: string, current: boolean) => {
@@ -432,7 +451,7 @@ export default function PersonalPanel({
                       <button onClick={() => toggleBanStatus(m.id, m.isActive)} className={`btn-status-toggle ${!m.isActive ? 'banned' : 'on'}`}>{!m.isActive ? "🚫" : "✓"}</button>
                     </td>
                     <td className="td-center">
-                      <button onClick={() => setEditingMemberData(m)} className="btn-edit-sm">✎</button>
+                      <button onClick={() => openEditModal(m)} className="btn-edit-sm">✎</button>
                     </td>
                   </tr>
                 );
@@ -759,7 +778,14 @@ export default function PersonalPanel({
 
             <div className="modal-body" style={{ padding: '1rem 2.5rem', maxHeight: '75vh', overflowY: 'auto' }}>
               
-              <section style={{ marginBottom: '2rem' }}>
+              {isFullLoading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 0', gap: '1rem' }}>
+                   <div className="spinner-ocgc"></div>
+                   <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Cargando detalles completos del usuario...</p>
+                </div>
+              ) : (
+                <>
+                  <section style={{ marginBottom: '2rem' }}>
                 <h3 className="section-title-small" style={{ marginBottom: '1.2rem', color: '#1a2a4b' }}>Perfil Artístico y Ubicación (Base de Datos)</h3>
                 
                 <div style={{ background: '#fff', border: '1px solid #eef2f6', borderRadius: '12px', overflow: 'hidden' }}>
@@ -778,18 +804,69 @@ export default function PersonalPanel({
                       {editingMemberData.estructuras?.map((est: any) => (
                         <tr key={est.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={{ padding: '0.8rem 0.5rem' }}>
-                            <select className="premium-input-sm" defaultValue={est.agrupacion} style={{ width: '100%', maxWidth: '140px' }}>
-                              {agrupaciones.map(a => <option key={a.id} value={a.agrupacion}>{a.agrupacion}</option>)}
+                            <select 
+                               className="premium-input-sm" 
+                               value={String(est.agrupacionId || "")} 
+                               style={{ width: '100%', maxWidth: '140px' }}
+                               onChange={async (e) => {
+                                 const newVal = e.target.value;
+                                 const updatedEsts = editingMemberData.estructuras.map((x: any) => x.id === est.id ? { ...x, agrupacionId: newVal } : x);
+                                 setEditingMemberData({ ...editingMemberData, estructuras: updatedEsts });
+
+                                 await fetch("/api/admin/users", { 
+                                   method: "POST", 
+                                   headers: { "Content-Type": "application/json" },
+                                   body: JSON.stringify({ userId: editingMemberData.id, action: "update-estructura", estructuraId: est.id, agrupacionId: newVal }) 
+                                 });
+                                 onRefreshMembers();
+                               }}
+                            >
+                              <option value="">Seleccionar...</option>
+                              {agrupaciones.map((a: any) => <option key={a.id} value={String(a.id)}>{a.agrupacion}</option>)}
                             </select>
                           </td>
                           <td style={{ padding: '0.8rem 0.5rem' }}>
-                            <select className="premium-input-sm" defaultValue={est.seccion} style={{ width: '100%', maxWidth: '160px' }}>
-                              {secciones.map(s => <option key={s.id} value={s.seccion}>{s.seccion}</option>)}
+                            <select 
+                               className="premium-input-sm" 
+                               value={String(est.seccionId || "")} 
+                               style={{ width: '100%', maxWidth: '160px' }}
+                               onChange={async (e) => {
+                                 const newVal = e.target.value;
+                                 const updatedEsts = editingMemberData.estructuras.map((x: any) => x.id === est.id ? { ...x, seccionId: newVal } : x);
+                                 setEditingMemberData({ ...editingMemberData, estructuras: updatedEsts });
+
+                                 await fetch("/api/admin/users", { 
+                                   method: "POST", 
+                                   headers: { "Content-Type": "application/json" },
+                                   body: JSON.stringify({ userId: editingMemberData.id, action: "update-estructura", estructuraId: est.id, seccionId: newVal }) 
+                                 });
+                                 onRefreshMembers();
+                               }}
+                            >
+                              <option value="">Seleccionar...</option>
+                              {secciones.map((s: any) => <option key={s.id} value={String(s.id)}>{s.seccion}</option>)}
                             </select>
                           </td>
                           <td style={{ padding: '0.8rem 0.5rem' }}>
-                            <select className="premium-input-sm" defaultValue={est.papel} style={{ width: '100%', maxWidth: '120px' }}>
-                              {papeles.map(p => <option key={p.id} value={p.papel}>{p.papel}</option>)}
+                            <select 
+                               className="premium-input-sm" 
+                               value={String(est.papelId || "")} 
+                               style={{ width: '100%', maxWidth: '120px' }}
+                               onChange={async (e) => {
+                                 const newVal = e.target.value;
+                                 const updatedEsts = editingMemberData.estructuras.map((x: any) => x.id === est.id ? { ...x, papelId: newVal } : x);
+                                 setEditingMemberData({ ...editingMemberData, estructuras: updatedEsts });
+
+                                 await fetch("/api/admin/users", { 
+                                   method: "POST", 
+                                   headers: { "Content-Type": "application/json" },
+                                   body: JSON.stringify({ userId: editingMemberData.id, action: "update-estructura", estructuraId: est.id, papelId: newVal }) 
+                                 });
+                                 onRefreshMembers();
+                               }}
+                            >
+                              <option value="">Seleccionar...</option>
+                              {papeles.map((p: any) => <option key={p.id} value={String(p.id)}>{p.papel}</option>)}
                             </select>
                           </td>
                           <td style={{ padding: '0.8rem 0.5rem', textAlign: 'center' }}>
@@ -812,11 +889,15 @@ export default function PersonalPanel({
                           <td style={{ padding: '0.8rem 0.5rem', textAlign: 'center' }}>
                             <input 
                               type="number" 
-                              defaultValue={est.atril || ""} 
+                              value={est.atril || ""} 
                               className="premium-input-sm" 
                               style={{ width: '45px', textAlign: 'center' }} 
+                              onChange={(e) => {
+                                const newVal = e.target.value;
+                                const updatedEsts = editingMemberData.estructuras.map((x: any) => x.id === est.id ? { ...x, atril: newVal } : x);
+                                setEditingMemberData({ ...editingMemberData, estructuras: updatedEsts });
+                              }}
                               onBlur={async (e) => {
-                                if(e.target.value === String(est.atril)) return;
                                 await fetch("/api/admin/users", { 
                                   method: "POST", 
                                   headers: { "Content-Type": "application/json" },
@@ -935,22 +1016,22 @@ export default function PersonalPanel({
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <button 
                       onClick={() => {
-                        confirmAction(`¿${editingMemberData.isBanned ? 'Activar' : 'Desactivar'} este usuario?`, async () => {
+                        confirmAction(`¿${!editingMemberData.isActive ? 'Activar' : 'Desactivar'} este usuario?`, async () => {
                           const res = await fetch("/api/admin/users", { 
                             method: "POST", 
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ userId: editingMemberData.id, action: "toggle-ban", isBanned: !editingMemberData.isBanned }) 
+                            body: JSON.stringify({ userId: editingMemberData.id, action: "toggle-ban", isBanned: editingMemberData.isActive }) 
                           });
                           if(res.ok) { onRefreshMembers(); setEditingMemberData(null); }
                         });
                       }}
-                      className={`btn-access-status ${!editingMemberData.isBanned ? 'active' : ''}`}
+                      className={`btn-access-status ${editingMemberData.isActive ? 'active' : ''}`}
                     >
-                      {!editingMemberData.isBanned ? '✓' : '🚫'}
+                      {editingMemberData.isActive ? '✓' : '🚫'}
                     </button>
                     <div>
                       <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: '#1e293b' }}>Estado</p>
-                      <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>{!editingMemberData.isBanned ? 'Activo' : 'Inactivo'}</p>
+                      <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>{editingMemberData.isActive ? 'Activo' : 'Inactivo'}</p>
                     </div>
                   </div>
                 </div>
@@ -960,14 +1041,52 @@ export default function PersonalPanel({
               <section style={{ border: '2px solid #eef2f6', borderRadius: '16px', padding: '1.5rem', borderLeft: '4px solid #478AC9' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem' }}>
                   <span style={{ fontSize: '1.2rem' }}>👤</span>
-                  <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, color: '#4b5563' }}>Datos de Perfil y Residencia Canaria</h3>
+                  <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, color: '#4b5563' }}>Datos Personales y Residencia Canaria</h3>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '1.5rem' }}>
+                   <div className="admin-form-group-premium">
+                     <label style={{ fontSize: '0.75rem', color: '#64748b' }}>NOMBRE</label>
+                     <input 
+                       type="text" 
+                       value={editingMemberData.firstName || ""} 
+                       className="premium-input" 
+                       onChange={(e) => setEditingMemberData({...editingMemberData, firstName: e.target.value})}
+                     />
+                   </div>
+                   <div className="admin-form-group-premium">
+                     <label style={{ fontSize: '0.75rem', color: '#64748b' }}>APELLIDOS</label>
+                     <input 
+                       type="text" 
+                       value={editingMemberData.surname || ""} 
+                       className="premium-input" 
+                       onChange={(e) => setEditingMemberData({...editingMemberData, surname: e.target.value})}
+                     />
+                   </div>
+                   <div className="admin-form-group-premium">
+                     <label style={{ fontSize: '0.75rem', color: '#64748b' }}>DNI / NIE</label>
+                     <input 
+                       type="text" 
+                       value={editingMemberData.dni || ""} 
+                       className="premium-input" 
+                       onChange={(e) => setEditingMemberData({...editingMemberData, dni: e.target.value})}
+                     />
+                   </div>
+                   <div className="admin-form-group-premium">
+                     <label style={{ fontSize: '0.75rem', color: '#64748b' }}>TELÉFONO</label>
+                     <input 
+                       type="text" 
+                       value={editingMemberData.phone || ""} 
+                       className="premium-input" 
+                       onChange={(e) => setEditingMemberData({...editingMemberData, phone: e.target.value})}
+                     />
+                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
                    <div className="admin-form-group-premium">
                      <label style={{ fontSize: '0.75rem', color: '#64748b' }}>FECHA DE NACIMIENTO</label>
                      <input 
                        type="date" 
-                       defaultValue={editingMemberData.birthDate?.split('T')[0] || ""} 
+                       value={editingMemberData.birthDate?.split('T')[0] || ""} 
                        className="premium-input" 
                        onChange={(e) => setEditingMemberData({...editingMemberData, birthDate: e.target.value})}
                      />
@@ -995,8 +1114,11 @@ export default function PersonalPanel({
                   });
                 }} className="btn-delete-link" style={{ fontSize: '0.8rem', color: '#ef4444', opacity: 0.7 }}>ELIMINAR DE BASE DE DATOS</button>
               </div>
-            </div>
+            </>
+          )}
+        </div>
 
+          {!isFullLoading && (
             <div className="modal-footer" style={{ border: 'none', padding: '1.5rem 2.5rem 2.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
               <button onClick={() => setEditingMemberData(null)} className="btn-modal-cancel">Cancelar</button>
               <button 
@@ -1006,7 +1128,11 @@ export default function PersonalPanel({
                      headers: { "Content-Type": "application/json" },
                      body: JSON.stringify({ 
                        userId: editingMemberData.id, 
-                       action: "update-user-profile", 
+                       action: "update-user", 
+                       firstName: editingMemberData.firstName,
+                       surname: editingMemberData.surname,
+                       dni: editingMemberData.dni,
+                       phone: editingMemberData.phone,
                        birthDate: editingMemberData.birthDate, 
                        hasCertificate: editingMemberData.hasCertificate 
                      })
@@ -1018,9 +1144,10 @@ export default function PersonalPanel({
                 Guardar Cambios
               </button>
             </div>
-          </div>
+          )}
         </div>
-      )}
-    </div>
-  );
+      </div>
+    )}
+  </div>
+);
 }
