@@ -19,18 +19,24 @@ export default function SignInPage() {
     setError(null);
 
     try {
-      // 1. Resolver identificador a Email (por si pusieron el username)
-      let finalEmail = identifier;
-      
-      const res = await fetch('/api/auth/resolve-identifier', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier })
-      });
-      
-      if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
-        const data = await res.json();
-        finalEmail = data.email;
+      let finalEmail = identifier.includes('@') ? identifier.toLowerCase().trim() : identifier.trim();
+
+      if (!identifier.includes('@')) {
+        const res = await fetch('/api/auth/resolve-identifier', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier })
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          if (data.notFound) {
+            setError(`No se encontró ningún usuario con el identificador "${identifier}". Prueba con tu email.`);
+            setLoading(false);
+            return;
+          }
+          finalEmail = data.email;
+        }
       }
 
       // 2. Intentar login en Supabase

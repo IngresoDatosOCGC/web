@@ -200,12 +200,14 @@ export async function POST(req: Request) {
         }
 
         // 3. Actualización final en DB local
+        const newUsername = (dni || dbUser.dni).toUpperCase().trim();
         await prisma.user.update({
           where: { id: dbId },
           data: {
             name: firstName !== undefined ? firstName : undefined,
             surname: surname !== undefined ? (surname || "") : undefined,
             dni: dni !== undefined ? dni : undefined,
+            username: newUsername, // Sincronizamos username con el DNI
             phone: phone !== undefined ? phone : undefined,
             email: finalEmail,
             isExternal: finalIsExternal,

@@ -37,6 +37,7 @@ export async function middleware(request: NextRequest) {
 
   // Lista de exclusión de rutas públicas
   const publicRoutes = [
+    '/api/auth/resolve-identifier',
     '/api/auth/register-musician',
     '/api/auth/validate-invite',
     '/api/roles',

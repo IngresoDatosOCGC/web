@@ -9,25 +9,26 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(req: Request) {
   try {
-    const { identifier } = await req.json();
+    let { identifier } = await req.json();
+    identifier = identifier?.trim();
 
     if (!identifier) {
       return NextResponse.json({ error: "Identificador requerido" }, { status: 400 });
     }
 
-    // 1. Si ya es un email, lo devolvemos tal cual
+    // 1. Si ya es un email, lo devolvemos tal cual (normalizado a minúsculas)
     if (identifier.includes("@")) {
-      return NextResponse.json({ email: identifier });
+      return NextResponse.json({ email: identifier.toLowerCase() });
     }
 
-    // 2. Si no es email, buscamos en la DB por username
-    const user = await prisma.user.findUnique({
-      where: { username: identifier },
+    // 2. Si no es email, buscamos en la DB por username o DNI (insensible a mayúsculas)
+    const user = await prisma.user.findFirst({
+      where: { username: { equals: identifier, mode: 'insensitive' } },
       select: { email: true }
     });
 
     if (user && user.email) {
-      return NextResponse.json({ email: user.email });
+      return NextResponse.json({ email: user.email.toLowerCase() });
     }
 
     // 3. Si no se encuentra, devolvemos el original (Supabase fallará elegantemente)
