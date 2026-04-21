@@ -21,13 +21,3 @@ export async function getSessionUser() {
 
   return dbUser;
 }
-
-export async function checkPermission(perm: 'master' | 'archiver') {
-  const user = await getSessionUser();
-  if (!user) return false;
-  
-  if (user.isMaster) return true;
-  if (perm === 'archiver' && user.isArchiver) return true;
-  
-  return false;
-}

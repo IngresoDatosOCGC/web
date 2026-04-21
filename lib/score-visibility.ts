@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 
-export type ScoreStructureRow = {
+type ScoreStructureRow = {
   agrupacion: string;
   seccion: string;
 };
