@@ -5,17 +5,12 @@ interface ResidencyOccupationFormProps {
   setFormData: (data: any) => void;
 }
 
-const fieldStyles = {
-  wrapper: { display: 'flex', flexDirection: 'column' as const, gap: '0.35rem' },
-  label: { fontSize: '0.78rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' as const, letterSpacing: '0.05em' },
-};
-
 export const ResidencyOccupationForm = ({ formData, setFormData }: ResidencyOccupationFormProps) => {
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
-        <div style={fieldStyles.wrapper}>
-          <label style={fieldStyles.label}>Isla de Residencia</label>
+      <div className="profile-form-grid profile-form-grid--2">
+        <div className="profile-field">
+          <label className="profile-label">Isla de Residencia</label>
           <select className="premium-input" value={formData.isla}
             onChange={e => setFormData({...formData, isla: e.target.value})}>
             <option value="">Seleccionar Isla...</option>
@@ -29,48 +24,40 @@ export const ResidencyOccupationForm = ({ formData, setFormData }: ResidencyOccu
             <option value="Fuera de Canarias">Fuera de Canarias</option>
           </select>
         </div>
-        <div style={fieldStyles.wrapper}>
-          <label style={fieldStyles.label}>Municipio</label>
+        <div className="profile-field">
+          <label className="profile-label">Municipio</label>
           <input type="text" className="premium-input" value={formData.municipio}
             onChange={e => setFormData({...formData, municipio: e.target.value})} />
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
-        <div style={fieldStyles.wrapper}>
-          <label style={fieldStyles.label}>Dirección de Empadronamiento</label>
+      <div className="profile-form-grid profile-form-grid--2">
+        <div className="profile-field">
+          <label className="profile-label">Dirección de Empadronamiento</label>
           <input type="text" className="premium-input" value={formData.empadronamiento}
             onChange={e => setFormData({...formData, empadronamiento: e.target.value})} />
         </div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '2px' }}>
-          <label style={{
-            display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer',
-            fontSize: '0.875rem', color: '#334155',
-            background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
-            padding: '0.65rem 1rem', borderRadius: '10px',
-            border: `1px solid ${formData.hasCertificate ? '#38bdf8' : '#bae6fd'}`,
-            width: '100%', transition: 'all 0.2s ease',
-            boxShadow: formData.hasCertificate ? '0 0 0 3px rgba(56,189,248,0.15)' : 'none',
-          }}>
+        <div className="profile-field profile-field--align-end">
+          <label className={`profile-cert-label${formData.hasCertificate ? ' profile-cert-label--active' : ''}`}>
             <input
               type="checkbox"
               checked={formData.hasCertificate}
               onChange={e => setFormData({...formData, hasCertificate: e.target.checked})}
-              style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#0284c7' }}
+              className="profile-cert-checkbox"
             />
-            <span style={{ fontWeight: 600 }}>Tengo Certificado de Residencia Canaria</span>
+            <span>Tengo Certificado de Residencia Canaria</span>
           </label>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
-        <div style={fieldStyles.wrapper}>
-          <label style={fieldStyles.label}>Profesión / Trabajo Actual</label>
+      <div className="profile-form-grid profile-form-grid--2">
+        <div className="profile-field">
+          <label className="profile-label">Profesión / Trabajo Actual</label>
           <input type="text" className="premium-input" value={formData.trabajo}
             onChange={e => setFormData({...formData, trabajo: e.target.value})} />
         </div>
-        <div style={fieldStyles.wrapper}>
-          <label style={fieldStyles.label}>Nivel de Estudios Musicales</label>
+        <div className="profile-field">
+          <label className="profile-label">Nivel de Estudios Musicales</label>
           <input type="text" className="premium-input" value={formData.estudios}
             onChange={e => setFormData({...formData, estudios: e.target.value})} />
         </div>
