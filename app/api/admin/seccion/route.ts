@@ -19,14 +19,19 @@ export async function GET() {
 
     if (!isMaster) {
       // Logic for Section Leader
-      // Fetch their `Estructura` to see what they lead
+      // Fetch their `Estructura` to see what they lead (Solo instrumentos/voces)
       const leaderEstructuras = await prisma.estructura.findMany({
-        where: { userId: sessionUser.id },
+        where: { 
+          userId: sessionUser.id,
+          seccion: { 
+            familia: { in: ["Cuerda", "Viento Madera", "Viento Metal", "Coro", "Teclados", "Percusión"] } 
+          }
+        },
         include: { seccion: true, agrupacion: true }
       });
 
       if (leaderEstructuras.length === 0) {
-        return NextResponse.json({ members: [], error: "No tiene perfil artístico." });
+        return NextResponse.json({ members: [], error: "No tienes asignada ninguna sección de instrumentos para gestionar." });
       }
 
       // Collect all managed combinations
@@ -36,7 +41,9 @@ export async function GET() {
           // Viento Madera manages their family AND Teclados
           conditions.push({
             agrupacion: { agrupacion: e.agrupacion.agrupacion },
-            seccion: { OR: [{ familia: "Viento Madera" }, { familia: "Teclados" }] }
+            seccion: { 
+              familia: { in: ["Viento Madera", "Teclados"] }
+            }
           });
         } else if (e.seccion.familia === "Viento Metal") {
           conditions.push({
@@ -51,12 +58,20 @@ export async function GET() {
         }
       }
 
+      // Final whereClause for Section Leader: managed sections AND restricted to instruments/voices
       whereClause = {
-        OR: conditions
+        AND: [
+          { OR: conditions },
+          { seccion: { familia: { in: ["Cuerda", "Viento Madera", "Viento Metal", "Coro", "Teclados", "Percusión"] } } }
+        ]
       };
     } else {
-      // Master can manage everything. 
-      // whereClause is empty {} meaning all estructuras.
+      // Master can manage everything EXCEPT non-instrument families
+      whereClause = {
+        seccion: { 
+          familia: { in: ["Cuerda", "Viento Madera", "Viento Metal", "Coro", "Teclados", "Percusión"] } 
+        }
+      };
     }
 
     const estructuras = await prisma.estructura.findMany({
@@ -125,7 +140,10 @@ export async function POST(req: Request) {
 
           // Mismo filtro de jurisdicción que el update individual
           const leaderEstructuras = await prisma.estructura.findMany({
-            where: { userId: sessionUser.id },
+            where: { 
+              userId: sessionUser.id,
+              seccion: { familia: { in: ["Cuerda", "Viento Madera", "Viento Metal", "Coro", "Teclados", "Percusión"] } }
+            },
             include: { seccion: true }
           });
 
@@ -170,7 +188,11 @@ export async function POST(req: Request) {
       }
 
       const leaderEstructuras = await prisma.estructura.findMany({
-        where: { userId: sessionUser.id, agrupacion: { agrupacion: "Orquesta" } },
+        where: { 
+          userId: sessionUser.id, 
+          agrupacion: { agrupacion: "Orquesta" },
+          seccion: { familia: { in: ["Cuerda", "Viento Madera", "Viento Metal", "Coro", "Teclados", "Percusión"] } }
+        },
         include: { seccion: true }
       });
 

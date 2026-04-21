@@ -28,6 +28,23 @@ export default function CSVImportScores({ categories, onImportSuccess }: { categ
     });
   };
 
+  const findInRow = (row: any, keys: string[]) => {
+    const rowKeys = Object.keys(row);
+    for (const key of keys) {
+      // Búsqueda exacta
+      if (row[key] !== undefined) return row[key];
+      // Búsqueda insensible a mayúsculas
+      const lowerKey = key.toLowerCase();
+      const match = rowKeys.find(rk => rk.toLowerCase() === lowerKey);
+      if (match) return row[match];
+      // Búsqueda sin acentos (muy común: título vs titulo)
+      const cleanKey = key.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      const matchClean = rowKeys.find(rk => rk.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() === cleanKey);
+      if (matchClean) return row[matchClean];
+    }
+    return undefined;
+  };
+
   const startImport = async () => {
     if (!csvData.length || !selectedFiles) {
       showToast("Debes cargar el CSV y seleccionar las partituras físicas (.pdf)", "error");
@@ -43,43 +60,74 @@ export default function CSVImportScores({ categories, onImportSuccess }: { categ
 
     for (const row of csvData) {
       try {
-        const fileName = row.archivo_pdf;
-        const actualFile = fileMap.get(fileName);
+        const title = findInRow(row, ['titulo', 'título', 'nombre', 'title']);
+        const fileNameRaw = findInRow(row, ['archivo_pdf', 'archivo', 'pdf', 'filename']);
+        const progNameRaw = findInRow(row, ['nombre_programa', 'programa', 'categoria', 'category']);
+        const agrupacionesRaw = findInRow(row, ['agrupaciones', 'agrupación', 'agrupacion']);
+        const instrumentosRaw = findInRow(row, ['instrumentos', 'roles', 'instrumento']);
+        const esDocumentoRaw = findInRow(row, ['es_documento', 'documento', 'is_document']);
 
-        if (!actualFile) {
-          console.warn(`Archivo no encontrado en la selección: ${fileName}`);
+        if (!title) {
+          console.error("Fila ignorada: Falta el título.");
           continue;
         }
 
-        // Buscar el ID del programa por su nombre (Case-insensitive)
-        let matchedCategoryId = "";
-        const progName = row.nombre_programa?.trim().toLowerCase();
-        if (progName) {
-           const found = categories.find(c => c.name.toLowerCase() === progName);
-           if (found) matchedCategoryId = String(found.id);
+        if (!fileNameRaw) {
+          console.error(`Fila ignorada (${title}): Falta el nombre del archivo PDF.`);
+          continue;
+        }
+        
+        const fileName = fileNameRaw.split('/').pop()?.split('\\').pop() || '';
+        const actualFile = fileMap.get(fileName);
+
+        if (!actualFile) {
+          console.error(`Fila ignorada (${title}): Archivo '${fileName}' no encontrado en la selección.`);
+          continue;
         }
 
-        // Subimos a la API normal que maneja Vercel Blob
+        let matchedCategoryId = "";
+        const progName = String(progNameRaw || '').trim().toLowerCase();
+        if (progName) {
+           const found = categories.find(c => c.name.toLowerCase() === progName);
+           if (found) {
+             matchedCategoryId = String(found.id);
+           } else {
+             console.warn(`Aviso (${title}): El programa '${progNameRaw}' no existe. Se marcará como 'Sin Programa' o fallará si no es un documento.`);
+           }
+        }
+
         const fd = new FormData();
-        fd.append('title', row.titulo || '');
+        fd.append('title', title);
         fd.append('categoryId', matchedCategoryId);
         fd.append('file', actualFile);
-        fd.append('isDocument', row.es_documento === 'true' ? 'on' : '');
+        fd.append('isDocument', (String(esDocumentoRaw).toLowerCase() === 'true' || esDocumentoRaw === 'on') ? 'on' : '');
         
-        if (row.instrumentos) {
-          row.instrumentos.split(',').forEach((i: string) => fd.append('roles', i.trim()));
+        if (agrupacionesRaw) {
+          String(agrupacionesRaw).split(',').forEach((a: string) => fd.append('agrupaciones', a.trim()));
+        }
+
+        if (instrumentosRaw) {
+          String(instrumentosRaw).split(',').forEach((i: string) => fd.append('roles', i.trim()));
         }
 
         const res = await fetch('/api/scores/create', { method: 'POST', body: fd });
-        if (res.ok || res.status === 303 || res.type === 'opaque' || res.redirected) {
+        if (res.ok) {
           successCount++;
+        } else {
+          const errText = await res.text();
+          console.error(`Error de API en fila "${title}":`, errText);
         }
       } catch (e) {
-        console.error("Error importando fila:", row, e);
+        console.error("Error crítico en procesamiento de fila:", row, e);
       }
     }
 
-    showToast(`Proceso finalizado. Importados: ${successCount} de ${csvData.length} filas del CSV.`, "success");
+    const failed = csvData.length - successCount;
+    if (successCount === csvData.length) {
+      showToast(`¡Éxito! Se han importado las ${successCount} partituras correctamente.`, "success");
+    } else {
+      showToast(`Carga parcial: ${successCount} éxitos, ${failed} errores. Revisa la consola para más detalles.`, "warning");
+    }
     setLoading(false);
     onImportSuccess();
     setCsvData([]);
@@ -106,8 +154,8 @@ export default function CSVImportScores({ categories, onImportSuccess }: { categ
             <h4 style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: '#333', fontWeight: 800 }}>Paso 2: Tu archivo CSV</h4>
             <p style={{ fontSize: '0.85rem', color: '#666', lineHeight: '1.5' }}>Crea un Excel con estas columnas y gúardalo como CSV. <strong>Para varios instrumentos, sepáralos por comas:</strong></p>
             <code style={{ display: 'block', background: '#f8f9fa', padding: '0.5rem', borderRadius: '4px', fontSize: '0.75rem', marginTop: '0.5rem', border: '1px solid #eee' }}>
-              titulo, nombre_programa, archivo_pdf, instrumentos, es_documento<br/>
-              Sinfonía 9, Temporada 2024, S9_Viento.pdf, "Flauta, Oboe, Fagot", false
+              titulo, nombre_programa, archivo_pdf, agrupaciones, instrumentos, es_documento<br/>
+              Sinfonía 9, Temporada 2024, S9_Viento.pdf, "Orquesta Sinfónica", "Flauta, Oboe, Fagot", false
             </code>
           </div>
         </div>
