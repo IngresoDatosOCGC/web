@@ -65,14 +65,20 @@ export default function DashboardPanel({ members, scores }: { members: any[], sc
             {agrup.sections && agrup.sections.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                 {agrup.sections
+                  .filter((sec: any) => {
+                    // Si es una agrupación musical, filtramos por familia
+                    if (SHOW_AGRUPACIONES.includes(agrup.name)) {
+                      const familiasInstrumentos = ["Cuerda", "Viento Madera", "Viento Metal", "Teclados", "Percusión", "Coro", "Dirección"];
+                      return familiasInstrumentos.includes(sec.familia);
+                    }
+                    return true;
+                  })
                   .sort((a: any, b: any) => a.name.localeCompare(b.name))
                   .map((sec: any) => {
-                    const pct = sec.count > 0 ? Math.round((sec.activeCount / sec.count) * 100) : 0;
                     return (
                       <div key={sec.name} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.3rem 0' }}>
                         <span style={{ flex: 1, fontSize: '0.82rem', color: '#475569', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sec.name}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
-                          
                           <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#10b981', minWidth: '20px', textAlign: 'right' }}>{sec.activeCount}</span>
                         </div>
                       </div>
@@ -93,7 +99,7 @@ export default function DashboardPanel({ members, scores }: { members: any[], sc
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
             {otherStats.map((a: any) => (
               <span key={a.name} style={{ fontSize: '0.82rem', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.3rem 0.8rem', color: '#64748b' }}>
-                <strong style={{ color: '#1a2a4b' }}>{a.name}</strong>: <span style={{ color: '#10b981', fontWeight: 700 }}>{a.activeCount ?? 0}</span> / {a.count ?? 0}
+                <strong style={{ color: '#1a2a4b' }}>{a.name}</strong>: <span style={{ color: '#10b981', fontWeight: 700 }}>{a.activeCount ?? 0}</span>
               </span>
             ))}
           </div>

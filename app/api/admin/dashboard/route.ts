@@ -25,6 +25,12 @@ export async function GET() {
     const agrupaciones = await prisma.agrupacion.findMany({
       include: {
         estructuras: {
+          where: {
+            activo: true,
+            user: {
+              isActive: true
+            }
+          },
           include: {
             seccion: true
           }
@@ -41,31 +47,34 @@ export async function GET() {
 
     const statsArray = agrupaciones
       .map(a => {
-        const sectionCounts: Record<string, { total: number, activos: number }> = {};
+        const sectionData: Record<string, { total: number, activos: number, familia: string }> = {};
         let agrupCount = 0;
         let agrupActivos = 0;
 
         a.estructuras.forEach(e => {
+
           const secName = e.seccion?.seccion || "Otro";
-          if (!sectionCounts[secName]) sectionCounts[secName] = { total: 0, activos: 0 };
+          const familia = e.seccion?.familia || "Otros";
           
-          sectionCounts[secName].total += 1;
-          agrupCount += 1;
-          
-          if (e.activo) {
-            sectionCounts[secName].activos += 1;
-            agrupActivos += 1;
+          if (!sectionData[secName]) {
+            sectionData[secName] = { total: 0, activos: 0, familia };
           }
+          
+          sectionData[secName].total += 1;
+          sectionData[secName].activos += 1;
+          agrupCount += 1;
+          agrupActivos += 1;
         });
 
         return {
           name: a.agrupacion,
           count: agrupCount,
           activeCount: agrupActivos,
-          sections: Object.entries(sectionCounts).map(([name, data]) => ({ 
+          sections: Object.entries(sectionData).map(([name, data]) => ({ 
             name, 
             count: data.total,
-            activeCount: data.activos
+            activeCount: data.activos,
+            familia: data.familia
           }))
         };
       })
