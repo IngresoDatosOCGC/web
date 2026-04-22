@@ -51,11 +51,18 @@ export async function GET() {
         let agrupCount = 0;
         let agrupActivos = 0;
 
-        a.estructuras.forEach(e => {
+        const MUSICAL_FAMILIES = ["Cuerda", "Viento Madera", "Viento Metal", "Teclados", "Percusión", "Coro", "Dirección"];
+        const MUSICAL_AGRUPACIONES = ["Orquesta", "Coro", "Ensemble Flautas", "Ensemble Metales", "Ensemble Chelos", "Big Band"];
 
+        a.estructuras.forEach(e => {
           const secName = e.seccion?.seccion || "Otro";
           const familia = e.seccion?.familia || "Otros";
           
+          // Si es una agrupación musical, ignorar familias no instrumentales/dirección en el conteo total
+          if (MUSICAL_AGRUPACIONES.includes(a.agrupacion) && !MUSICAL_FAMILIES.includes(familia)) {
+            return;
+          }
+
           if (!sectionData[secName]) {
             sectionData[secName] = { total: 0, activos: 0, familia };
           }

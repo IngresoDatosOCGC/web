@@ -65,14 +65,6 @@ export default function DashboardPanel({ members, scores }: { members: any[], sc
             {agrup.sections && agrup.sections.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                 {agrup.sections
-                  .filter((sec: any) => {
-                    // Si es una agrupación musical, filtramos por familia
-                    if (SHOW_AGRUPACIONES.includes(agrup.name)) {
-                      const familiasInstrumentos = ["Cuerda", "Viento Madera", "Viento Metal", "Teclados", "Percusión", "Coro", "Dirección"];
-                      return familiasInstrumentos.includes(sec.familia);
-                    }
-                    return true;
-                  })
                   .sort((a: any, b: any) => a.name.localeCompare(b.name))
                   .map((sec: any) => {
                     return (
