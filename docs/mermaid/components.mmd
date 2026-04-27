@@ -1,0 +1,29 @@
+flowchart TD
+    subgraph Frontend [Frontend: Next.js Client Side]
+        UI[React UI Components]
+        Tailwind[Tailwind CSS / Estilos]
+        Forms[React Hook Form / Estado Local]
+    end
+
+    subgraph Backend [Backend: Next.js Server Side]
+        SC[Server Components]
+        API[API Routes / Server Actions]
+        MW[Middleware de Rutas Protegidas]
+    end
+
+    subgraph External [Servicios Externos]
+        SupaAuth[Supabase Auth SSR]
+        Prisma[Prisma Client ORM]
+        DB[(PostgreSQL Database)]
+        Storage[Vercel Blob / S3 Storage]
+    end
+
+    UI <-->|Interacciones y Fetch| API
+    UI <-->|Renderizado| SC
+    
+    SC -->|Consultas DDBB| Prisma
+    API -->|Validación| SupaAuth
+    API -->|CRUD Operaciones| Prisma
+    API -->|Upload / Download| Storage
+    MW -->|Validar Cookies JWT| SupaAuth
+    Prisma <--> DB

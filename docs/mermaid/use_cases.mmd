@@ -1,0 +1,61 @@
+flowchart TD
+    %% Actors
+    Public["Usuario Público"]
+    Member["Miembro"]
+    Admin["Administrador"]
+    Archiver["Archivero"]
+    SectionLeader["Jefe de Sección"]
+    Seller["Vendedor"]
+
+    subgraph PublicPortal [Portal Público]
+        UC1["Consultar Conciertos"]
+        UC2["Ver Información"]
+        UC3["Enviar Solicitud de Ingreso"]
+    end
+
+    subgraph MemberPortal [Portal de Miembros]
+        UC4["Iniciar Sesión"]
+        UC5["Recuperar Contraseña"]
+        UC6["Ver Perfil"]
+        UC7["Descargar Partituras"]
+    end
+
+    subgraph AdminPortal [Portal Administrativo / Gestión]
+        UC8["Gestionar Miembros"]
+        UC9["Gestionar Solicitudes"]
+        UC10["Gestionar Catálogo de Partituras"]
+        UC11["Administrar Eventos"]
+        UC12["Generar Códigos de Invitación"]
+        UC13["Ver Logs de Actividad"]
+        UC14["Gestionar Ventas / Entradas"]
+        UC15["Gestionar Personal de Sección"]
+    end
+
+    %% Relations
+    Public --> UC1
+    Public --> UC2
+    Public --> UC3
+
+    Member --> UC4
+    Member --> UC5
+    Member --> UC6
+    Member --> UC7
+
+    Admin --> UC4
+    Admin --> UC8
+    Admin --> UC9
+    Admin --> UC10
+    Admin --> UC11
+    Admin --> UC12
+    Admin --> UC13
+    Admin --> UC14
+
+    Archiver --> UC6
+    Archiver --> UC7
+    Archiver --> UC10
+
+    SectionLeader --> UC6
+    SectionLeader --> UC15
+
+    Seller --> UC6
+    Seller --> UC14

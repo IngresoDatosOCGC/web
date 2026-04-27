@@ -1,0 +1,76 @@
+classDiagram
+    class User {
+        +Int id
+        +String supabaseUserId
+        +String name
+        +String surname
+        +String dni
+        +String email
+        +Boolean isActive
+        +Boolean isMaster
+    }
+
+    class Estructura {
+        +Int id
+        +Int userId
+        +Int papelId
+        +Int agrupacionId
+        +Int seccionId
+        +Boolean activo
+        +Int atril
+    }
+
+    class Residencia {
+        +Int id
+        +String isla
+        +String municipio
+    }
+
+    class Empleo {
+        +Int id
+        +String trabajo
+        +String estudios
+    }
+
+    class Score {
+        +Int id
+        +String title
+        +String fileUrl
+        +String[] allowedAgrupaciones
+        +String[] allowedRoles
+    }
+
+    class Category {
+        +Int id
+        +String name
+        +DateTime eventDate
+    }
+
+    class Event {
+        +Int id
+        +String title
+        +DateTime date
+        +EventType type
+    }
+
+    class JoinRequest {
+        +Int id
+        +String name
+        +String email
+        +String status
+    }
+
+    class ActivityLog {
+        +Int id
+        +String action
+        +Json details
+    }
+
+    User "1" -- "0..1" Residencia
+    User "1" -- "0..1" Empleo
+    User "1" -- "*" Estructura : Participa en
+    Estructura "*" -- "1" Papel
+    Estructura "*" -- "1" Agrupacion
+    Estructura "*" -- "1" Seccion
+    Score "*" -- "0..1" Category : Agrupado en
+    Event "*" -- "0..1" Category : Vinculado a

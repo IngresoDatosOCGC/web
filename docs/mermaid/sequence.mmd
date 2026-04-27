@@ -1,0 +1,25 @@
+sequenceDiagram
+    actor User as Miembro
+    participant Client as Next.js Client (Navegador)
+    participant Middleware as Next.js Middleware (Auth)
+    participant Server as Next.js Server Components / API
+    participant Supabase as Supabase Auth
+    participant DB as Base de Datos (PostgreSQL)
+
+    User->>Client: Navega a la sección "Partituras"
+    Client->>Middleware: GET /partituras
+    Middleware->>Supabase: Validar Sesión (Cookies JWT)
+    Supabase-->>Middleware: Sesión Válida / UserAuth
+    Middleware-->>Client: Permite acceso a la ruta protegida
+    
+    Client->>Server: Solicita listado de partituras (Server Component)
+    Server->>DB: Prisma: findMany(Score) filtrado por Seccion/Agrupacion del usuario
+    DB-->>Server: Retorna lista de Scores
+    Server-->>Client: Renderiza página con partituras
+    
+    User->>Client: Clic en "Descargar Partitura"
+    Client->>Server: GET /api/scores/download?id=123
+    Server->>DB: Prisma: Verificar permisos sobre el Score
+    DB-->>Server: Permisos OK (URL del archivo Vercel Blob / S3)
+    Server-->>Client: Retorna URL de descarga
+    Client-->>User: Descarga iniciada

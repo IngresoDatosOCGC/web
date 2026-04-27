@@ -1,0 +1,27 @@
+stateDiagram-v2
+    [*] --> EnviarSolicitud: El usuario llena el formulario "Únete"
+    
+    state EnviarSolicitud {
+        [*] --> GuardarJoinRequest: Se crea registro en BD (Pendiente)
+    }
+    
+    EnviarSolicitud --> RevisionAdmin: Administrador revisa la tabla de solicitudes
+    
+    state RevisionAdmin {
+        RevisarDatos --> Rechazar: No cumple requisitos
+        RevisarDatos --> Aprobar: Cumple requisitos
+    }
+    
+    Rechazar --> [*]: Fin del proceso
+    
+    Aprobar --> GenerarInvitacion: El Admin genera un código de invitación
+    GenerarInvitacion --> EnviarEmail: Se envía el código por correo al usuario
+    EnviarEmail --> RegistroUsuario: El usuario accede al enlace de registro
+    
+    state RegistroUsuario {
+        ValidarCodigo --> CrearAuth: Crear cuenta en Supabase Auth
+        CrearAuth --> CrearPerfil: Crear perfil de Usuario en Prisma
+        CrearPerfil --> MarcarUsado: Marcar código de invitación como usado
+    }
+    
+    RegistroUsuario --> [*]: Usuario convertido en Miembro activo
