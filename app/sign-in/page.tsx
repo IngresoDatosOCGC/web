@@ -56,7 +56,12 @@ function SignInContent() {
 
       const next = searchParams.get('next') || '/miembros/tablon';
       
-      // Usamos window.location.href para permitir redirecciones a dominios externos
+      // Limpiar la clave temporal de OAuth del sessionStorage
+      sessionStorage.removeItem('oauth_authorize_url')
+      
+      // IMPORTANTE: Usar window.location.href para navegación completa.
+      // Esto es necesario cuando 'next' es una URL de Supabase (/auth/v1/oauth/authorize)
+      // para que el navegador envíe las cookies de sesión correctamente.
       window.location.href = next;
     } catch (err: any) {
       console.error("Login error:", err);

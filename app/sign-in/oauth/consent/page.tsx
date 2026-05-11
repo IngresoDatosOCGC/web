@@ -25,15 +25,9 @@ function ConsentContent() {
   const [details, setDetails] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
-  const initialized = typeof window !== 'undefined' ? (window as any)._oauth_init : false
-
   const supabase = createClient()
 
   useEffect(() => {
-    // Evitar doble ejecución en React Strict Mode
-    if ((window as any)._oauth_init) return
-    (window as any)._oauth_init = true
-
     async function init() {
       if (!authorizationId) {
         setError('No se ha proporcionado un ID de autorización válido.')
@@ -45,8 +39,20 @@ function ConsentContent() {
 
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       if (userError || !user) {
-        const currentUrl = encodeURIComponent(window.location.href)
-        router.push(`/sign-in?next=${currentUrl}`)
+        // CRÍTICO: Guardar la URL original de Supabase (referrer) para que
+        // tras el login Supabase genere un NUEVO authorization_id vinculado
+        // a la sesión activa, en lugar de reutilizar el ID caducado.
+        const supabaseAuthorizeUrl = document.referrer && document.referrer.includes('/auth/v1/oauth/authorize')
+          ? document.referrer
+          : sessionStorage.getItem('oauth_authorize_url') || ''
+        
+        if (supabaseAuthorizeUrl) {
+          sessionStorage.setItem('oauth_authorize_url', supabaseAuthorizeUrl)
+          router.push(`/sign-in?next=${encodeURIComponent(supabaseAuthorizeUrl)}`)
+        } else {
+          // Fallback: si no tenemos la URL original, volver al consent
+          router.push(`/sign-in?next=${encodeURIComponent(window.location.href)}`)
+        }
         return
       }
       setUser(user)
