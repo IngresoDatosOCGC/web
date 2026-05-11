@@ -75,11 +75,29 @@ function ConsentContent() {
       await supabase.auth.getSession()
       
       console.log('Aprobando autorización para:', authorizationId)
-      const { data, error } = await (supabase.auth as any).oauth.approveAuthorization(authorizationId)
       
-      if (error) {
-        console.error('Error de Supabase al aprobar:', error)
-        throw error
+      // Intentamos usar el SDK, pero capturamos el error crudo si falla
+      const { data, error: sdkError } = await (supabase.auth as any).oauth.approveAuthorization(authorizationId)
+      
+      if (sdkError) {
+        console.warn('El SDK falló, intentando obtener detalle manual...')
+        // Si el SDK falla, intentamos una petición manual para ver el cuerpo del error
+        const session = (await supabase.auth.getSession()).data.session
+        const rawRes = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/oauth/authorizations/${authorizationId}/consent`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+          },
+          body: JSON.stringify({ action: 'approve' })
+        })
+        
+        if (!rawRes.ok) {
+          const errorBody = await rawRes.json()
+          console.error('Detalle del error del servidor:', errorBody)
+          throw new Error(errorBody.error_description || errorBody.msg || sdkError.message)
+        }
       }
 
       if (!data?.redirect_to) {
