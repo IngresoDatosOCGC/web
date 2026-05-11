@@ -55,8 +55,9 @@ function SignInContent() {
       if (signInError) throw signInError;
 
       const next = searchParams.get('next') || '/miembros/tablon';
-      router.push(next);
-      router.refresh();
+      
+      // Usamos window.location.href para permitir redirecciones a dominios externos
+      window.location.href = next;
     } catch (err: any) {
       console.error("Login error:", err);
       setError('Credenciales incorrectas. Revisa tu email/usuario y contraseña.');
