@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
           'Authorization': `Bearer ${session.access_token}`,
           'apikey': anonKey,
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ action: 'approve' }),
       }
     )
 
