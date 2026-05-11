@@ -1,10 +1,23 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 
+// Componente principal que envuelve el contenido en Suspense
 export default function ConsentPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc' }}>
+        <p style={{ color: 'var(--clr-navy)', fontWeight: 600 }}>Cargando...</p>
+      </div>
+    }>
+      <ConsentContent />
+    </Suspense>
+  )
+}
+
+function ConsentContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const authorizationId = searchParams.get('authorization_id')
@@ -27,18 +40,14 @@ export default function ConsentPage() {
         return
       }
 
-      // 1. Verificar si el usuario está autenticado
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       if (userError || !user) {
-        // Redirigir al login si no hay sesión, guardando la URL actual para volver
         const currentUrl = encodeURIComponent(window.location.href)
         router.push(`/sign-in?next=${currentUrl}`)
         return
       }
       setUser(user)
 
-      // 2. Obtener detalles de la aplicación externa
-      // Nota: getAuthorizationDetails es un método del servidor OAuth de Supabase
       try {
         const { data, error: detailsError } = await (supabase.auth as any).oauth.getAuthorizationDetails(authorizationId)
         if (detailsError) throw detailsError
@@ -59,7 +68,6 @@ export default function ConsentPage() {
     try {
       const { data, error } = await (supabase.auth as any).oauth.approveAuthorization(authorizationId)
       if (error) throw error
-      // Redirigir de vuelta a la app externa con el código
       window.location.href = data.redirect_to
     } catch (err: any) {
       setError(err.message)
@@ -116,7 +124,6 @@ export default function ConsentPage() {
         boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
         overflow: 'hidden'
       }}>
-        {/* Header con Branding */}
         <div style={{ 
           background: 'linear-gradient(135deg, var(--clr-navy), #2c3e50)', 
           padding: '2.5rem 2rem', 
@@ -127,7 +134,6 @@ export default function ConsentPage() {
           <p style={{ fontSize: '0.875rem', opacity: 0.8, marginTop: '0.5rem' }}>Servicio de Autenticación Centralizada</p>
         </div>
 
-        {/* Contenido de Consentimiento */}
         <div style={{ padding: '2rem' }}>
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <div style={{ 
@@ -181,7 +187,6 @@ export default function ConsentPage() {
             </p>
           </div>
 
-          {/* Botones de Acción */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <button 
               onClick={handleApprove}
