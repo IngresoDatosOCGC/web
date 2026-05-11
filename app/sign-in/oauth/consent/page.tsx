@@ -77,47 +77,30 @@ function ConsentContent() {
     setLoading(true)
     setError(null)
     try {
-      // Aseguramos que la sesión está fresca antes de aprobar
-      await supabase.auth.getSession()
-      
       console.log('Aprobando autorización para:', authorizationId)
       
-      // Intentamos usar el SDK, pero capturamos el error crudo si falla
-      const { data, error: sdkError } = await (supabase.auth as any).oauth.approveAuthorization(authorizationId)
-      
-      if (sdkError) {
-        console.warn('El SDK falló, intentando obtener detalle manual...')
-        // Si el SDK falla, intentamos una petición manual para ver el cuerpo del error
-        const session = (await supabase.auth.getSession()).data.session
-        const rawRes = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/oauth/authorizations/${authorizationId}/consent`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`,
-            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-          },
-          body: JSON.stringify({ 
-            action: 'approve',
-            authorization_id: authorizationId 
-          })
-        })
-        
-        if (!rawRes.ok) {
-          const errorBody = await rawRes.json()
-          console.error('Detalle del error del servidor:', errorBody)
-          throw new Error(errorBody.error_description || errorBody.msg || sdkError.message)
-        }
+      // Usamos nuestro API route server-side para evitar problemas de CORS
+      // y de cookies cross-domain con Supabase
+      const res = await fetch('/api/oauth/consent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authorizationId }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        console.error('Error del servidor OAuth:', data)
+        throw new Error(data.error || 'Error al procesar la aprobación.')
       }
 
-      if (!data?.redirect_to) {
+      if (!data.redirect_to) {
         throw new Error('Supabase no devolvió una URL de redirección.')
       }
 
       console.log('Redirigiendo a la app externa:', data.redirect_to)
-      
-      // IMPORTANTE: Asegurarnos de que la redirección sea exitosa
       window.location.assign(data.redirect_to)
-      
+
     } catch (err: any) {
       console.error('Error fatal en handleApprove:', err)
       setError(err.message || 'Error al procesar la aprobación.')
