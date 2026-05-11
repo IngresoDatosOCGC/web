@@ -71,6 +71,9 @@ function ConsentContent() {
     setLoading(true)
     setError(null)
     try {
+      // Aseguramos que la sesión está fresca antes de aprobar
+      await supabase.auth.getSession()
+      
       console.log('Aprobando autorización para:', authorizationId)
       const { data, error } = await (supabase.auth as any).oauth.approveAuthorization(authorizationId)
       
