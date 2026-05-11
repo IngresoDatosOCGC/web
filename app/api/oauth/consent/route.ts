@@ -2,10 +2,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
+async function callConsent(authorizationId: string, token: string, anonKey: string, supabaseUrl: string) {
+  const res = await fetch(
+    `${supabaseUrl}/auth/v1/oauth/authorizations/${authorizationId}/consent`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'apikey': anonKey,
+      },
+      body: JSON.stringify({ action: 'approve' }),
+    }
+  )
+  const data = await res.json()
+  return { ok: res.ok, status: res.status, data }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { authorizationId } = await request.json()
-
     if (!authorizationId) {
       return NextResponse.json({ error: 'Missing authorizationId' }, { status: 400 })
     }
@@ -34,61 +50,90 @@ export async function POST(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-    // Intentar aprobación directa
-    const response = await fetch(
-      `${supabaseUrl}/auth/v1/oauth/authorizations/${authorizationId}/consent`,
+    // Intento 1: aprobar directamente
+    const attempt1 = await callConsent(authorizationId, session.access_token, anonKey, supabaseUrl)
+    console.log('[Consent] Attempt 1:', attempt1.status, JSON.stringify(attempt1.data))
+
+    if (attempt1.ok) return NextResponse.json(attempt1.data)
+
+    if (attempt1.data?.error_code !== 'validation_failed') {
+      return NextResponse.json(
+        { error: attempt1.data?.msg || 'Consent failed', details: attempt1.data },
+        { status: attempt1.status }
+      )
+    }
+
+    // Intento 2: el authorization_id no tiene user_id.
+    // Obtener los parámetros originales para reconstruir el flujo con Bearer token.
+    console.log('[Consent] Fetching authorization details to reconstruct flow...')
+    const detailsRes = await fetch(
+      `${supabaseUrl}/auth/v1/oauth/authorizations/${authorizationId}`,
       {
-        method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
           'apikey': anonKey,
         },
-        body: JSON.stringify({ action: 'approve' }),
       }
     )
+    const details = await detailsRes.json()
+    console.log('[Consent] Authorization details:', JSON.stringify(details))
 
-    const responseData = await response.json()
-    console.log('[OAuth Consent] Status:', response.status, 'Body:', JSON.stringify(responseData))
+    // Si tenemos los parámetros PKCE, llamar a /authorize con Bearer token
+    // para crear un nuevo authorization_id vinculado al usuario autenticado
+    if (details.code_challenge) {
+      const authorizeParams = new URLSearchParams({
+        response_type: 'code',
+        client_id: details.client_id || '',
+        redirect_uri: details.redirect_uri || '',
+        scope: Array.isArray(details.scope) ? details.scope.join(' ') : (details.scope || 'openid'),
+        code_challenge: details.code_challenge,
+        code_challenge_method: details.code_challenge_method || 'S256',
+        state: details.state || '',
+      })
 
-    if (response.ok) {
-      return NextResponse.json(responseData)
-    }
+      const authorizeRes = await fetch(
+        `${supabaseUrl}/auth/v1/oauth/authorize?${authorizeParams.toString()}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': anonKey,
+          },
+          redirect: 'manual',
+        }
+      )
 
-    // Si falla por validation_failed, intentar refresco de sesión
-    if (responseData.error_code === 'validation_failed') {
-      console.warn('[OAuth Consent] validation_failed - intentando con token refrescado')
-      
-      const { data: refreshed } = await supabase.auth.refreshSession()
-      if (refreshed.session) {
-        const retry = await fetch(
-          `${supabaseUrl}/auth/v1/oauth/authorizations/${authorizationId}/consent`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${refreshed.session.access_token}`,
-              'apikey': anonKey,
-            },
-            body: JSON.stringify({ action: 'approve' }),
-          }
-        )
-        const retryData = await retry.json()
-        console.log('[OAuth Consent] Retry status:', retry.status, 'Body:', JSON.stringify(retryData))
-        if (retry.ok) return NextResponse.json(retryData)
+      const newLocation = authorizeRes.headers.get('location') || ''
+      console.log('[Consent] New authorize status:', authorizeRes.status, 'Location:', newLocation)
+
+      // Extraer el nuevo authorization_id del redirect
+      const newIdMatch = newLocation.match(/authorization_id=([^&]+)/)
+      if (newIdMatch) {
+        const newAuthorizationId = newIdMatch[1]
+        console.log('[Consent] New authorization_id:', newAuthorizationId)
+
+        const attempt2 = await callConsent(newAuthorizationId, session.access_token, anonKey, supabaseUrl)
+        console.log('[Consent] Attempt 2:', attempt2.status, JSON.stringify(attempt2.data))
+
+        if (attempt2.ok) return NextResponse.json(attempt2.data)
         return NextResponse.json(
-          { error: retryData.msg || 'Consent failed after refresh', details: retryData },
-          { status: retry.status }
+          { error: attempt2.data?.msg || 'Consent failed with new authorization', details: attempt2.data },
+          { status: attempt2.status }
         )
       }
     }
 
+    // Fallback: devolver todos los detalles para diagnóstico
     return NextResponse.json(
-      { error: responseData.msg || 'Consent failed', details: responseData },
-      { status: response.status }
+      {
+        error: attempt1.data?.msg || 'Consent failed',
+        details: attempt1.data,
+        authorizationDetails: details
+      },
+      { status: attempt1.status }
     )
+
   } catch (err: any) {
-    console.error('[OAuth Consent] Unexpected error:', err)
+    console.error('[Consent] Unexpected error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
