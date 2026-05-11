@@ -52,19 +52,33 @@ export async function GET(request: NextRequest) {
       'Authorization': `Bearer ${session.access_token}`,
       'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     },
-    redirect: 'manual', // No seguir la redirección automáticamente
+    redirect: 'manual',
   })
 
-  // Supabase devuelve un 302 con Location apuntando a nuestro consent
   const location = response.headers.get('location')
 
+  console.log('[OAuth Authorize Proxy] Status:', response.status)
+  console.log('[OAuth Authorize Proxy] Location:', location)
+  console.log('[OAuth Authorize Proxy] Has session:', !!session, 'User:', session?.user?.email)
+
   if (!location) {
+    const body = await response.text()
+    console.log('[OAuth Authorize Proxy] Response body:', body)
     return NextResponse.json(
-      { error: 'No redirect location from Supabase authorize' },
+      { error: 'No redirect location from Supabase authorize', status: response.status, body },
       { status: 502 }
     )
   }
 
-  // Redirigir al browser a la URL de consent con el authorization_id válido
+  // Si Supabase nos manda de vuelta al sign-in, significa que no aceptó el Bearer token
+  if (location.includes('/sign-in') || location.includes('sign_in')) {
+    console.warn('[OAuth Authorize Proxy] Supabase redirected to sign-in despite Bearer token')
+    return NextResponse.json(
+      { error: 'Supabase did not accept Bearer token on /authorize', location },
+      { status: 502 }
+    )
+  }
+
+  console.log('[OAuth Authorize Proxy] Redirecting to:', location)
   return NextResponse.redirect(location)
 }

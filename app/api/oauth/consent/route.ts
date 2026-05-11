@@ -10,7 +10,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing authorizationId' }, { status: 400 })
     }
 
-    // Crear cliente Supabase server-side para leer la sesión de las cookies
     const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -27,17 +26,15 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    // Obtener sesión del usuario autenticado
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-
-    if (sessionError || !session) {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
       return NextResponse.json({ error: 'No authenticated session' }, { status: 401 })
     }
 
-    // Llamar al endpoint de Supabase server-to-server (sin restricciones CORS)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
+    // Intentar aprobación directa
     const response = await fetch(
       `${supabaseUrl}/auth/v1/oauth/authorizations/${authorizationId}/consent`,
       {
@@ -52,18 +49,46 @@ export async function POST(request: NextRequest) {
     )
 
     const responseData = await response.json()
+    console.log('[OAuth Consent] Status:', response.status, 'Body:', JSON.stringify(responseData))
 
-    if (!response.ok) {
-      console.error('[OAuth Consent API] Supabase error:', responseData)
-      return NextResponse.json(
-        { error: responseData.msg || responseData.message || 'Consent failed', details: responseData },
-        { status: response.status }
-      )
+    if (response.ok) {
+      return NextResponse.json(responseData)
     }
 
-    return NextResponse.json(responseData)
+    // Si falla por validation_failed, intentar refresco de sesión
+    if (responseData.error_code === 'validation_failed') {
+      console.warn('[OAuth Consent] validation_failed - intentando con token refrescado')
+      
+      const { data: refreshed } = await supabase.auth.refreshSession()
+      if (refreshed.session) {
+        const retry = await fetch(
+          `${supabaseUrl}/auth/v1/oauth/authorizations/${authorizationId}/consent`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${refreshed.session.access_token}`,
+              'apikey': anonKey,
+            },
+            body: JSON.stringify({ action: 'approve' }),
+          }
+        )
+        const retryData = await retry.json()
+        console.log('[OAuth Consent] Retry status:', retry.status, 'Body:', JSON.stringify(retryData))
+        if (retry.ok) return NextResponse.json(retryData)
+        return NextResponse.json(
+          { error: retryData.msg || 'Consent failed after refresh', details: retryData },
+          { status: retry.status }
+        )
+      }
+    }
+
+    return NextResponse.json(
+      { error: responseData.msg || 'Consent failed', details: responseData },
+      { status: response.status }
+    )
   } catch (err: any) {
-    console.error('[OAuth Consent API] Unexpected error:', err)
+    console.error('[OAuth Consent] Unexpected error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
