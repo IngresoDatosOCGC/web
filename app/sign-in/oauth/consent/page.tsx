@@ -90,7 +90,8 @@ function ConsentContent() {
             'Authorization': `Bearer ${session?.access_token}`,
             'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
           },
-          body: JSON.stringify({ action: 'approve' })
+          body: JSON.stringify({ action: 'approve' }),
+          credentials: 'include' // IMPORTANTE: Enviar cookies de sesión
         })
         
         if (!rawRes.ok) {
