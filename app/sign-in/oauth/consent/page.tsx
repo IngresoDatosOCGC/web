@@ -25,16 +25,23 @@ function ConsentContent() {
   const [details, setDetails] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
+  const initialized = typeof window !== 'undefined' ? (window as any)._oauth_init : false
 
   const supabase = createClient()
 
   useEffect(() => {
+    // Evitar doble ejecución en React Strict Mode
+    if ((window as any)._oauth_init) return
+    (window as any)._oauth_init = true
+
     async function init() {
       if (!authorizationId) {
         setError('No se ha proporcionado un ID de autorización válido.')
         setLoading(false)
         return
       }
+
+      console.log('Iniciando validación de ID:', authorizationId)
 
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       if (userError || !user) {
