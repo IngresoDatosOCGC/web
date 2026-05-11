@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 export default function SignInPage() {
@@ -12,6 +12,7 @@ export default function SignInPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +48,8 @@ export default function SignInPage() {
 
       if (signInError) throw signInError;
 
-      router.push('/miembros/tablon');
+      const next = searchParams.get('next') || '/miembros/tablon';
+      router.push(next);
       router.refresh();
     } catch (err: any) {
       console.error("Login error:", err);
