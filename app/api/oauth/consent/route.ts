@@ -53,6 +53,8 @@ export async function POST(request: NextRequest) {
 
     // INTENTO 1: Aprobar el ID tal cual viene
     const attempt1 = await callConsent(authorizationId, session.access_token, anonKey, supabaseUrl, action)
+    console.log('[OAuth Debug] Attempt 1 Status:', attempt1.status)
+    console.log('[OAuth Debug] Attempt 1 Data:', JSON.stringify(attempt1.data))
     
     if (attempt1.ok) return NextResponse.json(attempt1.data)
 
@@ -73,10 +75,14 @@ export async function POST(request: NextRequest) {
         headers: { 'Authorization': `Bearer ${session.access_token}`, 'apikey': anonKey }
       })
       
+      console.log('[OAuth Debug] Details fetch status:', detailsRes.status)
+
       if (!detailsRes.ok) {
+        console.log('[OAuth Debug] Details fetch failed with token, trying anon...')
         detailsRes = await fetch(`${supabaseUrl}/auth/v1/oauth/authorizations/${authorizationId}`, {
           headers: { 'apikey': anonKey }
         })
+        console.log('[OAuth Debug] Details fetch status (anon):', detailsRes.status)
       }
 
       if (detailsRes.ok) {
@@ -110,7 +116,9 @@ export async function POST(request: NextRequest) {
       redirect: 'manual',
     })
 
+    console.log('[OAuth Debug] New Authorize Status:', newAuthRes.status)
     const location = newAuthRes.headers.get('location') || ''
+    console.log('[OAuth Debug] New Authorize Location:', location)
     const newIdMatch = location.match(/authorization_id=([^&]+)/)
     
     if (!newIdMatch) {
