@@ -103,11 +103,11 @@ export async function POST(request: NextRequest) {
     
     const authorizeParams = new URLSearchParams({
       response_type: 'code',
-      client_id: recoveryDetails.client_id,
-      redirect_uri: recoveryDetails.redirect_uri,
-      scope: recoveryDetails.scope || 'openid',
-      code_challenge: recoveryDetails.code_challenge || '',
-      code_challenge_method: recoveryDetails.code_challenge_method || 'S256',
+      client_id: recoveryDetails.client_id || recoveryDetails.clientId,
+      redirect_uri: recoveryDetails.redirect_uri || recoveryDetails.redirectUri,
+      scope: recoveryDetails.scope || (recoveryDetails.scopes ? recoveryDetails.scopes.join(' ') : 'openid'),
+      code_challenge: recoveryDetails.code_challenge || recoveryDetails.codeChallenge || '',
+      code_challenge_method: recoveryDetails.code_challenge_method || recoveryDetails.codeChallengeMethod || 'S256',
       state: recoveryDetails.state || '',
     })
 

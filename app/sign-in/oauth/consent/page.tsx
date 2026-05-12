@@ -72,6 +72,7 @@ function ConsentContent() {
             setError(data.error || 'Error al obtener los detalles de la autorización.')
           }
         } else {
+          console.log('[OAuth Frontend] Detalles cargados:', data)
           setDetails(data)
         }
       } catch (err: any) {
@@ -99,11 +100,11 @@ function ConsentContent() {
           authorizationId,
           // Enviamos los detalles para que el servidor pueda reconstruir el flujo si el ID original falla
           details: {
-            client_id: details.client_id,
-            redirect_uri: details.redirect_uri,
-            scope: details.scopes?.join(' ') || details.scope,
-            code_challenge: details.code_challenge,
-            code_challenge_method: details.code_challenge_method,
+            client_id: details.client_id || details.clientId,
+            redirect_uri: details.redirect_uri || details.redirectUri,
+            scope: details.scope || (details.scopes ? details.scopes.join(' ') : 'openid'),
+            code_challenge: details.code_challenge || details.codeChallenge,
+            code_challenge_method: details.code_challenge_method || details.codeChallengeMethod || 'S256',
             state: details.state
           }
         }),
