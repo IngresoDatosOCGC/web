@@ -3,7 +3,8 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 /**
- * Proxy server-side para obtener los detalles de la autorización pendiente (app name, scopes, etc).
+ * Proxy server-side para obtener los detalles de la autorización pendiente.
+ * Ahora incluye lógica de fallback para IDs generados de forma anónima.
  */
 export async function GET(request: NextRequest) {
   const authorizationId = request.nextUrl.searchParams.get('authorization_id')
@@ -25,27 +26,35 @@ export async function GET(request: NextRequest) {
   )
 
   const { data: { session } } = await supabase.auth.getSession()
-
-  if (!session) {
-    return NextResponse.json({ error: 'No authenticated session' }, { status: 401 })
-  }
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/oauth/authorizations/${authorizationId}`,
+    // Intento 1: Con el token del usuario (lo ideal)
+    let res = await fetch(
+      `${supabaseUrl}/auth/v1/oauth/authorizations/${authorizationId}`,
       {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          'Authorization': session ? `Bearer ${session.access_token}` : '',
+          'apikey': anonKey,
         },
       }
     )
+
+    // Intento 2: Fallback anónimo si el ID no deja leerse con el token del usuario
+    if (!res.ok) {
+      console.log('[OAuth Details] Fetch failed with token, trying anonymous fallback...')
+      res = await fetch(
+        `${supabaseUrl}/auth/v1/oauth/authorizations/${authorizationId}`,
+        { headers: { 'apikey': anonKey } }
+      )
+    }
 
     const data = await res.json()
 
     if (!res.ok) {
       return NextResponse.json(
-        { error: data.msg || 'Failed to fetch authorization details' },
+        { error: data.msg || 'Failed to fetch authorization details', details: data },
         { status: res.status }
       )
     }
