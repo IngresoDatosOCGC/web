@@ -58,9 +58,11 @@ function ConsentContent() {
       setUser(user)
 
       try {
-        // Obtenemos los detalles de la petición de la app externa
-        const { data, error: detailsError } = await (supabase.auth as any).oauth.getAuthorizationDetails(authorizationId)
-        if (detailsError) throw detailsError
+        // Obtenemos los detalles de la petición de la app externa vía nuestro proxy
+        const res = await fetch(`/api/oauth/details?authorization_id=${authorizationId}`)
+        const data = await res.json()
+        
+        if (!res.ok) throw new Error(data.error || 'Error al obtener detalles')
         setDetails(data)
       } catch (err: any) {
         console.error('Error al obtener detalles OAuth:', err)
@@ -111,8 +113,13 @@ function ConsentContent() {
   const handleDeny = async () => {
     setLoading(true)
     try {
-      const { data, error } = await (supabase.auth as any).oauth.denyAuthorization(authorizationId)
-      if (error) throw error
+      const res = await fetch('/api/oauth/consent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authorizationId, action: 'deny' }),
+      })
+      const data = await res.json()
+      
       if (data?.redirect_to) {
         window.location.assign(data.redirect_to)
       } else {

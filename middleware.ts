@@ -43,6 +43,8 @@ export async function middleware(request: NextRequest) {
     '/api/roles',
     '/api/agrupaciones',
     '/api/unete',
+    '/api/oauth/authorize',
+    '/sign-in/oauth',
     '/unete',
     '/sign-in',
     '/sign-up'

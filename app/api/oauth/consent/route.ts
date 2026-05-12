@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-async function callConsent(authorizationId: string, token: string, anonKey: string, supabaseUrl: string) {
+async function callConsent(authorizationId: string, token: string, anonKey: string, supabaseUrl: string, action: string = 'approve') {
   const res = await fetch(
     `${supabaseUrl}/auth/v1/oauth/authorizations/${authorizationId}/consent`,
     {
@@ -12,7 +12,7 @@ async function callConsent(authorizationId: string, token: string, anonKey: stri
         'Authorization': `Bearer ${token}`,
         'apikey': anonKey,
       },
-      body: JSON.stringify({ action: 'approve' }),
+      body: JSON.stringify({ action }),
     }
   )
   const data = await res.json()
@@ -21,7 +21,7 @@ async function callConsent(authorizationId: string, token: string, anonKey: stri
 
 export async function POST(request: NextRequest) {
   try {
-    const { authorizationId } = await request.json()
+    const { authorizationId, action = 'approve' } = await request.json()
     if (!authorizationId) {
       return NextResponse.json({ error: 'Missing authorizationId' }, { status: 400 })
     }
@@ -50,8 +50,8 @@ export async function POST(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-    // Intento 1: aprobar directamente
-    const attempt1 = await callConsent(authorizationId, session.access_token, anonKey, supabaseUrl)
+    // Intento 1: procesar la acción (aprobar o denegar)
+    const attempt1 = await callConsent(authorizationId, session.access_token, anonKey, supabaseUrl, action)
     console.log('[Consent] Attempt 1:', attempt1.status, JSON.stringify(attempt1.data))
 
     if (attempt1.ok) return NextResponse.json(attempt1.data)
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
         const newAuthorizationId = newIdMatch[1]
         console.log('[Consent] New authorization_id:', newAuthorizationId)
 
-        const attempt2 = await callConsent(newAuthorizationId, session.access_token, anonKey, supabaseUrl)
+        const attempt2 = await callConsent(newAuthorizationId, session.access_token, anonKey, supabaseUrl, action)
         console.log('[Consent] Attempt 2:', attempt2.status, JSON.stringify(attempt2.data))
 
         if (attempt2.ok) return NextResponse.json(attempt2.data)

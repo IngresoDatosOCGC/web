@@ -27,8 +27,8 @@ export default function HeaderMiembros() {
     e.preventDefault();
     const externalUrl = process.env.NEXT_PUBLIC_EXTERNAL_SERVER_URL;
     if (!externalUrl) { alert("Error: La URL del servidor externo no está configurada."); return; }
-    if (session?.access_token) {
-      window.open(`${externalUrl}/?access_token=${session.access_token}`, '_blank');
+    if (session?.access_token && session?.refresh_token) {
+      window.open(`${externalUrl}/callback#access_token=${session.access_token}&refresh_token=${session.refresh_token}`, '_blank');
     } else {
       alert("⚠️ Error de Autenticación: No se ha detectado una sesión activa. Prueba a cerrar sesión y volver a entrar para refrescar tus permisos.");
     }
