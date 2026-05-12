@@ -21,7 +21,8 @@ async function callConsent(authorizationId: string, token: string, anonKey: stri
 
 export async function POST(request: NextRequest) {
   try {
-    const { authorizationId, action = 'approve', details: providedDetails } = await request.json()
+    const body = await request.json()
+    const { authorizationId, action = 'approve', details: providedDetails } = body
     
     if (!authorizationId) {
       return NextResponse.json({ error: 'Missing authorizationId' }, { status: 400 })
@@ -51,90 +52,78 @@ export async function POST(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-    // INTENTO 1: Aprobar el ID tal cual viene
+    // INTENTO 1: Aprobar el ID original
     const attempt1 = await callConsent(authorizationId, session.access_token, anonKey, supabaseUrl, action)
     console.log('[OAuth Debug] Attempt 1 Status:', attempt1.status)
-    console.log('[OAuth Debug] Attempt 1 Data:', JSON.stringify(attempt1.data))
     
     if (attempt1.ok) return NextResponse.json(attempt1.data)
 
-    // Si falló por algo que no sea "validation_failed", abortamos
-    if (attempt1.data?.error_code !== 'validation_failed' && attempt1.status !== 400) {
-      return NextResponse.json(attempt1.data, { status: attempt1.status })
+    // INTENTO 2: Reconstrucción agresiva
+    console.log('[OAuth Debug] Starting reconstruction...')
+
+    // Helper para buscar parámetros en cualquier nivel del objeto
+    const getParam = (obj: any, keys: string[]) => {
+      if (!obj) return undefined
+      for (const key of keys) {
+        if (obj[key]) return obj[key]
+      }
+      // Búsqueda en primer nivel de objetos anidados (ej: details.client.id)
+      for (const k in obj) {
+        if (typeof obj[k] === 'object') {
+          for (const key of keys) {
+            if (obj[k][key]) return obj[k][key]
+          }
+        }
+      }
+      return undefined
     }
 
-    // INTENTO 2: Auto-Reconstrucción
-    console.log('[OAuth Consent] ID rejected or anonymous. Attempting reconstruction...')
+    const clientId = getParam(providedDetails, ['client_id', 'clientId', 'id'])
+    const redirectUri = getParam(providedDetails, ['redirect_uri', 'redirectUri', 'uri'])
+    const scope = getParam(providedDetails, ['scope', 'scopes'])
+    const codeChallenge = getParam(providedDetails, ['code_challenge', 'codeChallenge'])
+    const codeChallengeMethod = getParam(providedDetails, ['code_challenge_method', 'codeChallengeMethod'])
+    const state = getParam(providedDetails, ['state'])
 
-    let recoveryDetails = providedDetails
-
-    // Si no nos pasaron detalles desde el front, intentamos leerlos (último recurso)
-    if (!recoveryDetails) {
-      console.log('[OAuth Consent] No details provided by client, fetching from Supabase...')
-      let detailsRes = await fetch(`${supabaseUrl}/auth/v1/oauth/authorizations/${authorizationId}`, {
-        headers: { 'Authorization': `Bearer ${session.access_token}`, 'apikey': anonKey }
-      })
-      
-      console.log('[OAuth Debug] Details fetch status:', detailsRes.status)
-
-      if (!detailsRes.ok) {
-        console.log('[OAuth Debug] Details fetch failed with token, trying anon...')
-        detailsRes = await fetch(`${supabaseUrl}/auth/v1/oauth/authorizations/${authorizationId}`, {
-          headers: { 'apikey': anonKey }
-        })
-        console.log('[OAuth Debug] Details fetch status (anon):', detailsRes.status)
-      }
-
-      if (detailsRes.ok) {
-        recoveryDetails = await detailsRes.json()
-      }
-    }
-
-    if (!recoveryDetails || !recoveryDetails.client_id) {
-      console.error('[OAuth Consent] Reconstruction failed: No client_id available')
+    if (!clientId) {
+      console.error('[OAuth Debug] Reconstruction failed: Missing Client ID in', providedDetails)
       return NextResponse.json({ 
-        error: 'El ID de autorización es inválido y no pudo ser recuperado. Por favor, reinicia el flujo desde la aplicación secundaria.',
-        details: recoveryDetails 
+        error: 'El ID de autorización es inválido y no pudo ser recuperado automágicamente.',
+        details_received: providedDetails 
       }, { status: 400 })
     }
 
-    // Paso B: Crear un NUEVO ID de autorización vinculado al usuario actual
-    console.log('[OAuth Consent] Re-authorizing for client:', recoveryDetails.client_id)
-    
     const authorizeParams = new URLSearchParams({
       response_type: 'code',
-      client_id: recoveryDetails.client_id || recoveryDetails.clientId,
-      redirect_uri: recoveryDetails.redirect_uri || recoveryDetails.redirectUri,
-      scope: recoveryDetails.scope || (recoveryDetails.scopes ? recoveryDetails.scopes.join(' ') : 'openid'),
-      code_challenge: recoveryDetails.code_challenge || recoveryDetails.codeChallenge || '',
-      code_challenge_method: recoveryDetails.code_challenge_method || recoveryDetails.codeChallengeMethod || 'S256',
-      state: recoveryDetails.state || '',
+      client_id: clientId,
+      redirect_uri: redirectUri || '',
+      scope: Array.isArray(scope) ? scope.join(' ') : (scope || 'openid'),
+      code_challenge: codeChallenge || '',
+      code_challenge_method: codeChallengeMethod || 'S256',
+      state: state || '',
     })
+
+    console.log('[OAuth Debug] Re-authorizing with params:', authorizeParams.toString())
 
     const newAuthRes = await fetch(`${supabaseUrl}/auth/v1/oauth/authorize?${authorizeParams.toString()}`, {
       headers: { 'Authorization': `Bearer ${session.access_token}`, 'apikey': anonKey },
       redirect: 'manual',
     })
 
-    console.log('[OAuth Debug] New Authorize Status:', newAuthRes.status)
     const location = newAuthRes.headers.get('location') || ''
     console.log('[OAuth Debug] New Authorize Location:', location)
     const newIdMatch = location.match(/authorization_id=([^&]+)/)
     
     if (!newIdMatch) {
-      console.error('[OAuth Consent] Failed to generate new ID. Location:', location)
-      return NextResponse.json({ error: 'No se pudo generar un nuevo ID de sesión.', location }, { status: 502 })
+      return NextResponse.json({ error: 'No se pudo generar un nuevo ID tras reconstrucción.', location }, { status: 502 })
     }
 
     const newId = newIdMatch[1]
-    console.log('[OAuth Consent] New ID generated via reconstruction:', newId)
-
-    // Paso C: Aprobar el NUEVO ID automáticamente
     const attempt2 = await callConsent(newId, session.access_token, anonKey, supabaseUrl, action)
     return NextResponse.json(attempt2.data, { status: attempt2.status })
 
   } catch (err: any) {
-    console.error('[OAuth Consent] Fatal error:', err)
+    console.error('[OAuth Debug] Fatal error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }

@@ -72,7 +72,7 @@ function ConsentContent() {
             setError(data.error || 'Error al obtener los detalles de la autorización.')
           }
         } else {
-          console.log('[OAuth Frontend] Detalles cargados:', data)
+          console.log('[OAuth Frontend] Detalles cargados:', JSON.stringify(data, null, 2))
           setDetails(data)
         }
       } catch (err: any) {
