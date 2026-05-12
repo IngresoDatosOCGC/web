@@ -95,7 +95,18 @@ function ConsentContent() {
       const res = await fetch('/api/oauth/consent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authorizationId }),
+        body: JSON.stringify({ 
+          authorizationId,
+          // Enviamos los detalles para que el servidor pueda reconstruir el flujo si el ID original falla
+          details: {
+            client_id: details.client_id,
+            redirect_uri: details.redirect_uri,
+            scope: details.scopes?.join(' ') || details.scope,
+            code_challenge: details.code_challenge,
+            code_challenge_method: details.code_challenge_method,
+            state: details.state
+          }
+        }),
       })
 
       const data = await res.json()
