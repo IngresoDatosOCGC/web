@@ -23,14 +23,18 @@ export default function HeaderMiembros() {
     .join('')
     .toUpperCase();
 
-  const handleExternalRedirect = (e: React.MouseEvent) => {
+  const handleExternalRedirect = async (e: React.MouseEvent) => {
     e.preventDefault();
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
     const externalUrl = process.env.NEXT_PUBLIC_EXTERNAL_SERVER_URL;
-    if (!externalUrl) { alert("Error: La URL del servidor externo no está configurada."); return; }
-    if (session?.access_token && session?.refresh_token) {
-      window.open(`${externalUrl}/callback#access_token=${session.access_token}&refresh_token=${session.refresh_token}`, '_blank');
+    
+    if (currentSession?.access_token && currentSession?.refresh_token) {
+      // Pasamos los tokens en el fragmento (#) para que no viajen al servidor en la petición inicial
+      const targetUrl = `${externalUrl}/callback#access_token=${currentSession.access_token}&refresh_token=${currentSession.refresh_token}`;
+      window.open(targetUrl, '_blank');
     } else {
-      alert("⚠️ Error de Autenticación: No se ha detectado una sesión activa. Prueba a cerrar sesión y volver a entrar para refrescar tus permisos.");
+      // Si no hay sesión, mandamos a la URL externa base
+      window.open(externalUrl, '_blank');
     }
   };
 
@@ -68,7 +72,7 @@ export default function HeaderMiembros() {
             <li>
               <a href="#" onClick={handleExternalRedirect} className="miembros-link" title="Abrir panel en servidor externo"
                 style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                Subpanel <ExternalLink size={12} />
+                App Butacas <ExternalLink size={12} />
               </a>
             </li>
           )}
@@ -198,7 +202,7 @@ export default function HeaderMiembros() {
                   Panel de Gestión
                 </Link>
                 <a href="#" onClick={(e) => { handleExternalRedirect(e); setMobileOpen(false); }} className="mobile-drawer-link" style={{ color: '#bae6fd', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  Subpanel Externo <ExternalLink size={14} />
+                  App Butacas <ExternalLink size={14} />
                 </a>
               </>
             )}
