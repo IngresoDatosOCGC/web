@@ -25,16 +25,15 @@ export default function HeaderMiembros() {
 
   const handleExternalRedirect = async (e: React.MouseEvent) => {
     e.preventDefault();
-    const { data: { session: currentSession } } = await supabase.auth.getSession();
     const externalUrl = process.env.NEXT_PUBLIC_EXTERNAL_SERVER_URL;
-    
-    if (currentSession?.access_token && currentSession?.refresh_token) {
-      // Pasamos los tokens en el fragmento (#) para que no viajen al servidor en la petición inicial
-      const targetUrl = `${externalUrl}/callback#access_token=${currentSession.access_token}&refresh_token=${currentSession.refresh_token}`;
-      window.open(targetUrl, '_blank');
+
+    if (session?.access_token && session?.refresh_token) {
+      // WARNING: Tokens are passed in URL fragment. This is visible in browser history.
+      // TODO: Migrate to server-to-server token exchange flow.
+      const targetUrl = `${externalUrl}/callback#access_token=${session.access_token}&refresh_token=${session.refresh_token}`;
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
     } else {
-      // Si no hay sesión, mandamos a la URL externa base
-      window.open(externalUrl, '_blank');
+      window.open(externalUrl, '_blank', 'noopener,noreferrer');
     }
   };
 

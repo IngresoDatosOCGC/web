@@ -1,6 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import prisma from "./prisma";
 
+if (typeof window !== 'undefined') {
+  throw new Error("supabase-sync.ts must only be imported in server-side code");
+}
+
 // Cliente Admin para actualizar app_metadata (Caché de roles)
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,

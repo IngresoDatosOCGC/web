@@ -38,8 +38,9 @@ export default function CalendarPanel() {
       const res = await fetch('/api/admin/events', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
       });
-      if (res.ok) { fetchEvents(); (e.target as HTMLFormElement).reset(); }
-    } catch(err) { console.error(err); }
+      if (res.ok) { fetchEvents(); (e.target as HTMLFormElement).reset(); showToast("Evento creado"); }
+      else showToast("Error al crear evento", "error");
+    } catch(err) { console.error(err); showToast("Error de conexión", "error"); }
     finally { setLoading(false); }
   };
 
@@ -62,8 +63,9 @@ export default function CalendarPanel() {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editingEvent)
       });
-      if (res.ok) { fetchEvents(); setEditingEvent(null); }
-    } catch(err) { console.error(err); }
+      if (res.ok) { fetchEvents(); setEditingEvent(null); showToast("Evento actualizado"); }
+      else showToast("Error al actualizar evento", "error");
+    } catch(err) { console.error(err); showToast("Error de conexión", "error"); }
     finally { setLoading(false); }
   };
 
@@ -113,9 +115,20 @@ export default function CalendarPanel() {
       const dtStart = get('DTSTART');
       if (!dtStart) return;
       const parseDate = (dt: string) => {
-        // Formato: 20241201T180000Z o 20241201
-        const s = dt.replace(/[TZ]/g, '').replace(/(\d{4})(\d{2})(\d{2})(\d{2})?(\d{2})?(\d{2})?/, '$1-$2-$3T$4:$5:$6');
-        return new Date(s.replace(/T:/, 'T00:').replace(/::/, ':00:').replace(/:$/, ':00'));
+        const s = dt.replace(/[TZ]/g, '');
+        if (s.length >= 8) {
+          const year = s.substring(0, 4);
+          const month = s.substring(4, 6);
+          const day = s.substring(6, 8);
+          const hour = s.length >= 10 ? s.substring(8, 10) : '00';
+          const minute = s.length >= 12 ? s.substring(10, 12) : '00';
+          const second = s.length >= 14 ? s.substring(12, 14) : '00';
+          const dateStr = `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+          const d = new Date(dateStr);
+          if (isNaN(d.getTime())) return new Date();
+          return d;
+        }
+        return new Date();
       };
       events.push({
         title: get('SUMMARY') || 'Sin título',

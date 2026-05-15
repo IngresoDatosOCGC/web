@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limiter";
 
-// POST /api/auth/validate-invite
-// Verifica si un código de invitación es válido (existe, no ha caducado y no ha sido usado)
 export async function POST(req: Request) {
   try {
+    const ip = getClientIp(req);
+    if (!checkRateLimit(`validate-invite:${ip}`, 5)) {
+      return new NextResponse(JSON.stringify({ error: "Demasiados intentos. Espera un momento." }), { status: 429 });
+    }
+
     const { code } = await req.json();
 
     if (!code) return new NextResponse(JSON.stringify({ error: "No se proporcionó el código" }), { status: 400 });
@@ -28,16 +32,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ 
       success: true,
       name: invitation.name || '',
-      email: invitation.sentToEmail,
       surname: invitation.surname || '',
-      phone: invitation.phone || '',
       agrupacion: invitation.agrupacion,
       seccion: invitation.seccion,
       agrupacion2: invitation.agrupacion2,
       seccion2: invitation.seccion2,
       agrupacion3: invitation.agrupacion3,
       seccion3: invitation.seccion3,
-      birthDate: invitation.birthDate,
       isla: invitation.isla,
       hasCertificate: invitation.hasCertificate
     });

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNotifications } from '@/components/ui/NotificationContext';
 import { 
   IconUser, 
@@ -62,8 +62,12 @@ export default function RequestsPanel({ joinRequests, onRefresh }: RequestsPanel
   };
 
   const [isExpanded, setIsExpanded] = useState(true);
-  const filteredRequests = joinRequests.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .filter(r => filterRequestStatus === 'all' || r.status === filterRequestStatus);
+  const filteredRequests = useMemo(() =>
+    [...joinRequests]
+      .sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .filter(r => filterRequestStatus === 'all' || r.status === filterRequestStatus),
+    [joinRequests, filterRequestStatus]
+  );
 
   return (
     <section className="admin-list-card" style={{ padding: 'var(--sp-8)' }}>

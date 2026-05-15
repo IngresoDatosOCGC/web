@@ -37,7 +37,7 @@ export const SupabaseAuthProvider = ({ children }: { children: React.ReactNode }
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<AuthProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClient();
+  const supabase = React.useMemo(() => createClient(), []);
 
   // Función para obtener el perfil real de la DB (Verdad Absoluta)
   const fetchProfile = useCallback(async (currentSession: Session | null) => {

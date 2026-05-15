@@ -55,6 +55,9 @@ export default function PersonalPanel({
   const [upgradeData, setUpgradeData] = useState({ email: '', username: '', password: '' });
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [isCreatingManual, setIsCreatingManual] = useState(false);
+  const [newEstructuraAgr, setNewEstructuraAgr] = useState('');
+  const [newEstructuraSec, setNewEstructuraSec] = useState('');
+  const [newEstructuraPap, setNewEstructuraPap] = useState('');
 
   // Manual User Creation State
   const [manualUser, setManualUser] = useState({
@@ -148,7 +151,7 @@ export default function PersonalPanel({
       const member = members.find(m => m.id === userId);
       if (member && member.isExternal) {
         setUpgradingMember({ ...member, targetRole: 'master' });
-        setUpgradeData({ ...upgradeData, email: member.email || '' });
+        setUpgradeData(prev => ({ ...prev, email: member.email || '' }));
         return;
       }
     }
@@ -185,7 +188,7 @@ export default function PersonalPanel({
       const member = members.find(m => m.id === userId);
       if (member && member.isExternal) {
         setUpgradingMember({ ...member, targetRole: 'archiver' });
-        setUpgradeData({ ...upgradeData, email: member.email || '' });
+        setUpgradeData(prev => ({ ...prev, email: member.email || '' }));
         return;
       }
     }
@@ -359,15 +362,6 @@ export default function PersonalPanel({
           </select>
           <input type="text" placeholder="Buscar músico..." value={searchMember} onChange={(e) => setSearchMember(e.target.value)} />
         </div>
-
-        <style tabIndex={0} dangerouslySetInnerHTML={{ __html: `
-          .tr-master { background-color: #f5f3ff !important; border-left: 4px solid #8b5cf6 !important; }
-          .tr-leader { background-color: #fffbeb !important; border-left: 4px solid #f59e0b !important; }
-          .tr-archiver { background-color: #eff6ff !important; border-left: 4px solid #3b82f6 !important; }
-          .tr-seller { background-color: #f0fdf4 !important; border-left: 4px solid #22c55e !important; }
-          .personal-table tr { transition: all 0.2s; border-left: 4px solid transparent; }
-          .personal-table tr:hover { filter: brightness(0.98); }
-        `}} />
 
         <div className="table-scroll">
           <table className="personal-table">
@@ -933,36 +927,33 @@ export default function PersonalPanel({
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
                     <div className="admin-form-group-sm" style={{ flex: '1 1 140px' }}>
                       <label>Agrupación</label>
-                      <select id="newAgr" className="premium-input" style={{ width: '100%' }}>
+                      <select className="premium-input" style={{ width: '100%' }} value={newEstructuraAgr} onChange={e => setNewEstructuraAgr(e.target.value)}>
                         <option value="">Seleccionar...</option>
-                        {agrupaciones.map(a => <option key={a.id} value={a.id}>{a.agrupacion}</option>)}
+                        {agrupaciones.map(s => <option key={s.id} value={s.id}>{s.agrupacion}</option>)}
                       </select>
                     </div>
                     <div className="admin-form-group-sm" style={{ flex: '1 1 140px' }}>
                       <label>Sección / Instrumento</label>
-                      <select id="newSec" className="premium-input" style={{ width: '100%' }}>
+                      <select className="premium-input" style={{ width: '100%' }} value={newEstructuraSec} onChange={e => setNewEstructuraSec(e.target.value)}>
                         <option value="">Seleccionar...</option>
                         {secciones.map(s => <option key={s.id} value={s.id}>{s.seccion}</option>)}
                       </select>
                     </div>
                     <div className="admin-form-group-sm" style={{ flex: '1 1 120px' }}>
                       <label>Papel</label>
-                      <select id="newPap" className="premium-input" style={{ width: '100%' }} defaultValue={1}>
+                      <select className="premium-input" style={{ width: '100%' }} value={newEstructuraPap} onChange={e => setNewEstructuraPap(e.target.value)}>
                         {papeles.map(p => <option key={p.id} value={p.id}>{p.papel}</option>)}
                       </select>
                     </div>
                     <button 
                       onClick={async () => {
-                        const agr = (document.getElementById("newAgr") as HTMLSelectElement).value;
-                        const sec = (document.getElementById("newSec") as HTMLSelectElement).value;
-                        const pap = (document.getElementById("newPap") as HTMLSelectElement).value;
-                        if(!agr || !sec) return showToast("Selecciona Agrupación y Sección", "warning");
+                        if(!newEstructuraAgr || !newEstructuraSec) return showToast("Selecciona Agrupación y Sección", "warning");
                         const res = await fetch("/api/admin/users", { 
                           method: "POST", 
                           headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ userId: editingMemberData.id, action: "add-estructura", agrupacionId: agr, seccionId: sec, papelId: pap }) 
+                          body: JSON.stringify({ userId: editingMemberData.id, action: "add-estructura", agrupacionId: newEstructuraAgr, seccionId: newEstructuraSec, papelId: newEstructuraPap }) 
                         });
-                        if (res.ok) { showToast("Perfil añadido"); onRefreshMembers(); setEditingMemberData(null); }
+                        if (res.ok) { showToast("Perfil añadido"); onRefreshMembers(); setEditingMemberData(null); setNewEstructuraAgr(''); setNewEstructuraSec(''); }
                       }}
                       className="btn-vincular"
                       style={{ flex: '0 0 auto' }}

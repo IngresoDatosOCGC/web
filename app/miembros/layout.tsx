@@ -1,5 +1,3 @@
-"use client";
-
 import '@/css/miembros.css';
 
 export default function MiembrosLayout({

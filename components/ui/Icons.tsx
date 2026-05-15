@@ -38,7 +38,9 @@ export const IconArrowDown = ({ size = 20, color }: IconProps) => (
 
 export const IconViolin = ({ size = 28, color }: IconProps) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color || "currentColor"} strokeWidth="1.75" aria-hidden="true">
-    <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+    <path d="M12 2C8 2 6 5 6 8c0 2 1 4 3 5.5L8 21h8l-1-7.5C17 12 18 10 18 8c0-3-2-6-6-6z"/>
+    <line x1="9" y1="21" x2="15" y2="21"/>
+    <line x1="12" y1="2" x2="12" y2="8"/>
   </svg>
 );
 
@@ -90,7 +92,7 @@ export const IconStar = ({ size = 28, color }: IconProps) => (
 
 export const IconPassion = ({ size = 28, color }: IconProps) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color || "currentColor"} strokeWidth="1.75" aria-hidden="true">
-    <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
   </svg>
 );
 

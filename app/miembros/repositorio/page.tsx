@@ -13,8 +13,8 @@ export default function RepositorioPageClient() {
   useEffect(() => {
     if (user) {
       Promise.all([
-        fetch("/api/scores").then(res => res.json()),
-        fetch("/api/categories").then(res => res.json())
+        fetch("/api/scores").then(res => { if (!res.ok) throw new Error("Failed to fetch scores"); return res.json(); }),
+        fetch("/api/categories").then(res => { if (!res.ok) throw new Error("Failed to fetch categories"); return res.json(); })
       ])
       .then(([scoresData, catsData]) => {
         setScores(Array.isArray(scoresData) ? scoresData : []);

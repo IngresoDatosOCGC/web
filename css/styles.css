@@ -1224,6 +1224,9 @@ footer {
 
 @media (max-width: 480px) {
   .hero-eyebrow { font-size: 0.65rem; }
+}
+
+.close-modal {
   display: flex;
   align-items: center;
   justify-content: center;

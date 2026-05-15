@@ -26,18 +26,40 @@ export async function GET(req: Request) {
       const allScores = await prisma.score.findMany({ ...scoreListArgs, take });
       
       const supabase = await createClient();
-      const signed = await Promise.all(allScores.map(async (s) => {
-        if (!s.fileUrl || s.fileUrl.includes('?token=')) return s;
-        try {
+      const urlMap = new Map<string, string>();
+      for (const s of allScores) {
+        if (s.fileUrl && !s.fileUrl.includes('?token=')) {
           const parts = s.fileUrl.split('/object/');
-          if (parts.length < 2) return s;
-          const subparts = parts[1].split('/');
-          const bucket = subparts[1];
-          const path = subparts.slice(2).join('/');
+          if (parts.length >= 2) {
+            const subparts = parts[1].split('/');
+            const bucket = subparts[1];
+            const path = subparts.slice(2).join('/');
+            const key = `${bucket}/${path}`;
+            if (!urlMap.has(key)) urlMap.set(key, '');
+          }
+        }
+      }
+      
+      const signedUrls: Record<string, string> = {};
+      for (const [key] of urlMap.entries()) {
+        const [bucket, ...pathParts] = key.split('/');
+        const path = pathParts.join('/');
+        try {
           const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
-          return { ...s, fileUrl: data?.signedUrl || s.fileUrl };
-        } catch { return s; }
-      }));
+          if (data?.signedUrl) signedUrls[key] = data.signedUrl;
+        } catch {}
+      }
+      
+      const signed = allScores.map(s => {
+        if (!s.fileUrl || s.fileUrl.includes('?token=')) return s;
+        const parts = s.fileUrl.split('/object/');
+        if (parts.length < 2) return s;
+        const subparts = parts[1].split('/');
+        const bucket = subparts[1];
+        const path = subparts.slice(2).join('/');
+        const key = `${bucket}/${path}`;
+        return { ...s, fileUrl: signedUrls[key] || s.fileUrl };
+      });
       
       return NextResponse.json(signed);
     }
@@ -78,27 +100,41 @@ export async function GET(req: Request) {
       take
     });
 
-    // 🔄 Generar URLs firmadas temporales (VUL-03)
     const supabase = await createClient();
-    const signedScores = await Promise.all(scores.map(async (s) => {
-      if (!s.fileUrl || s.fileUrl.includes('?token=')) return s; // Ya firmada o vacía
-      
-      try {
-        // Asumiendo formato: .../object/public/BUCKET/PATH o .../object/authenticated/BUCKET/PATH
+    const urlMap = new Map<string, string>();
+    for (const s of scores) {
+      if (s.fileUrl && !s.fileUrl.includes('?token=')) {
         const parts = s.fileUrl.split('/object/');
-        if (parts.length < 2) return s;
-        
-        const subparts = parts[1].split('/');
-        // subparts[0] es "public" o "authenticated"
-        const bucket = subparts[1];
-        const path = subparts.slice(2).join('/');
-        
-        const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
-        return { ...s, fileUrl: data?.signedUrl || s.fileUrl };
-      } catch {
-        return s;
+        if (parts.length >= 2) {
+          const subparts = parts[1].split('/');
+          const bucket = subparts[1];
+          const path = subparts.slice(2).join('/');
+          const key = `${bucket}/${path}`;
+          if (!urlMap.has(key)) urlMap.set(key, '');
+        }
       }
-    }));
+    }
+
+    const signedUrls: Record<string, string> = {};
+    for (const [key] of urlMap.entries()) {
+      const [bucket, ...pathParts] = key.split('/');
+      const path = pathParts.join('/');
+      try {
+        const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
+        if (data?.signedUrl) signedUrls[key] = data.signedUrl;
+      } catch {}
+    }
+
+    const signedScores = scores.map(s => {
+      if (!s.fileUrl || s.fileUrl.includes('?token=')) return s;
+      const parts = s.fileUrl.split('/object/');
+      if (parts.length < 2) return s;
+      const subparts = parts[1].split('/');
+      const bucket = subparts[1];
+      const path = subparts.slice(2).join('/');
+      const key = `${bucket}/${path}`;
+      return { ...s, fileUrl: signedUrls[key] || s.fileUrl };
+    });
 
     return NextResponse.json(signedScores);
   } catch (error) {

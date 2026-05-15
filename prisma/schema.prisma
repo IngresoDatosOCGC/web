@@ -23,6 +23,9 @@ model Score {
   allowedAgrupaciones String[] @default([])
   // Ahora es una lista preestablecida de cadenas (Secciones)
   allowedRoles String[]  @default([])
+
+  @@index([categoryId])
+  @@index([createdAt])
 }
 
 model Category {
@@ -81,6 +84,10 @@ model User {
   isSectionLeader Boolean    @default(false)
   estructuras   Estructura[]
   matriculas    Matricula[]
+
+  @@index([isActive])
+  @@index([isExternal])
+  @@index([supabaseUserId])
 }
 
 model Estructura {
@@ -98,6 +105,11 @@ model Estructura {
   programaAnterior Boolean              @default(false)
 
   @@unique([userId, papelId, agrupacionId, seccionId])
+  @@index([userId])
+  @@index([agrupacionId])
+  @@index([seccionId])
+  @@index([papelId])
+  @@index([activo])
 }
 
 model Residencia {
@@ -135,6 +147,8 @@ model Agrupacion {
   agrupacion       String       @unique
   isVisibleInPublic Boolean     @default(true)
   estructuras      Estructura[]
+
+  @@index([isVisibleInPublic])
 }
 
 model Papel {
@@ -143,6 +157,8 @@ model Papel {
   isVisibleInPublic Boolean     @default(true)
   isDirector       Boolean      @default(false)
   estructuras      Estructura[]
+
+  @@index([isVisibleInPublic])
 }
 
 model InvitationCode {
@@ -165,6 +181,9 @@ model InvitationCode {
   hasCertificate   Boolean   @default(false)
   registeredUserId Int?      // ID del usuario que aceptó (Tracking)
   createdAt        DateTime  @default(now())
+
+  @@index([expiresAt])
+  @@index([usedAt])
 }
 
 enum EventType {

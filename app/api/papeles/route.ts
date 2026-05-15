@@ -11,7 +11,9 @@ export async function GET(req: Request) {
     where: isPublic ? { isVisibleInPublic: true } : undefined,
     orderBy: { papel: "asc" } 
   });
-  return NextResponse.json(papeles);
+  const res = NextResponse.json(papeles);
+  res.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+  return res;
 }
 
 export async function POST(req: Request) {

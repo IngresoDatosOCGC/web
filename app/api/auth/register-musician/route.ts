@@ -10,7 +10,6 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(req: Request) {
-  // ⏱️ Delay artificial para mitigar ataques de fuerza bruta/enumeración (VUL-02)
   await new Promise(resolve => setTimeout(resolve, 1000));
 
   try {
@@ -25,13 +24,20 @@ export async function POST(req: Request) {
       inviteCode
     } = data;
 
-    // 0. Validar y consumir el código de invitación
     if (!inviteCode) return new NextResponse(JSON.stringify({ error: "Se requiere un código de invitación válido." }), { status: 400 });
-    
-    const invite = await prisma.invitationCode.findUnique({ where: { code: inviteCode } });
-    if (!invite) return new NextResponse(JSON.stringify({ error: "Código de invitación no encontrado." }), { status: 404 });
-    if (invite.usedAt) return new NextResponse(JSON.stringify({ error: "Este código ya ha sido utilizado." }), { status: 410 });
-    if (new Date(invite.expiresAt) < new Date()) return new NextResponse(JSON.stringify({ error: "Este código ha caducado." }), { status: 410 });
+
+    const now = new Date();
+    const consumedInvite = await prisma.invitationCode.updateMany({
+      where: { code: inviteCode, usedAt: null, expiresAt: { gte: now } },
+      data: { usedAt: now }
+    });
+
+    if (consumedInvite.count === 0) {
+      const existing = await prisma.invitationCode.findUnique({ where: { code: inviteCode } });
+      if (!existing) return new NextResponse(JSON.stringify({ error: "Código de invitación no encontrado." }), { status: 404 });
+      if (existing.usedAt) return new NextResponse(JSON.stringify({ error: "Este código ya ha sido utilizado." }), { status: 410 });
+      return new NextResponse(JSON.stringify({ error: "Este código ha caducado." }), { status: 410 });
+    }
 
     const groupPairs = [
       { ag: data.agrupacion, inst: data.instrument },
@@ -39,123 +45,125 @@ export async function POST(req: Request) {
       { ag: data.agrupacion3, inst: data.instrument3 }
     ].filter(p => p.ag && p.inst);
 
-    // 1. Crear el usuario en Supabase Auth
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: email,
-      password: password,
-      email_confirm: true,
-      user_metadata: {
-        full_name: `${firstName} ${surname}`.trim(),
-        username: username
-      }
-    });
+    let authUserId: string | null = null;
 
-    if (authError) throw authError;
-
-    const papelMusico = await prisma.papel.findUnique({ where: { papel: "Músico" } });
-    if (!papelMusico) throw new Error("Papel 'Músico' no encontrado en el catálogo.");
-
-    // 2. Buscar/Crear Residencia y Empleo
-    const [residenciaRecord, empleoRecord] = await Promise.all([
-      prisma.residencia.upsert({
-        where: {
-          isla_municipio_empadronamiento: {
-            isla: isla || null,
-            municipio: municipio || null,
-            empadronamiento: empadronamiento || null
-          }
-        },
-        create: { isla: isla || null, municipio: municipio || null, empadronamiento: empadronamiento || null },
-        update: {}
-      }),
-      prisma.empleo.upsert({
-        where: {
-          trabajo_estudios: {
-            trabajo: trabajo || null,
-            estudios: estudios || null
-          }
-        },
-        create: { trabajo: trabajo || null, estudios: estudios || null },
-        update: {}
-      })
-    ]);
-
-    // 3. Crear o Actualizar el usuario principal (Fuente de Verdad)
-    const newUser = await prisma.user.upsert({
-      where: { dni: dni || "" },
-      update: {
-        supabaseUserId: authUser.user.id,
-        name: firstName,
-        surname: surname || "",
+    try {
+      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email: email,
-        username: username || null,
-        phone: phone || null,
-        birthDate: dob || null,
-        hasCertificate: !!hasCertificate,
-        residenciaId: residenciaRecord.id,
-        empleoId: empleoRecord.id,
-        isExternal: false,
-        isActive: true
-      },
-      create: {
-        supabaseUserId: authUser.user.id,
-        name: firstName,
-        surname: surname || "",
-        dni: dni || "",
-        email: email,
-        username: username || null,
-        phone: phone || null,
-        birthDate: dob || null,
-        hasCertificate: !!hasCertificate,
-        residenciaId: residenciaRecord.id,
-        empleoId: empleoRecord.id,
-        isExternal: false,
-        isActive: true
-      }
-    });
+        password: password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: `${firstName} ${surname}`.trim(),
+          username: username
+        }
+      });
 
-    // 4. Estructuras
-    for (const pair of groupPairs) {
-      const dbAgrup = await prisma.agrupacion.findUnique({ where: { agrupacion: pair.ag } });
-      const dbInst = await prisma.seccion.findUnique({ where: { seccion: pair.inst } });
-      
-      if (dbAgrup && dbInst) {
-        await prisma.estructura.upsert({
+      if (authError) throw authError;
+      authUserId = authUser.user.id;
+
+      const papelMusico = await prisma.papel.findUnique({ where: { papel: "Músico" } });
+      if (!papelMusico) throw new Error("Papel 'Músico' no encontrado en el catálogo.");
+
+      const [residenciaRecord, empleoRecord] = await Promise.all([
+        prisma.residencia.upsert({
           where: {
-            userId_papelId_agrupacionId_seccionId: {
+            isla_municipio_empadronamiento: {
+              isla: isla || null,
+              municipio: municipio || null,
+              empadronamiento: empadronamiento || null
+            }
+          },
+          create: { isla: isla || null, municipio: municipio || null, empadronamiento: empadronamiento || null },
+          update: {}
+        }),
+        prisma.empleo.upsert({
+          where: {
+            trabajo_estudios: {
+              trabajo: trabajo || null,
+              estudios: estudios || null
+            }
+          },
+          create: { trabajo: trabajo || null, estudios: estudios || null },
+          update: {}
+        })
+      ]);
+
+      const newUser = await prisma.user.upsert({
+        where: { dni: dni || "" },
+        update: {
+          supabaseUserId: authUserId,
+          name: firstName,
+          surname: surname || "",
+          email: email,
+          username: username || null,
+          phone: phone || null,
+          birthDate: dob || null,
+          hasCertificate: !!hasCertificate,
+          residenciaId: residenciaRecord.id,
+          empleoId: empleoRecord.id,
+          isExternal: false,
+          isActive: true
+        },
+        create: {
+          supabaseUserId: authUserId,
+          name: firstName,
+          surname: surname || "",
+          dni: dni || "",
+          email: email,
+          username: username || null,
+          phone: phone || null,
+          birthDate: dob || null,
+          hasCertificate: !!hasCertificate,
+          residenciaId: residenciaRecord.id,
+          empleoId: empleoRecord.id,
+          isExternal: false,
+          isActive: true
+        }
+      });
+
+      for (const pair of groupPairs) {
+        const dbAgrup = await prisma.agrupacion.findUnique({ where: { agrupacion: pair.ag } });
+        const dbInst = await prisma.seccion.findUnique({ where: { seccion: pair.inst } });
+
+        if (dbAgrup && dbInst) {
+          await prisma.estructura.upsert({
+            where: {
+              userId_papelId_agrupacionId_seccionId: {
+                userId: newUser.id,
+                papelId: papelMusico.id,
+                agrupacionId: dbAgrup.id,
+                seccionId: dbInst.id
+              }
+            },
+            update: { activo: true },
+            create: {
               userId: newUser.id,
               papelId: papelMusico.id,
               agrupacionId: dbAgrup.id,
-              seccionId: dbInst.id
+              seccionId: dbInst.id,
+              activo: true
             }
-          },
-          update: { activo: true },
-          create: {
-            userId: newUser.id,
-            papelId: papelMusico.id,
-            agrupacionId: dbAgrup.id,
-            seccionId: dbInst.id,
-            activo: true
-          }
-        });
+          });
+        }
       }
+
+      await syncUserMetadata(newUser.id);
+
+      return NextResponse.json({ success: true, userId: authUserId, dbId: newUser.id });
+    } catch (innerError: any) {
+      if (authUserId) {
+        await supabaseAdmin.auth.admin.deleteUser(authUserId).catch(() => {});
+      }
+      await prisma.invitationCode.update({
+        where: { code: inviteCode },
+        data: { usedAt: null }
+      });
+      throw innerError;
     }
-
-    // 5. Marcar código como usado AHORA que todo salió bien
-    await prisma.invitationCode.update({
-      where: { id: invite.id },
-      data: { usedAt: new Date() }
-    });
-
-    // 🔄 Sincronizar caché de app_metadata para el nuevo usuario
-    await syncUserMetadata(newUser.id);
-
-    return NextResponse.json({ success: true, userId: authUser.user.id, dbId: newUser.id });
   } catch (error: any) {
     console.error("Error Registrando Miembro:", error);
     let errorMessage = error.message || "Error desconocido en el registro";
     if (error.code === 'P2002') {
-      // Evitar enumeración (VUL-02): NO revelar exactamente qué campo falló
       errorMessage = "No se ha podido completar el registro. Es posible que algunos de los datos introducidos (DNI o Correo) ya existan en nuestro sistema.";
     }
     return new NextResponse(JSON.stringify({ error: errorMessage }), { status: 400 });

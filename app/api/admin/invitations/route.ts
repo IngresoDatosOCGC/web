@@ -76,7 +76,7 @@ export async function POST(req: Request) {
     await logActivity("Invitación Generada", user.supabaseUserId || '', { 
       destinatario: `${name} ${surname || ""}`.trim(), 
       emailSent: actuallySent,
-      codigo: code 
+      codigoRef: code.substring(0, 6) + '***'
     });
 
     return NextResponse.json(invitation);

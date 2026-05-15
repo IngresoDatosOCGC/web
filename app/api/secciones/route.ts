@@ -13,7 +13,9 @@ export async function GET(req: Request) {
       where: isPublic ? { isVisibleInPublic: true } : undefined,
       orderBy: { seccion: 'asc' }
     });
-    return NextResponse.json(secciones);
+    const res = NextResponse.json(secciones);
+    res.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    return res;
   } catch (error) {
     return new NextResponse("Error loading sections", { status: 500 });
   }

@@ -1,7 +1,7 @@
 /* onboarding.css — Sistema de Diseño OCGC */
 
 .onboarding-page {
-  background-color: var(--clr-light);
+  background-color: var(--clr-bg);
   min-height: 100vh;
   display: flex;
   justify-content: center;
@@ -13,7 +13,7 @@
 .onboarding-card {
   background: var(--clr-surface);
   padding: var(--sp-12);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
   width: 100%;
   max-width: 700px;

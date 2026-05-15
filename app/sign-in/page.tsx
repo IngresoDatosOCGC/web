@@ -141,7 +141,7 @@ function SignInContent() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <label htmlFor="password" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--clr-navy)' }}>Contraseña</label>
-              <Link href="/auth/forgot-password" style={{ fontSize: '0.8rem', color: 'var(--clr-navy-md)', textDecoration: 'none' }}>¿Olvidaste tu contraseña?</Link>
+              <Link href="/forgot-password" style={{ fontSize: '0.8rem', color: 'var(--clr-navy-md)', textDecoration: 'none' }}>¿Olvidaste tu contraseña?</Link>
             </div>
             <input
               id="password"

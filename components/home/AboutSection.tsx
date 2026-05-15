@@ -23,7 +23,7 @@ export default function AboutSection() {
         </div>
         <div className="video-container">
           <iframe
-            src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0"
+            src="https://www.youtube.com/embed/?rel=0"
             title="Orquesta Comunitaria de Gran Canaria — Actuación"
             frameBorder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

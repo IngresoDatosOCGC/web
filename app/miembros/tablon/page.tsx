@@ -11,12 +11,12 @@ export default function TablonPage() {
   useEffect(() => {
     if (user) {
       fetch("/api/scores?limit=5")
-        .then(res => res.json())
+        .then(res => { if (!res.ok) throw new Error("Failed to fetch scores"); return res.json(); })
         .then(data => setRecentScores(Array.isArray(data) ? data : []))
         .catch(err => console.error("Error loading scores:", err));
 
       fetch("/api/events?upcoming=true&limit=4")
-        .then(res => res.json())
+        .then(res => { if (!res.ok) throw new Error("Failed to fetch events"); return res.json(); })
         .then(data => {
             if (!Array.isArray(data)) return;
             setUpcomingEvents(data);

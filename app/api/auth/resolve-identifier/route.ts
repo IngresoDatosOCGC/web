@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limiter";
 
 export const dynamic = 'force-dynamic';
 
-/**
- * Resuelve un identificador (email o username) a un correo electrónico real.
- * Esto permite el inicio de sesión con el alias del usuario.
- */
 export async function POST(req: Request) {
   try {
+    const ip = getClientIp(req);
+    if (!checkRateLimit(`resolve-identifier:${ip}`, 10)) {
+      return NextResponse.json({ error: "Demasiados intentos. Espera un momento." }, { status: 429 });
+    }
+
     let { identifier } = await req.json();
     identifier = identifier?.trim();
 
@@ -16,12 +18,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Identificador requerido" }, { status: 400 });
     }
 
-    // 1. Si ya es un email, lo devolvemos tal cual (normalizado a minúsculas)
     if (identifier.includes("@")) {
       return NextResponse.json({ email: identifier.toLowerCase() });
     }
 
-    // 2. Si no es email, buscamos en la DB por username o DNI (insensible a mayúsculas)
     const user = await prisma.user.findFirst({
       where: { username: { equals: identifier, mode: 'insensitive' } },
       select: { email: true }
@@ -31,8 +31,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ email: user.email.toLowerCase() });
     }
 
-    // 3. Si no se encuentra, devolvemos el original (Supabase fallará elegantemente)
-    return NextResponse.json({ email: identifier, notFound: true });
+    return NextResponse.json({ email: identifier });
 
   } catch (error) {
     return NextResponse.json({ error: "Error interno" }, { status: 500 });

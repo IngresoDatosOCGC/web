@@ -13,14 +13,13 @@ export async function GET() {
   if (!admin.isMaster) return new NextResponse("Forbidden", { status: 403 });
 
   try {
-    const totalUsers = await prisma.user.count();
-    const activeUsers = await prisma.user.count({ where: { isActive: true } });
-    const totalScores = await prisma.score.count();
-    const totalEvents = await prisma.event.count();
-
-    const totalBanned = await prisma.user.count({ 
-      where: { isActive: false } 
-    });
+    const [totalUsers, activeUsers, totalScores, totalEvents, totalBanned] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { isActive: true } }),
+      prisma.score.count(),
+      prisma.event.count(),
+      prisma.user.count({ where: { isActive: false } }),
+    ]);
 
     const agrupaciones = await prisma.agrupacion.findMany({
       include: {

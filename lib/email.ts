@@ -4,8 +4,22 @@
  * Recomendado: Configurar RESEND_API_KEY en .env
  */
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export async function sendInvitationEmail(to: string, name: string, code: string) {
-  const registerUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/registro-usuarios?code=${code}`;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!appUrl) {
+    console.error("[Email Service] NEXT_PUBLIC_APP_URL not configured");
+    return { success: false, error: "App URL not configured" };
+  }
+  const registerUrl = `${appUrl}/registro-usuarios?code=${encodeURIComponent(code)}`;
   
   const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 12px; overflow: hidden;">
@@ -13,7 +27,7 @@ export async function sendInvitationEmail(to: string, name: string, code: string
         <img src="https://ocgc.es/wp-content/uploads/2021/05/logo-ocgc-blanco.png" alt="OCGC" width="120">
       </div>
       <div style="padding: 40px; color: #333; line-height: 1.6;">
-        <h2 style="color: #0D1B2A; margin-top: 0;">¡Hola, ${name}!</h2>
+        <h2 style="color: #0D1B2A; margin-top: 0;">¡Hola, ${escapeHtml(name)}!</h2>
         <p>Has sido invitado a formar parte del área privada de la <strong>Orquesta Comunitaria de Gran Canaria</strong>.</p>
         <p>A través de este portal podrás acceder a tus partituras, calendarios de ensayos y toda la información operativa del archivo digital.</p>
         <div style="margin: 40px 0; text-align: center;">
@@ -72,6 +86,7 @@ export async function sendInvitationEmail(to: string, name: string, code: string
 export async function sendAdminJoinNotification(data: any) {
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "archivo@ocgc.es";
   const fromAddress = process.env.EMAIL_FROM || "onboarding@resend.dev";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   
   const html = `
     <div style="font-family: sans-serif; padding: 30px; border: 1px solid #eee; border-radius: 12px; max-width: 550px; margin: 0 auto; color: #333;">
@@ -80,37 +95,37 @@ export async function sendAdminJoinNotification(data: any) {
       <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
         <tr>
           <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold; width: 120px;">Nombre:</td>
-          <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${data.firstName}</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${escapeHtml(data.firstName || '')}</td>
         </tr>
         <tr>
           <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold;">Apellidos:</td>
-          <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${data.lastName}</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${escapeHtml(data.lastName || '')}</td>
         </tr>
         <tr>
           <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold;">Agrupación:</td>
-          <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${data.group}</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${escapeHtml(data.group || '')}</td>
         </tr>
         <tr>
           <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold;">Instrumento:</td>
-          <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${data.instrument || '—'}</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${escapeHtml(data.instrument || '—')}</td>
         </tr>
         <tr>
           <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold;">Email:</td>
-          <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold; color: #478AC9;">${data.email}</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold; color: #478AC9;">${escapeHtml(data.email || '')}</td>
         </tr>
         <tr>
           <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-weight: bold;">Teléfono:</td>
-          <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${data.phone}</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${escapeHtml(data.phone || '')}</td>
         </tr>
       </table>
 
       <div style="margin-top: 25px; padding: 15px; background: #f9f9f9; border-radius: 8px; font-size: 14px;">
         <strong style="display: block; margin-bottom: 5px; color: #0D1B2A;">Trayectoria / Comentarios:</strong>
-        <p style="margin: 0; line-height: 1.5; color: #666;">${data.experience || 'Sin comentarios adicionales.'}</p>
+        <p style="margin: 0; line-height: 1.5; color: #666;">${escapeHtml(data.experience || 'Sin comentarios adicionales.')}</p>
       </div>
 
       <div style="margin-top: 30px; text-align: center;">
-        <a href="${process.env.NEXT_PUBLIC_APP_URL}/miembros/gestion" style="background: #0D1B2A; color: white; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
+        <a href="${appUrl ? `${appUrl}/miembros/gestion` : '#'}" style="background: #0D1B2A; color: white; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
           Gestionar en el Panel de Administración
         </a>
       </div>

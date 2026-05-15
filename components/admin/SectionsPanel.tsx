@@ -214,7 +214,7 @@ export default function SectionsPanel({ agrupaciones, papeles, secciones, onRefr
             </button>
           </div>
           <div className="catalog-scroll-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-            {secciones.sort((a,b) => a.seccion.localeCompare(b.seccion)).map((s: any) => (
+            {[...secciones].sort((a,b) => a.seccion.localeCompare(b.seccion)).map((s: any) => (
               <div key={s.id} className="catalog-item-row" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.6rem', borderBottom: '1px solid #eee' }}>
                 <div>
                   <div style={{ fontWeight: 500 }}>{s.seccion} {s.isVisibleInPublic ? <span className="cat-badge-public">Público</span> : <span className="cat-badge-private">Privado</span>}</div>
